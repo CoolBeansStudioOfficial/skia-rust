@@ -9,14 +9,20 @@
 #![allow(clippy::collapsible_if, clippy::similar_names)] // Keeps the C++ control flow and the foreground/background names.
 use skia_rust_core::blend_mode::{BlendMode, BlendModeCoeff};
 use skia_rust_core::blender::Blender;
-use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::flattenable::FlattenableRegistry;
+use skia_rust_core::image_filter::{
+    ImageFilter, ImageFilterBase, ImageFilterCommon, flatten_common, unflatten_common,
+};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags, default_sampling};
 use skia_rust_core::image_filter_types::{
     Context, Mapping, MatrixCapability, irect_intersect_in_place,
 };
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect, rect_priv};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::blenders;
 use crate::image_filters::crop_filter::{crop, empty};
@@ -37,6 +43,8 @@ pub struct BlendImageFilter {
     /// blenders are pessimistic about the bounds they affect; the coefficients let the bounds be
     /// reasoned about.
     arithmetic_coefficients: Option<[f32; 4]>,
+    /// Remembered to serialize the arithmetic variant (`fEnforcePremul`).
+    enforce_premul: bool,
 }
 
 impl BlendImageFilter {
@@ -128,6 +136,29 @@ impl BlendImageFilter {
 impl ImageFilterBase for BlendImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L17-L51 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkBlendImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L282-L296 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        if let Some(k) = self.arithmetic_coefficients {
+            buffer.write_uint(ARITHMETIC_BLEND_MODE);
+            buffer.write_scalar(k[0]);
+            buffer.write_scalar(k[1]);
+            buffer.write_scalar(k[2]);
+            buffer.write_scalar(k[3]);
+            buffer.write_bool(self.enforce_premul);
+        } else if let Some(bm) = self.blend_mode() {
+            buffer.write_uint(bm as u32);
+        } else {
+            buffer.write_uint(CUSTOM_BLEND_MODE);
+            buffer.write_blender(Some(&self.blender));
+        }
     }
 
     // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L36 (chrome/m156)
@@ -277,6 +308,7 @@ fn make_blend(
     foreground: Option<ImageFilter>,
     crop_rect: Option<Rect>,
     coefficients: Option<[f32; 4]>,
+    enforce_premul: bool,
 ) -> Option<ImageFilter> {
     let blender = blender.unwrap_or_else(|| Blender::mode(BlendMode::SrcOver));
     let cropped = |filter: Option<ImageFilter>| match crop_rect {
@@ -296,6 +328,7 @@ fn make_blend(
         common: ImageFilterCommon::new(vec![background, foreground], None),
         blender,
         arithmetic_coefficients: coefficients,
+        enforce_premul,
     });
     cropped(Some(filter))
 }
@@ -316,6 +349,7 @@ pub fn blend(
         foreground,
         crop_rect,
         None,
+        false,
     )
 }
 
@@ -329,7 +363,14 @@ pub fn blend_with_blender(
     foreground: Option<ImageFilter>,
     crop_rect: Option<Rect>,
 ) -> Option<ImageFilter> {
-    make_blend(Some(blender), background, foreground, crop_rect, None)
+    make_blend(
+        Some(blender),
+        background,
+        foreground,
+        crop_rect,
+        None,
+        false,
+    )
 }
 
 /// `SkImageFilters::Arithmetic(k1, k2, k3, k4, enforcePMColor, background, foreground, cropRect)`:
@@ -357,5 +398,111 @@ pub fn arithmetic(
         foreground,
         crop_rect,
         Some([k1, k2, k3, k4]),
+        enforce_pm_color,
+    )
+}
+
+/// `kCustom_SkBlendMode`: a blender that is not a blend mode, written with its body.
+// Port of: src/core/SkBlendModePriv.h#L24 (chrome/m156)
+const CUSTOM_BLEND_MODE: u32 = 0xFF;
+
+/// `kArithmetic_SkBlendMode`: the arithmetic blender, written with its coefficients.
+// Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L64 (chrome/m156)
+const ARITHMETIC_BLEND_MODE: u32 = CUSTOM_BLEND_MODE + 1;
+
+/// `SkBlendImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L202-L234 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 2, registry)?;
+
+    let mut blender: Option<Blender> = None;
+    let mut coefficients: Option<[f32; 4]> = None;
+    let mut enforce_premul = false;
+
+    // The mode is read as a `uint32_t`.
+    let mode = buffer.read32().cast_unsigned();
+    if mode == ARITHMETIC_BLEND_MODE {
+        // Should only see this sentinel value in newer SKPs
+        let version_ok =
+            !buffer.is_version_lt(picture_priv::VERSION_COMBINE_BLEND_ARITHMETIC_FILTERS);
+        if buffer.validate(version_ok) {
+            let k = [
+                buffer.read_scalar(),
+                buffer.read_scalar(),
+                buffer.read_scalar(),
+                buffer.read_scalar(),
+            ];
+            coefficients = Some(k);
+            enforce_premul = buffer.read_bool();
+            let Some(arithmetic_blender) =
+                blenders::arithmetic(k[0], k[1], k[2], k[3], enforce_premul)
+            else {
+                // A null arithmetic blender is an error condition.
+                buffer.validate(false);
+                return None;
+            };
+            blender = Some(arithmetic_blender);
+        }
+    } else if mode == CUSTOM_BLEND_MODE {
+        blender = buffer.read_blender(registry);
+    } else {
+        let bm = i32::try_from(mode).ok().and_then(BlendMode::from_i32);
+        if !buffer.validate(bm.is_some()) {
+            return None;
+        }
+        blender = bm.map(Blender::mode);
+    }
+
+    let mut inputs = inputs.into_iter();
+    let background = inputs.next().flatten();
+    let foreground = inputs.next().flatten();
+    make_blend(
+        blender,
+        background,
+        foreground,
+        crop_rect,
+        coefficients,
+        enforce_premul,
+    )
+}
+
+/// `SkBlendImageFilter::LegacyArithmeticCreateProc`: the arithmetic filter of the old name, which
+/// newer pictures do not write.
+// Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L174-L194 (chrome/m156)
+pub fn legacy_arithmetic_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    // Newer SKPs should be using the updated Blend CreateProc.
+    let old_version = buffer.is_version_lt(picture_priv::VERSION_COMBINE_BLEND_ARITHMETIC_FILTERS);
+    if !buffer.validate(old_version) {
+        // SkASSERT(false): debug-only, so release will just see a failed deserialization.
+        debug_assert!(false, "a legacy arithmetic filter in a newer picture");
+        return None;
+    }
+
+    let (inputs, crop_rect) = unflatten_common(buffer, 2, registry)?;
+    let k = [
+        buffer.read_scalar(),
+        buffer.read_scalar(),
+        buffer.read_scalar(),
+        buffer.read_scalar(),
+    ];
+    let enforce_premul = buffer.read_bool();
+    let mut inputs = inputs.into_iter();
+    let background = inputs.next().flatten();
+    let foreground = inputs.next().flatten();
+    arithmetic(
+        k[0],
+        k[1],
+        k[2],
+        k[3],
+        enforce_premul,
+        background,
+        foreground,
+        crop_rect,
     )
 }

@@ -5,9 +5,12 @@
 
 //! `SkComposeImageFilter`: runs an inner filter, then an outer filter on its result.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{input_at, unflatten_common};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect};
 
 /// Index of the outer input (`kOuter`).
@@ -26,6 +29,11 @@ pub struct ComposeImageFilter {
 impl ImageFilterBase for ComposeImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkComposeImageFilter.cpp#L48 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkComposeImageFilter"
     }
 
     // Port of: src/effects/imagefilters/SkComposeImageFilter.cpp#L24 (chrome/m156)
@@ -106,4 +114,15 @@ pub fn compose(outer: Option<ImageFilter>, inner: Option<ImageFilter>) -> Option
     Some(ImageFilter::from_base(ComposeImageFilter {
         common: ImageFilterCommon::new(vec![Some(outer), Some(inner)], Some(uses_src)),
     }))
+}
+
+/// `SkComposeImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkComposeImageFilter.cpp#L83-L86 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, _) = unflatten_common(buffer, 2, registry)?;
+    // `kOuter` is input 0 and `kInner` input 1.
+    compose(input_at(&inputs, 0), input_at(&inputs, 1))
 }

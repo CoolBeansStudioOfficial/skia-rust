@@ -103,6 +103,12 @@ impl BitAnd<u32> for Color {
 }
 
 impl Color {
+    /// The packed `0xAARRGGBB` value (`SkColor`).
+    #[must_use]
+    pub const fn argb(self) -> u32 {
+        self.0
+    }
+
     /// Wraps a packed `0xAARRGGBB` value.
     #[must_use]
     pub const fn new(argb: u32) -> Self {

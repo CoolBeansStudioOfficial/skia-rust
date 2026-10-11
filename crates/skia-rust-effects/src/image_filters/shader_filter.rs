@@ -5,11 +5,17 @@
 
 //! `SkImageFilters::Shader`: a leaf filter whose output is an (infinite) shader.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, unflatten_common};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability};
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect, rect_priv};
 use skia_rust_core::shader::Shader;
+use skia_rust_core::shaders;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use skia_rust_core::tile_mode::TileMode;
 
@@ -54,6 +60,18 @@ impl ShaderImageFilter {
 impl ImageFilterBase for ShaderImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkShaderImageFilter.cpp#L47 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkShaderImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkShaderImageFilter.cpp#L128-L133 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_shader(Some(&self.shader));
+        buffer.write_bool(self.dither == Dither::Yes);
     }
 
     // Port of: src/effects/imagefilters/SkShaderImageFilter.cpp#L119-L122 (chrome/m156)
@@ -120,4 +138,28 @@ pub fn shader(
         Some(rect) => crop(&rect, TileMode::Decal, filter),
         None => filter,
     }
+}
+
+/// `SkShaderImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkShaderImageFilter.cpp#L89-L115 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (_, crop_rect) = unflatten_common(buffer, 0, registry)?;
+    let (filter_shader, dither): (Option<Shader>, bool);
+    if buffer.is_version_lt(picture_priv::VERSION_SHADER_IMAGE_FILTER_SERIALIZE_SHADER) {
+        // The old implementation stored an entire SkPaint, but we only need the SkShader and dither
+        // boolean.
+        let paint = buffer.read_paint(registry);
+        filter_shader = paint
+            .shader()
+            .or_else(|| shaders::color_in_space(paint.color4f(), None));
+        dither = paint.is_dither();
+    } else {
+        filter_shader = buffer.read_shader(registry);
+        dither = buffer.read_bool();
+    }
+    let dither = if dither { Dither::Yes } else { Dither::No };
+    shader(filter_shader, dither, crop_rect)
 }

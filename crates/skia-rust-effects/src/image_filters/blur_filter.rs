@@ -7,12 +7,16 @@
 //! through [`FilterResult::Builder::blur`](skia_rust_core::image_filter_result::Builder::blur).
 
 use skia_rust_core::blur_engine::is_effectively_identity;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags, default_sampling};
 use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place, size_ceil};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::size::Size;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 
@@ -94,6 +98,19 @@ impl BlurImageFilter {
 impl ImageFilterBase for BlurImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkBlurImageFilter.cpp#L16-L44 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkBlurImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkBlurImageFilter.cpp#L135-L141 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_scalar(self.sigma.width);
+        buffer.write_scalar(self.sigma.height);
+        buffer.write_int(self.legacy_tile_mode as i32);
     }
 
     // Port of: src/effects/imagefilters/SkBlurImageFilter.cpp#L202-L232 (chrome/m156)
@@ -214,4 +231,19 @@ pub fn blur(
         filter = crop(&rect, TileMode::Decal, filter);
     }
     filter
+}
+
+/// `SkBlurImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkBlurImageFilter.cpp#L118-L133 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 1, registry)?;
+    let sigma_x = buffer.read_scalar();
+    let sigma_y = buffer.read_scalar();
+    let tile_mode = TileMode::from_i32(buffer.read32_le(TileMode::Decal as u32).cast_signed())
+        .unwrap_or_default();
+    // NOTE: a legacy tile mode is handled by `blur`, which emulates the legacy tiling.
+    blur(sigma_x, sigma_y, tile_mode, input_at(&inputs, 0), crop_rect)
 }

@@ -25,13 +25,16 @@ use crate::color_space::ColorSpace;
 use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::color_type::ColorType;
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
 use crate::image::Image;
 use crate::image_info_priv::color_type_is_alpha_only;
 use crate::m44::M44;
 use crate::matrix::{Matrix, TypeMask};
 use crate::mipmap_accessor::MipmapAccessor;
 use crate::paint::{Paint, Style};
+use crate::picture_priv;
 use crate::raster_pipeline::{RasterPipeline, SRGB_TRANSFER_FUNCTION, Stage};
+use crate::read_buffer::ReadBuffer;
 use crate::rect::{Contains, Rect};
 use crate::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use crate::sampling_priv::aniso_fallback;
@@ -40,6 +43,7 @@ use crate::shaders;
 use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
 use crate::size::ISize;
 use crate::tile_mode::TileMode;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// A shader that samples an image with tiling and sampling options (`SkImageShader`).
 // Port of: src/shaders/SkImageShader.h#L33-L102 (chrome/m156)
@@ -810,6 +814,19 @@ impl ImageShader {
 }
 
 impl ShaderBase for ImageShader {
+    // Port of: src/shaders/SkImageShader.cpp (SK_FLATTENABLE_HOOKS, chrome/m156)
+    fn type_name(&self) -> &'static str {
+        "SkImageShader"
+    }
+
+    // Port of: src/shaders/SkImageShader.cpp#L498-L511 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_uint(self.tile_mode_x as u32);
+        buffer.write_uint(self.tile_mode_y as u32);
+        buffer.write_sampling(&self.sampling);
+        buffer.write_image(&self.image);
+        buffer.write_bool(self.raw);
+    }
     // Port of: src/shaders/SkImageShader.cpp#L180-L183 (chrome/m156)
     fn is_opaque(&self) -> bool {
         self.image.is_opaque()
@@ -833,5 +850,43 @@ impl ShaderBase for ImageShader {
 
     fn append_stages(&self, rec: &mut StageRec<'_, '_>, m_rec: &MatrixRec) -> bool {
         self.append_stages_impl(rec, m_rec)
+    }
+}
+
+/// `SkImageShader::CreateProc`.
+// Port of: src/shaders/SkImageShader.cpp#L474-L496 (chrome/m156)
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, _registry: &FlattenableRegistry) -> Option<Shader> {
+    let tmx = TileMode::from_i32(buffer.read32_le(TileMode::Decal as u32).cast_signed())
+        .unwrap_or_default();
+    let tmy = TileMode::from_i32(buffer.read32_le(TileMode::Decal as u32).cast_signed())
+        .unwrap_or_default();
+
+    let mut sampling = SamplingOptions::default();
+    let mut read_sampling = true;
+    if buffer.is_version_lt(picture_priv::VERSION_NO_FILTER_QUALITY_SHADERS) && !buffer.read_bool()
+    {
+        // Legacy has_sampling: we just default to Nearest in sampling.
+        read_sampling = false;
+    }
+    if read_sampling {
+        sampling = buffer.read_sampling();
+    }
+
+    let mut local_matrix = Matrix::default();
+    if buffer.is_version_lt(picture_priv::VERSION_NO_SHADER_LOCAL_MATRIX) {
+        local_matrix = buffer.read_matrix();
+    }
+    let img = buffer.read_image()?;
+
+    let raw = if buffer.is_version_lt(picture_priv::VERSION_RAW_IMAGE_SHADERS) {
+        false
+    } else {
+        buffer.read_bool()
+    };
+
+    if raw {
+        ImageShader::make_raw(Some(img), tmx, tmy, &sampling, Some(&local_matrix))
+    } else {
+        ImageShader::make(Some(img), tmx, tmy, &sampling, Some(&local_matrix), false)
     }
 }

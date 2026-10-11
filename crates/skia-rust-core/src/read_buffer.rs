@@ -810,6 +810,23 @@ impl ReadBuffer<'_> {
         self.read_flattenable_body(|buffer| factory(buffer, registry))
     }
 
+    /// Reads an image filter written by `writeFlattenable` (`readImageFilter`). `registry` maps
+    /// the names to their factories.
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), with the factory table passed
+    // in (see `flattenable`)
+    #[doc(alias = "readImageFilter")]
+    pub fn read_image_filter(
+        &mut self,
+        registry: &FlattenableRegistry,
+    ) -> Option<crate::image_filter::ImageFilter> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.image_filter_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
     /// Reads a paint (`readPaint`, `SkPaintPriv::Unflatten`). The paint is reset if the buffer is
     /// invalid afterwards. The shader, path effect, mask filter, color filter and blender are read
     /// with `registry`; an image filter must be null, as it is not read yet.

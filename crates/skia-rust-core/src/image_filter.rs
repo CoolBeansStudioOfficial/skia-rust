@@ -21,6 +21,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::color_filter::ColorFilter;
+use crate::data::Data;
+use crate::flattenable::FlattenableRegistry;
 use crate::image::Image;
 use crate::image_filter_cache::{
     CreateIfNecessary, ImageFilterCache, ImageFilterCacheKey, SK_INVALID_UNIQUE_ID,
@@ -30,8 +32,12 @@ use crate::image_filter_types::{Backend, Context, Mapping, MatrixCapability, Sta
 use crate::local_matrix_image_filter::make_local_matrix_image_filter;
 use crate::m44::M44;
 use crate::matrix::Matrix;
+use crate::picture_priv;
 use crate::point::{IPoint, Point};
+use crate::read_buffer::ReadBuffer;
 use crate::rect::{Contains, IRect, Rect, rect_priv};
+use crate::serial_procs::{DeserialProcs, SerialProcs};
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// `SkImageFilter_Base::Direction`'s `SkImageFilter::MapDirection`.
 // Port of: include/core/SkImageFilter.h#L120-L125 (chrome/m156)
@@ -115,6 +121,20 @@ impl ImageFilterCommon {
 pub trait ImageFilterBase: Any + fmt::Debug + Send + Sync {
     /// The inputs, usage flags and unique ID of this filter.
     fn common(&self) -> &ImageFilterCommon;
+
+    /// The name the filter is flattened under (`getTypeName`), which the registry maps back to
+    /// its factory. The empty name, the default, marks a filter that cannot be flattened.
+    #[doc(alias = "getTypeName")]
+    fn type_name(&self) -> &'static str {
+        ""
+    }
+
+    /// Writes the filter (`flatten`). Writes the inputs by default, as `SkImageFilter_Base`
+    /// does; a filter with parameters writes them after [`flatten_common`].
+    // Port of: src/core/SkImageFilter.cpp#L220-L229 (chrome/m156), SkImageFilter_Base::flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(self.common(), buffer);
+    }
 
     /// Return the color filter if this node is just a color filter without crop constraints
     /// (`onIsColorFilterNode`).
@@ -385,6 +405,93 @@ pub fn round_out_layer(r: &Rect) -> IRect {
 /// A shared image filter (`sk_sp<SkImageFilter>`): a cheaply clonable handle to an
 /// [`ImageFilterBase`].
 ///
+/// The input `index` of the filter read by [`unflatten_common`], or `None` for a null input
+/// (`Common::getInput`).
+#[must_use]
+pub fn input_at(inputs: &[Option<ImageFilter>], index: usize) -> Option<ImageFilter> {
+    inputs.get(index).cloned().flatten()
+}
+
+/// `SkIsValidRect`: the edges are ordered, and the width and height are finite.
+// Port of: src/core/SkValidationUtils.h#L28-L33 (chrome/m156), SkIsValidRect
+#[must_use]
+pub fn is_valid_rect(rect: &Rect) -> bool {
+    rect.left <= rect.right
+        && rect.top <= rect.bottom
+        && (rect.right - rect.left).is_finite()
+        && (rect.bottom - rect.top).is_finite()
+}
+
+/// Writes the inputs of a filter (`SkImageFilter_Base::flatten`): their count, then for each a
+/// flag and, for a present input, the input.
+// Port of: src/core/SkImageFilter.cpp#L220-L229 (chrome/m156), SkImageFilter_Base::flatten
+pub fn flatten_common(common: &ImageFilterCommon, buffer: &mut BinaryWriteBuffer) {
+    buffer.write_int(i32::try_from(common.count_inputs()).unwrap_or(i32::MAX));
+    for i in 0..common.count_inputs() {
+        let input = common.input(i);
+        buffer.write_bool(input.is_some());
+        if let Some(input) = input {
+            buffer.write_image_filter(Some(input));
+        }
+    }
+}
+
+/// Reads the inputs of a filter, and its legacy crop rect (`SkImageFilter_Base::Common::unflatten`).
+/// `expected_count` is the number of inputs the filter takes, or negative for any number. Returns
+/// the inputs and the crop rect, or `None` if the data is invalid.
+// Port of: src/core/SkImageFilter.cpp#L177-L218 (chrome/m156), Common::unflatten
+#[must_use]
+pub fn unflatten_common(
+    buffer: &mut ReadBuffer<'_>,
+    expected_count: i32,
+    registry: &FlattenableRegistry,
+) -> Option<(Vec<Option<ImageFilter>>, Option<Rect>)> {
+    let count = buffer.read_int();
+    if !buffer.validate(count >= 0) {
+        return None;
+    }
+    if !buffer.validate(expected_count < 0 || count == expected_count) {
+        return None;
+    }
+
+    // skia-rust: `SK_BUILD_FOR_FUZZER` builds (OSS-Fuzz, `skia_build_fuzzers`) refuse more than
+    // four inputs.
+    if count > 4 {
+        return None;
+    }
+
+    let mut inputs = Vec::new();
+    for _ in 0..count {
+        let input = if buffer.read_bool() {
+            buffer.read_image_filter(registry)
+        } else {
+            None
+        };
+        inputs.push(input);
+        if !buffer.is_valid() {
+            return None;
+        }
+    }
+
+    let mut crop_rect = None;
+    if buffer.is_version_lt(picture_priv::VERSION_REMOVE_DEPRECATED_CROP_RECT) {
+        const HAS_ALL_CROP_EDGE: u32 = 0x0F;
+        let rect = buffer.read_rect();
+        if !buffer.is_valid() || !buffer.validate(is_valid_rect(&rect)) {
+            return None;
+        }
+
+        let flags = buffer.read_uint();
+        if !buffer.is_valid() || !buffer.validate(flags == 0 || flags == HAS_ALL_CROP_EDGE) {
+            return None;
+        }
+        if flags == HAS_ALL_CROP_EDGE {
+            crop_rect = Some(rect);
+        }
+    }
+    buffer.is_valid().then_some((inputs, crop_rect))
+}
+
 /// Equality is identity, as Skia compares `sk_sp`s ([`ImageFilter::ptr_eq`]).
 // Port of: include/core/SkImageFilter.h#L35-L117 (chrome/m156)
 #[doc(alias = "SkImageFilter")]
@@ -396,6 +503,36 @@ impl ImageFilter {
     #[must_use]
     pub fn from_base(base: impl ImageFilterBase) -> ImageFilter {
         ImageFilter(Arc::new(base))
+    }
+
+    /// The flattened filter, as `SkImageFilter::serialize` makes it: its name, then its body
+    /// (`SkFlattenable::serialize`). `procs` decides how the images and pictures are written.
+    // Port of: src/core/SkFlattenable.cpp#L127-L139 (chrome/m156), SkFlattenable::serialize
+    #[must_use]
+    pub fn serialize(&self, procs: Option<&SerialProcs>) -> Data {
+        let mut writer = match procs {
+            Some(procs) => BinaryWriteBuffer::with_serial_procs(procs.clone()),
+            None => BinaryWriteBuffer::new(),
+        };
+        writer.write_image_filter(Some(self));
+        writer.snapshot_as_data()
+    }
+
+    /// Reads back a filter written by [`ImageFilter::serialize`], with the factories of `registry`
+    /// (`SkImageFilter::Deserialize`).
+    // Port of: src/core/SkFlattenable.cpp#L152-L159 (chrome/m156), SkFlattenable::Deserialize
+    #[doc(alias = "Deserialize")]
+    #[must_use]
+    pub fn deserialize(
+        data: &[u8],
+        procs: Option<&DeserialProcs>,
+        registry: &FlattenableRegistry,
+    ) -> Option<ImageFilter> {
+        let mut buffer = match procs {
+            Some(procs) => ReadBuffer::with_deserial_procs(data, procs.clone()),
+            None => ReadBuffer::new(data),
+        };
+        buffer.read_image_filter(registry)
     }
 
     /// The implementation (`as_IFB`).

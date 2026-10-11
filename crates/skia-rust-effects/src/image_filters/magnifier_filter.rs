@@ -7,17 +7,22 @@
 //! (the `Magnifier` known runtime effect) or as a plain rect-to-rect transform when the inset is
 //! zero.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags};
 use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place, map_rect};
 use skia_rust_core::known_runtime_effects::{StableKey, get_known_runtime_effect};
 use skia_rust_core::matrix::{Matrix, ScaleToFit};
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::runtime_effect::RuntimeEffectBuilder;
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 
@@ -88,6 +93,20 @@ pub struct MagnifierImageFilter {
 impl ImageFilterBase for MagnifierImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkMagnifierImageFilter.cpp#L58 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkMagnifierImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkMagnifierImageFilter.cpp#L199-L204 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_rect(&self.lens_bounds);
+        buffer.write_scalar(self.zoom_amount);
+        buffer.write_scalar(self.inset);
+        buffer.write_sampling(&self.sampling);
     }
 
     // Port of: src/effects/imagefilters/SkMagnifierImageFilter.cpp#L163-L227 (chrome/m156)
@@ -314,4 +333,29 @@ pub fn magnifier(
         // expensive identity function so treat zoomAmount <= 1 as a no-op.
         input
     }
+}
+
+/// `SkMagnifierImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkMagnifierImageFilter.cpp#L232-L245 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    if buffer.is_version_lt(picture_priv::VERSION_REVAMP_MAGNIFIER_FILTER) {
+        // This was actually a legacy magnifier image filter that was serialized.
+        return None;
+    }
+    let (inputs, _) = unflatten_common(buffer, 1, registry)?;
+    let lens_bounds = buffer.read_rect();
+    let zoom_amount = buffer.read_scalar();
+    let inset = buffer.read_scalar();
+    let sampling = buffer.read_sampling();
+    magnifier(
+        &lens_bounds,
+        zoom_amount,
+        inset,
+        sampling,
+        input_at(&inputs, 0),
+        None,
+    )
 }

@@ -89,6 +89,59 @@ pub(crate) const VERSION_COMBINE_COLOR_SHADERS: u32 = 107;
 // Port of: src/core/SkPicturePriv.h#L145-L176 (chrome/m156)
 pub(crate) const VERSION_WORKING_COLOR_SPACE_OUTPUT: u32 = 109;
 
+/// The version where matrix image filters gained a sampling (`kMatrixImageFilterSampling_Version`).
+// Port of: src/core/SkPicturePriv.h#L150 (chrome/m156)
+pub const VERSION_MATRIX_IMAGE_FILTER_SAMPLING: u32 = 83;
+
+/// The version where image filters gained a sampling (`kImageFilterImageSampling_Version`).
+// Port of: src/core/SkPicturePriv.h#L151 (chrome/m156)
+pub const VERSION_IMAGE_FILTER_IMAGE_SAMPLING: u32 = 84;
+
+/// The version where shader image filters serialize their shader
+/// (`kShaderImageFilterSerializeShader`).
+// Port of: src/core/SkPicturePriv.h#L162 (chrome/m156)
+pub const VERSION_SHADER_IMAGE_FILTER_SERIALIZE_SHADER: u32 = 95;
+
+/// The version where the magnifier filter was revamped (`kRevampMagnifierFilter`).
+// Port of: src/core/SkPicturePriv.h#L163 (chrome/m156)
+pub const VERSION_REVAMP_MAGNIFIER_FILTER: u32 = 96;
+
+/// The version where blend and arithmetic filters were combined
+/// (`kCombineBlendArithmeticFilters`).
+// Port of: src/core/SkPicturePriv.h#L165 (chrome/m156)
+pub const VERSION_COMBINE_BLEND_ARITHMETIC_FILTERS: u32 = 98;
+
+/// The version where crop image filters support tiling (`kCropImageFilterSupportsTiling`).
+// Port of: src/core/SkPicturePriv.h#L168 (chrome/m156)
+pub const VERSION_CROP_IMAGE_FILTER_SUPPORTS_TILING: u32 = 101;
+
+/// The version where convolution image filters moved their tiling to a crop
+/// (`kConvolutionImageFilterTilingUpdate`).
+// Port of: src/core/SkPicturePriv.h#L169 (chrome/m156)
+pub const VERSION_CONVOLUTION_IMAGE_FILTER_TILING_UPDATE: u32 = 102;
+
+/// The version where runtime effects serialize their stable keys (`kSerializeStableKeys`).
+// Port of: src/core/SkPicturePriv.h#L175 (chrome/m156)
+pub const VERSION_SERIALIZE_STABLE_KEYS: u32 = 108;
+
+/// The version where the deprecated crop rect of image filters was removed
+/// (`kRemoveDeprecatedCropRect`).
+// Port of: src/core/SkPicturePriv.h#L170 (chrome/m156)
+pub const VERSION_REMOVE_DEPRECATED_CROP_RECT: u32 = 103;
+
+/// The version where shaders gained a sampling for every filter quality
+/// (`kNoFilterQualityShaders_Version`).
+// Port of: src/core/SkPicturePriv.h#L152 (chrome/m156)
+pub const VERSION_NO_FILTER_QUALITY_SHADERS: u32 = 85;
+
+/// The version where raw image shaders were serialized (`kRawImageShaders`).
+// Port of: src/core/SkPicturePriv.h#L158 (chrome/m156)
+pub const VERSION_RAW_IMAGE_SHADERS: u32 = 91;
+
+/// The version where shaders stopped serializing a local matrix (`kNoShaderLocalMatrix`).
+// Port of: src/core/SkPicturePriv.h#L161 (chrome/m156)
+pub const VERSION_NO_SHADER_LOCAL_MATRIX: u32 = 94;
+
 /// The shared ID of the resource cache entries made from picture `picture_id`
 /// (`SkPicturePriv::MakeSharedID`).
 // Port of: src/core/SkPicturePriv.h#L61-L64 (chrome/m156), `MakeSharedID`

@@ -6,14 +6,19 @@
 //! `SkImageImageFilter`: draws a part of an image into a rectangle. It is a leaf filter that
 //! ignores its (absent) inputs.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_filter::{
     ImageFilter, ImageFilterBase, ImageFilterCommon, round_out_layer,
 };
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability};
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{Contains, IRect, Rect};
 use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::sampling_priv::{LegacyFQ, MediumAs, from_fq};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::empty;
 
@@ -33,6 +38,19 @@ pub struct ImageImageFilter {
 impl ImageFilterBase for ImageImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkImageImageFilter.cpp#L52 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkImageImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkImageImageFilter.cpp#L131-L135 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_sampling(&self.sampling);
+        buffer.write_rect(&self.src_rect);
+        buffer.write_rect(&self.dst_rect);
+        buffer.write_image(&self.image);
     }
 
     // Port of: src/effects/imagefilters/SkImageImageFilter.cpp#L34 (chrome/m156)
@@ -134,4 +152,38 @@ pub fn image_sampled(image: Option<Image>, sampling: SamplingOptions) -> Option<
     let image = image?;
     let r = Rect::from_isize(image.dimensions());
     Some(self::image(Some(image), r, r, sampling))
+}
+
+/// `checkFilterQuality`: the legacy filter quality, which the reader checks is in range (a value
+/// out of range is `kNone`).
+// Port of: src/core/SkReadBuffer.cpp#L550-L562 (chrome/m156), checkInt and checkFilterQuality
+fn check_filter_quality(buffer: &mut ReadBuffer<'_>) -> LegacyFQ {
+    let value = buffer.read32();
+    if !(0..=3).contains(&value) {
+        buffer.validate(false);
+        return LegacyFQ::None;
+    }
+    match value {
+        1 => LegacyFQ::Low,
+        2 => LegacyFQ::Medium,
+        3 => LegacyFQ::High,
+        _ => LegacyFQ::None,
+    }
+}
+
+/// `SkImageImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkImageImageFilter.cpp#L118-L135 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let sampling = if buffer.is_version_lt(picture_priv::VERSION_IMAGE_FILTER_IMAGE_SAMPLING) {
+        from_fq(check_filter_quality(buffer), MediumAs::Linear)
+    } else {
+        buffer.read_sampling()
+    };
+    let src = buffer.read_rect();
+    let dst = buffer.read_rect();
+    let img = buffer.read_image()?;
+    Some(image(Some(img), src, dst, sampling))
 }

@@ -5,11 +5,15 @@
 
 //! `SkImageFilters::Picture`: a leaf filter that plays a picture back into its target rectangle.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability, round_out};
 use skia_rust_core::picture::Picture;
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::empty;
 
@@ -41,6 +45,19 @@ impl PictureImageFilter {
 impl ImageFilterBase for PictureImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkPictureImageFilter.cpp#L45 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkPictureImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkPictureImageFilter.cpp#L98-L104 (chrome/m156), flatten
+    // (no inputs: the filter writes its picture instead)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_bool(true);
+        picture_priv::flatten(&self.picture, buffer);
+        buffer.write_rect(&self.cull_rect);
     }
 
     // Port of: src/effects/imagefilters/SkPictureImageFilter.cpp#L38-L39 (chrome/m156)
@@ -98,4 +115,18 @@ pub fn picture(pic: Option<Picture>, target_rect: Option<&Rect>) -> Option<Image
         }
     }
     Some(empty())
+}
+
+/// `SkPictureImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkPictureImageFilter.cpp#L81-L92 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let mut pic = None;
+    if buffer.read_bool() {
+        pic = picture_priv::make_from_buffer(buffer, registry);
+    }
+    let cull_rect = buffer.read_rect();
+    picture(pic, Some(&cull_rect))
 }

@@ -12,19 +12,24 @@
 #![allow(clippy::similar_names)] // Keeps the C++ light/material field names (kd, ks, ...).
 
 use skia_rust_core::color::Color;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::float_midpoint;
-use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{
+    ImageFilter, ImageFilterBase, ImageFilterCommon, flatten_common, input_at, unflatten_common,
+};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags, default_sampling};
 use skia_rust_core::image_filter_types::{Context, Mapping};
 use skia_rust_core::known_runtime_effects::{StableKey, get_known_runtime_effect};
 use skia_rust_core::m44::V3;
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::point3::Point3;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{Contains, IRect, Rect, rect_priv};
 use skia_rust_core::runtime_effect::RuntimeEffectBuilder;
 use skia_rust_core::scalar::{degrees_to_radians, scalar_cos};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 
@@ -298,6 +303,30 @@ impl ImageFilterBase for LightingImageFilter {
         &self.common
     }
 
+    // Port of: src/effects/imagefilters/SkLightingImageFilter.cpp#L179 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkLightingImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkLightingImageFilter.cpp#L397-L416 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        // Light
+        buffer.write_int(self.light.light_type as i32);
+        buffer.write_int(self.light.light_color.argb().cast_signed());
+        buffer.write_point(Point::new(self.light.location.x, self.light.location.y));
+        buffer.write_scalar(self.light.location.z);
+        buffer.write_point(Point::new(self.light.direction.x, self.light.direction.y));
+        buffer.write_scalar(self.light.direction.z);
+        buffer.write_scalar(self.light.falloff_exponent);
+        buffer.write_scalar(self.light.cos_cutoff_angle);
+        // Material
+        buffer.write_int(self.material.material_type as i32);
+        buffer.write_scalar(self.material.surface_depth);
+        buffer.write_scalar(self.material.k);
+        buffer.write_scalar(self.material.shininess);
+    }
+
     // Port of: src/effects/imagefilters/SkLightingImageFilter.cpp#L171 (chrome/m156)
     fn on_affects_transparent_black(&self) -> bool {
         true
@@ -407,6 +436,59 @@ impl ImageFilterBase for LightingImageFilter {
 
 /// `make_lighting`: validates the parameters, then wraps `input` in the lighting filter, clipped
 /// by `crop_rect` on both sides when there is one.
+/// `SkLightingImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkLightingImageFilter.cpp#L335-L362 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 1, registry)?;
+    let light_type = match buffer.read32_le(2) {
+        1 => LightType::Point,
+        2 => LightType::Spot,
+        _ => LightType::Distant,
+    };
+    let light_color = Color::new(buffer.read_int().cast_unsigned());
+    let light_pos = Point3::new(
+        buffer.read_scalar(),
+        buffer.read_scalar(),
+        buffer.read_scalar(),
+    );
+    let light_dir = Point3::new(
+        buffer.read_scalar(),
+        buffer.read_scalar(),
+        buffer.read_scalar(),
+    );
+    let falloff_exponent = buffer.read_scalar();
+    let cos_cutoff_angle = buffer.read_scalar();
+    let material_type = match buffer.read32_le(2) {
+        1 => MaterialType::Specular,
+        2 => MaterialType::EmbossSpecular,
+        _ => MaterialType::Diffuse,
+    };
+    let surface_depth = buffer.read_scalar();
+    let k = buffer.read_scalar();
+    let shininess = buffer.read_scalar();
+    if !buffer.is_valid() {
+        return None;
+    }
+    let light = Light {
+        light_type,
+        light_color,
+        location: light_pos,
+        direction: light_dir,
+        falloff_exponent,
+        cos_cutoff_angle,
+    };
+    let material = Material {
+        material_type,
+        surface_depth,
+        k,
+        shininess,
+    };
+    make_lighting(light, material, input_at(&inputs, 0), crop_rect)
+}
+
 // Port of: src/effects/imagefilters/SkLightingImageFilter.cpp#L212-L244 (chrome/m156)
 fn make_lighting(
     light: Light,

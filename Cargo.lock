@@ -1196,6 +1196,7 @@ dependencies = [
  "skia-rust-pathops",
  "skia-rust-pdf",
  "skia-rust-raster",
+ "skia-rust-svg",
  "skia-rust-tools",
 ]
 

@@ -597,6 +597,19 @@ impl BinaryWriteBuffer {
         }
     }
 
+    /// Writes an image filter (`writeFlattenable(filter)`), or the null marker.
+    // Port of: src/core/SkWriteBuffer.cpp#L265-L313 (chrome/m156), `writeFlattenable` of a filter
+    #[doc(alias = "writeFlattenable")]
+    pub fn write_image_filter(&mut self, filter: Option<&crate::image_filter::ImageFilter>) {
+        match filter {
+            None => self.writer.write32(0),
+            Some(filter) => {
+                let base = filter.as_base();
+                self.write_flattenable(base.type_name(), |buffer| base.flatten(buffer));
+            }
+        }
+    }
+
     /// Writes a blender (`writeFlattenable(blender)`), or the null marker.
     // Port of: src/core/SkWriteBuffer.cpp#L265-L313 (chrome/m156), `writeFlattenable` of a blender
     #[doc(alias = "writeFlattenable")]
