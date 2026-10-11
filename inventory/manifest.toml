@@ -35874,8 +35874,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageIsOpaqueTest.cpp#L76-L101"
 module = "core"
-status = "todo"
-reason = "decodes png/jpg resources and makes a lazy picture image (DeferredFromPicture): not ported"
+status = "passing"
 span_hash = "c04bd1a7bf5cc122cc0508e4e3be456a77cf40796d5eacbe95128af955212083"
 
 [[test]]
