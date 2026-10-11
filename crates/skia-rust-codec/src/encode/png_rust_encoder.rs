@@ -58,6 +58,9 @@ enum ExtraRowTransform {
     Rgba16leToRgb16be,
 }
 
+/// The byte-level conversion of one row: `(src, dst, width)`.
+type RowConvert = fn(&[u8], &mut [u8], usize);
+
 /// The `png` writer's output, shared with the caller. `WriteTraitAdapterForSkWStream` in Skia.
 // Port of: src/encode/SkPngRustEncoder.cpp (WriteTraitAdapterForSkWStream, chrome/m156)
 #[derive(Clone)]
@@ -94,21 +97,14 @@ impl RustSink {
     fn transform_row(&mut self, row: &[u8]) -> bool {
         let src_row_bytes = self.src_row_bytes;
         let width = self.width;
-        let (dst_row_bytes, convert): (usize, fn(&[u8], &mut [u8], usize)) =
-            match self.extra_row_transform {
-                ExtraRowTransform::None => return true,
-                ExtraRowTransform::Rgba8ToRgb8 => (
-                    src_row_bytes - (src_row_bytes / 4),
-                    rgba8_to_rgb8,
-                ),
-                ExtraRowTransform::Rgba16leToRgba16be => {
-                    (src_row_bytes, rgba16le_to_rgba16be)
-                }
-                ExtraRowTransform::Rgba16leToRgb16be => (
-                    src_row_bytes - (src_row_bytes / 4),
-                    rgba16le_to_rgb16be,
-                ),
-            };
+        let (dst_row_bytes, convert): (usize, RowConvert) = match self.extra_row_transform {
+            ExtraRowTransform::None => return true,
+            ExtraRowTransform::Rgba8ToRgb8 => (src_row_bytes - (src_row_bytes / 4), rgba8_to_rgb8),
+            ExtraRowTransform::Rgba16leToRgba16be => (src_row_bytes, rgba16le_to_rgba16be),
+            ExtraRowTransform::Rgba16leToRgb16be => {
+                (src_row_bytes - (src_row_bytes / 4), rgba16le_to_rgb16be)
+            }
+        };
         self.extra_row_buffer.clear();
         self.extra_row_buffer.resize(dst_row_bytes, 0x00);
         convert(row, &mut self.extra_row_buffer, width);
@@ -162,7 +158,11 @@ fn encode_comments(
         return true;
     };
     for (keyword, text) in comments {
-        if !write_text_chunk(writer, trim_trailing_zeros(keyword), trim_trailing_zeros(text)) {
+        if !write_text_chunk(
+            writer,
+            trim_trailing_zeros(keyword),
+            trim_trailing_zeros(text),
+        ) {
             return false;
         }
     }
@@ -175,7 +175,10 @@ fn encode_comments(
 fn write_text_chunk(writer: &mut png::Writer<SharedOutput>, keyword: &[u8], text: &[u8]) -> bool {
     let is_latin1_byte = |b: &u8| (0x20..=0x7E).contains(b) || (0xA0..=0xFF).contains(b);
     let is_linefeed_byte = |b: &u8| *b == 10;
-    if !text.iter().all(|b| is_latin1_byte(b) || is_linefeed_byte(b)) {
+    if !text
+        .iter()
+        .all(|b| is_latin1_byte(b) || is_linefeed_byte(b))
+    {
         return false;
     }
     if !keyword.iter().all(|b| is_latin1_byte(b) && *b != 0xA0) {
@@ -203,9 +206,7 @@ fn write_gainmap_chunks() -> bool {
 
 /// Port of `SkPngRustEncoderImpl::Make`'s choice of the `png` colour type and row transform.
 // Port of: src/encode/SkPngRustEncoderImpl.cpp#L186-L236 (Make, chrome/m156)
-fn choose_color(
-    target: &TargetInfo,
-) -> Option<(png::ColorType, ExtraRowTransform)> {
+fn choose_color(target: &TargetInfo) -> Option<(png::ColorType, ExtraRowTransform)> {
     let dst_info = &target.dst_info;
     let mut extra = ExtraRowTransform::None;
     let color = match dst_info.color() {
@@ -215,7 +216,9 @@ fn choose_color(
             if let Some(dst_row_info) = target.dst_row_info.as_ref() {
                 if dst_row_info.is_opaque() {
                     color = png::ColorType::Rgb;
-                    if dst_row_info.color_type() == skia_rust_core::color_type::ColorType::R16G16B16A16UNorm {
+                    if dst_row_info.color_type()
+                        == skia_rust_core::color_type::ColorType::R16G16B16A16UNorm
+                    {
                         extra = ExtraRowTransform::Rgba16leToRgb16be;
                     } else {
                         extra = ExtraRowTransform::Rgba8ToRgb8;
@@ -293,11 +296,7 @@ impl PngRowSink for RustSink {
 /// Port of `SkPngRustEncoderImpl::Make`: writes the PNG header, the comments, and the stream
 /// writer, and returns the encoder that writes the rows into `out`.
 // Port of: src/encode/SkPngRustEncoderImpl.cpp#L166-L285 (Make, chrome/m156)
-fn make<'a>(
-    out: SharedOutput,
-    src: Pixmap<'a>,
-    options: &Options,
-) -> Option<PngRustEncoder<'a>> {
+fn make<'a>(out: &SharedOutput, src: Pixmap<'a>, options: &Options) -> Option<PngRustEncoder<'a>> {
     let target = get_target_info(src.info())?;
     let width = u32::try_from(target.dst_info.width()).ok()?;
     let height = u32::try_from(target.dst_info.height()).ok()?;
@@ -333,9 +332,10 @@ fn make<'a>(
     }
     let stream_writer = writer.into_stream_writer().ok()?;
 
-    let dst_row_info = target.dst_row_info.clone().unwrap_or_else(|| {
-        ImageInfo::new_unknown(None)
-    });
+    let dst_row_info = target
+        .dst_row_info
+        .clone()
+        .unwrap_or_else(|| ImageInfo::new_unknown(None));
     let sink = RustSink {
         stream_writer: Some(stream_writer),
         extra_row_transform,
@@ -358,7 +358,7 @@ pub fn encode_to_vec(src: &Pixmap<'_>, options: &Options) -> Option<Vec<u8>> {
     let view = Pixmap::new_readonly(src.info(), src.addr()?, src.row_bytes())?;
     let out = SharedOutput(Arc::new(Mutex::new(Vec::new())));
     let height = src.height();
-    let mut encoder = make(out.clone(), view, options)?;
+    let mut encoder = make(&out, view, options)?;
     // The base finishes the PNG after its last row (`onFinishEncoding`), as `encodeRows` does.
     if !encoder.encode_rows(height) {
         return None;

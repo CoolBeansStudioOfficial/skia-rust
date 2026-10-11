@@ -11,7 +11,7 @@
 use std::sync::{Arc, Mutex};
 
 use skia_rust_codec::android_codec::{AndroidCodec, AndroidOptions};
-use skia_rust_codec::codec::FrameInfo;
+use skia_rust_codec::codec_animation::{Blend, DisposalMethod};
 use skia_rust_codec::{Codec, Options, Result, ZeroInitialized, png_codec, png_rust_codec};
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color::{Color, pre_multiply_color};
@@ -22,11 +22,10 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream};
-use skia_rust_codec::codec_animation::{Blend, DisposalMethod};
 
-use crate::unit::codec_partial_test::HaltingStream;
-use crate::unit::codec_exact_read_test::SharedStream;
 use crate::resources::get_resource_as_data;
+use crate::unit::codec_exact_read_test::SharedStream;
+use crate::unit::codec_partial_test::HaltingStream;
 use crate::{Reporter, def_test, errorf, reporter_assert};
 
 /// A pixel buffer that a decode writes into, with the image info it was allocated for. Stands in
@@ -65,12 +64,12 @@ impl Buf {
     fn erase(&mut self, color: Color) {
         let pm = pre_multiply_color(color);
         let bpp = self.info.bytes_per_pixel();
-        let row_len = self.info.width() as usize * bpp;
+        let row_len = dim(self.info.width()) * bpp;
         let mut row = vec![0u8; row_len];
         for chunk in row.chunks_exact_mut(bpp) {
             chunk.copy_from_slice(&pixel_bytes(&self.info, pm));
         }
-        for y in 0..self.info.height() as usize {
+        for y in 0..dim(self.info.height()) {
             let start = y * self.row_bytes;
             self.data[start..start + row_len].copy_from_slice(&row);
         }
@@ -89,8 +88,15 @@ fn sampled_dimension(src_dimension: i32, sample_size: i32) -> i32 {
     src_dimension / sample_size
 }
 
+/// A non-negative dimension or index as `usize`.
+fn dim(value: i32) -> usize {
+    usize::try_from(value).expect("dimensions are not negative")
+}
+
 /// The bytes of one pixel of `info` holding the premultiplied colour `pm`. Uses the native N32
 /// layout, which is what the tests draw with.
+// The channels are 8-bit values held in a `u32`, so the casts to `u8` do not truncate.
+#[allow(clippy::cast_possible_truncation)]
 fn pixel_bytes(info: &ImageInfo, pm: skia_rust_core::color::PMColor) -> Vec<u8> {
     let (a, r, g, b) = (
         skia_rust_core::color_priv::get_packed_a32(pm),
@@ -144,8 +150,18 @@ fn assert_pixel_color(
     expected: Color,
     description: &str,
 ) {
-    reporter_assert!(r, x < buf.info.width(), "x={x} >= width={}", buf.info.width());
-    reporter_assert!(r, y < buf.info.height(), "y={y} >= height={}", buf.info.height());
+    reporter_assert!(
+        r,
+        x < buf.info.width(),
+        "x={x} >= width={}",
+        buf.info.width()
+    );
+    reporter_assert!(
+        r,
+        y < buf.info.height(),
+        "y={y} >= height={}",
+        buf.info.height()
+    );
     reporter_assert!(
         r,
         buf.info.color_type() == ColorType::N32,
@@ -177,7 +193,12 @@ fn assert_blue_pixel(r: &mut Reporter, buf: &Buf, x: i32, y: i32, description: &
 
 /// Port of `AssertSingleGreenFrame`.
 // Port of: tests/SkPngRustDecoderTest.cpp#L136-L166 (AssertSingleGreenFrame, chrome/m156)
-fn assert_single_green_frame(r: &mut Reporter, expected_width: i32, expected_height: i32, path: &str) {
+fn assert_single_green_frame(
+    r: &mut Reporter,
+    expected_width: i32,
+    expected_height: i32,
+    path: &str,
+) {
     let Some(mut codec) = png_rust_decoder_decode(r, path) else {
         return;
     };
@@ -257,12 +278,9 @@ fn start_incremental_decode_subset(
 /// Port of `DecodeSubsetOneShot`.
 // Port of: tests/SkPngRustDecoderTest.cpp#L194-L211 (DecodeSubsetOneShot, chrome/m156)
 fn decode_subset_one_shot(r: &mut Reporter, data: &[u8], subset: IRect, dst: &mut Buf) -> bool {
-    let Some(mut codec) = start_incremental_decode_subset(
-        r,
-        MemoryStream::make_copy(data),
-        subset,
-        dst,
-    ) else {
+    let Some(mut codec) =
+        start_incremental_decode_subset(r, MemoryStream::make_copy(data), subset, dst)
+    else {
         return false;
     };
     let (result, _) = codec.incremental_decode(&mut dst.data);
@@ -279,8 +297,7 @@ fn decode_subset_halting(r: &mut Reporter, data: &[u8], subset: IRect, dst: &mut
     let initial_limit = data.len() / 2;
     let halting = HaltingStream::new(data, initial_limit);
     let retained = halting.clone();
-    let Some(mut codec) = start_incremental_decode_subset(r, Box::new(halting), subset, dst)
-    else {
+    let Some(mut codec) = start_incremental_decode_subset(r, Box::new(halting), subset, dst) else {
         return false;
     };
     let (result, _) = codec.incremental_decode(&mut dst.data);
@@ -305,7 +322,7 @@ fn compare_bitmaps(r: &mut Reporter, bm1: &Buf, bm2: &Buf) {
         return;
     }
     let row_bytes = bm1.info.min_row_bytes();
-    for i in 0..bm1.info.height() as usize {
+    for i in 0..dim(bm1.info.height()) {
         let a = &bm1.data[i * bm1.row_bytes..i * bm1.row_bytes + row_bytes];
         let b = &bm2.data[i * bm2.row_bytes..i * bm2.row_bytes + row_bytes];
         if a != b {
@@ -379,8 +396,7 @@ fn decode_android_pixels(
         .with_color_type(ColorType::N32);
     if let Some(subset) = opts.base.subset {
         let subset_width = sampled_dimension(subset.width(), sample_size);
-        let subset_height =
-            sampled_dimension(subset.height(), sample_size);
+        let subset_height = sampled_dimension(subset.height(), sample_size);
         info = info.with_wh(subset_width, subset_height);
     }
     let mut bm = Buf::new(info.clone());
@@ -451,7 +467,8 @@ fn assert_android_decode_sampling(
     let rust_codec = png_rust_codec::make_from_stream(MemoryStream::make_copy(&data)).ok();
     let rust_bm = decode_android_pixels(r, rust_codec, sample_size, get_subset, Result::Success);
     let libpng_codec = png_codec::make_from_stream(MemoryStream::make_copy(&data)).ok();
-    let libpng_bm = decode_android_pixels(r, libpng_codec, sample_size, get_subset, Result::Success);
+    let libpng_bm =
+        decode_android_pixels(r, libpng_codec, sample_size, get_subset, Result::Success);
     let (Some(rust_bm), Some(libpng_bm)) = (rust_bm, libpng_bm) else {
         return;
     };
@@ -537,14 +554,11 @@ fn decode_last_frame_of(r: &mut Reporter, codec: &mut Codec<'_>) -> Option<Buf> 
     let frame_count = codec.get_frame_count();
     let mut image: Option<Buf> = None;
     for i in 0..frame_count {
-        let info: FrameInfo = match codec.get_frame_info(i) {
-            Some(info) => info,
-            None => {
-                reporter_assert!(r, false);
-                return None;
-            }
+        let Some(info) = codec.get_frame_info(i) else {
+            reporter_assert!(r, false);
+            return None;
         };
-        assert!(info.disposal_method == DisposalMethod::Keep);
+        assert_eq!(info.disposal_method, DisposalMethod::Keep);
         match image.as_mut() {
             None => match codec.get_image(None::<ImageInfo>, None::<&Options>) {
                 Ok(img) => {
@@ -633,59 +647,66 @@ def_test!(RustPngCodec_apng_basic_ignoring_default_image, |r| {
 });
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L587-L592 (RustPngCodec_apng_ignoring_default_image_without_getFrameCount)
-def_test!(RustPngCodec_apng_ignoring_default_image_without_getFrameCount, |r| {
-    let resource = "images/apng-test-suite--basic--ignoring-default-image.png";
-    {
-        let Some(mut codec) = png_rust_decoder_decode(r, resource) else {
-            return;
-        };
-        match codec.get_image(None::<ImageInfo>, None::<&Options>) {
-            Ok(image) => {
-                let pm = image.peek_pixels().expect("image has pixels");
-                reporter_assert!(r, pm.get_color((0, 0)) == Color::GREEN);
+def_test!(
+    RustPngCodec_apng_ignoring_default_image_without_getFrameCount,
+    |r| {
+        let resource = "images/apng-test-suite--basic--ignoring-default-image.png";
+        {
+            let Some(mut codec) = png_rust_decoder_decode(r, resource) else {
+                return;
+            };
+            match codec.get_image(None::<ImageInfo>, None::<&Options>) {
+                Ok(image) => {
+                    let pm = image.peek_pixels().expect("image has pixels");
+                    reporter_assert!(r, pm.get_color((0, 0)) == Color::GREEN);
+                }
+                Err(result) => assert_successful_codec_result!(r, result),
             }
-            Err(result) => assert_successful_codec_result!(r, result),
         }
-    }
-    {
-        let Some(mut codec) = png_rust_decoder_decode(r, resource) else {
-            return;
-        };
-        let mut bitmap = Buf::new(codec.info());
-        let info = bitmap.info.clone();
-        let row_bytes = bitmap.row_bytes;
-        let result = codec.start_incremental_decode(&info, &mut bitmap.data, row_bytes, None);
-        assert_successful_codec_result!(r, result);
-        if result == Result::Success {
-            let (result, _) = codec.incremental_decode(&mut bitmap.data);
+        {
+            let Some(mut codec) = png_rust_decoder_decode(r, resource) else {
+                return;
+            };
+            let mut bitmap = Buf::new(codec.info());
+            let info = bitmap.info.clone();
+            let row_bytes = bitmap.row_bytes;
+            let result = codec.start_incremental_decode(&info, &mut bitmap.data, row_bytes, None);
             assert_successful_codec_result!(r, result);
-            assert_green_pixel(r, &bitmap, 0, 0, "Expecting a green pixel");
+            if result == Result::Success {
+                let (result, _) = codec.incremental_decode(&mut bitmap.data);
+                assert_successful_codec_result!(r, result);
+                assert_green_pixel(r, &bitmap, 0, 0, "Expecting a green pixel");
+            }
+        }
+        {
+            let Some(codec) = png_rust_decoder_decode(r, resource) else {
+                return;
+            };
+            let Some(mut android) = AndroidCodec::make_from_codec(codec) else {
+                reporter_assert!(r, false);
+                return;
+            };
+            let sampled_dims = android.get_sampled_dimensions(2);
+            let sampled_info = android.info().with_dimensions(sampled_dims);
+            let mut bitmap = Buf::new(sampled_info.clone());
+            let options = AndroidOptions {
+                sample_size: 2,
+                ..AndroidOptions::default()
+            };
+            let row_bytes = bitmap.row_bytes;
+            let result = android.get_android_pixels(
+                &sampled_info,
+                &mut bitmap.data,
+                row_bytes,
+                Some(&options),
+            );
+            assert_successful_codec_result!(r, result);
+            if result == Result::Success {
+                assert_green_pixel(r, &bitmap, 0, 0, "Expecting a green pixel");
+            }
         }
     }
-    {
-        let Some(codec) = png_rust_decoder_decode(r, resource) else {
-            return;
-        };
-        let Some(mut android) = AndroidCodec::make_from_codec(codec) else {
-            reporter_assert!(r, false);
-            return;
-        };
-        let sampled_dims = android.get_sampled_dimensions(2);
-        let sampled_info = android.info().with_dimensions(sampled_dims);
-        let mut bitmap = Buf::new(sampled_info.clone());
-        let options = AndroidOptions {
-            sample_size: 2,
-            ..AndroidOptions::default()
-        };
-        let row_bytes = bitmap.row_bytes;
-        let result =
-            android.get_android_pixels(&sampled_info, &mut bitmap.data, row_bytes, Some(&options));
-        assert_successful_codec_result!(r, result);
-        if result == Result::Success {
-            assert_green_pixel(r, &bitmap, 0, 0, "Expecting a green pixel");
-        }
-    }
-});
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L594-L627 (RustPngCodec_apng_dispose_op_none_basic)
 def_test!(RustPngCodec_apng_dispose_op_none_basic, |r| {
@@ -719,7 +740,11 @@ def_test!(RustPngCodec_apng_dispose_op_none_basic, |r| {
     reporter_assert!(r, image.width() == 128, "width {} != 128", image.width());
     reporter_assert!(r, image.height() == 64, "height {} != 64", image.height());
     let pixmap = image.peek_pixels().expect("image has pixels");
-    reporter_assert!(r, pixmap.get_color((0, 0)) == Color::RED, "Frame #0 should be red");
+    reporter_assert!(
+        r,
+        pixmap.get_color((0, 0)) == Color::RED,
+        "Frame #0 should be red"
+    );
 
     let mut buf = Buf {
         info: pixmap.info().clone(),
@@ -754,95 +779,110 @@ def_test!(RustPngCodec_apng_dispose_op_none_basic, |r| {
 });
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L629-L641 (RustPngCodec_apng_dispose_op_none_basic_incomplete_input1)
-def_test!(RustPngCodec_apng_dispose_op_none_basic_incomplete_input1, |r| {
-    let path = "images/apng-test-suite--dispose-ops--none-basic.png";
-    let Some(data) = get_resource_as_data(path) else {
-        errorf!(r, "Missing resource: {path}");
-        return;
-    };
-    let full_length = data.len();
-    const INITIAL_BYTES: usize = 0xAD;
-    let halting = HaltingStream::new(&data, INITIAL_BYTES);
-    let retained = halting.clone();
-    let codec = png_rust_codec::make_from_stream(Box::new(halting));
-    let mut codec = match codec {
-        Ok(codec) => codec,
-        Err(result) => {
-            assert_successful_codec_result!(r, result);
+def_test!(
+    RustPngCodec_apng_dispose_op_none_basic_incomplete_input1,
+    |r| {
+        let path = "images/apng-test-suite--dispose-ops--none-basic.png";
+        let Some(data) = get_resource_as_data(path) else {
+            errorf!(r, "Missing resource: {path}");
             return;
+        };
+        let full_length = data.len();
+        let initial_bytes: usize = 0xAD;
+        let halting = HaltingStream::new(&data, initial_bytes);
+        let retained = halting.clone();
+        let codec = png_rust_codec::make_from_stream(Box::new(halting));
+        let mut codec = match codec {
+            Ok(codec) => codec,
+            Err(result) => {
+                assert_successful_codec_result!(r, result);
+                return;
+            }
+        };
+        let dims = codec.dimensions();
+        let _bitmap = Buf::new(codec.info().with_dimensions(dims));
+        let frame_count = codec.get_frame_count();
+        reporter_assert!(r, frame_count == 1);
+        retained.add_new_data(full_length);
+        match codec.get_image(None::<ImageInfo>, None::<&Options>) {
+            Ok(image) => {
+                reporter_assert!(r, image.width() == 128, "width {} != 128", image.width());
+                reporter_assert!(r, image.height() == 64, "height {} != 64", image.height());
+                let pixmap = image.peek_pixels().expect("image has pixels");
+                reporter_assert!(
+                    r,
+                    pixmap.get_color((0, 0)) == Color::RED,
+                    "Frame #0 should be red"
+                );
+            }
+            Err(result) => assert_successful_codec_result!(r, result),
         }
-    };
-    let dims = codec.dimensions();
-    let _bitmap = Buf::new(codec.info().with_dimensions(dims));
-    let frame_count = codec.get_frame_count();
-    reporter_assert!(r, frame_count == 1);
-    retained.add_new_data(full_length);
-    match codec.get_image(None::<ImageInfo>, None::<&Options>) {
-        Ok(image) => {
-            reporter_assert!(r, image.width() == 128, "width {} != 128", image.width());
-            reporter_assert!(r, image.height() == 64, "height {} != 64", image.height());
-            let pixmap = image.peek_pixels().expect("image has pixels");
-            reporter_assert!(r, pixmap.get_color((0, 0)) == Color::RED, "Frame #0 should be red");
-        }
-        Err(result) => assert_successful_codec_result!(r, result),
     }
-});
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L643-L690 (RustPngCodec_apng_dispose_op_none_basic_incomplete_input2)
-def_test!(RustPngCodec_apng_dispose_op_none_basic_incomplete_input2, |r| {
-    let path = "images/apng-test-suite--dispose-ops--none-basic.png";
-    let Some(data) = get_resource_as_data(path) else {
-        errorf!(r, "Missing resource: {path}");
-        return;
-    };
-    let full_length = data.len();
-    // Roughly the middle of the IDAT chunk.
-    const INITIAL_BYTES: usize = 0x8D;
-    let halting = HaltingStream::new(&data, INITIAL_BYTES);
-    let retained = halting.clone();
-    let mut codec = match png_rust_codec::make_from_stream(Box::new(halting)) {
-        Ok(codec) => codec,
-        Err(result) => {
-            assert_successful_codec_result!(r, result);
+def_test!(
+    RustPngCodec_apng_dispose_op_none_basic_incomplete_input2,
+    |r| {
+        let path = "images/apng-test-suite--dispose-ops--none-basic.png";
+        let Some(data) = get_resource_as_data(path) else {
+            errorf!(r, "Missing resource: {path}");
             return;
-        }
-    };
-    let dims = codec.dimensions();
-    let mut bitmap = Buf::new(codec.info().with_dimensions(dims));
-    bitmap.erase(Color::BLUE);
-    assert_blue_pixel(r, &bitmap, 0, 0, "");
-    assert_blue_pixel(r, &bitmap, 40, 29, "");
-    assert_blue_pixel(r, &bitmap, 80, 35, "");
-    assert_blue_pixel(r, &bitmap, 127, 63, "");
-    let options = Options {
-        zero_initialized: ZeroInitialized::No,
-        subset: None,
-        frame_index: 0,
-        prior_frame: skia_rust_codec::NO_FRAME,
-    };
-    let info = bitmap.info.clone();
-    let row_bytes = bitmap.row_bytes;
-    let result = codec.start_incremental_decode(&info, &mut bitmap.data, row_bytes, Some(&options));
-    reporter_assert!(r, result == Result::Success);
-    let (result, rows_decoded) = codec.incremental_decode(&mut bitmap.data);
-    reporter_assert!(r, result == Result::IncompleteInput);
-    reporter_assert!(r, rows_decoded == Some(10), "actual rowsDecoded = {rows_decoded:?}");
-    assert_red_pixel(r, &bitmap, 0, 0, "");
-    assert_blue_pixel(r, &bitmap, 40, 29, "");
-    assert_blue_pixel(r, &bitmap, 80, 35, "");
-    assert_blue_pixel(r, &bitmap, 127, 63, "");
-    retained.add_new_data(full_length);
-    let frame_count = codec.get_frame_count();
-    reporter_assert!(r, frame_count == 1);
-    let (result, rows_decoded) = codec.incremental_decode(&mut bitmap.data);
-    reporter_assert!(r, result == Result::Success);
-    // Not set when `kSuccess`.
-    reporter_assert!(r, rows_decoded.is_none());
-    assert_red_pixel(r, &bitmap, 0, 0, "");
-    assert_red_pixel(r, &bitmap, 40, 29, "");
-    assert_red_pixel(r, &bitmap, 80, 35, "");
-    assert_red_pixel(r, &bitmap, 127, 63, "");
-});
+        };
+        let full_length = data.len();
+        // Roughly the middle of the IDAT chunk.
+        let initial_bytes: usize = 0x8D;
+        let halting = HaltingStream::new(&data, initial_bytes);
+        let retained = halting.clone();
+        let mut codec = match png_rust_codec::make_from_stream(Box::new(halting)) {
+            Ok(codec) => codec,
+            Err(result) => {
+                assert_successful_codec_result!(r, result);
+                return;
+            }
+        };
+        let dims = codec.dimensions();
+        let mut bitmap = Buf::new(codec.info().with_dimensions(dims));
+        bitmap.erase(Color::BLUE);
+        assert_blue_pixel(r, &bitmap, 0, 0, "");
+        assert_blue_pixel(r, &bitmap, 40, 29, "");
+        assert_blue_pixel(r, &bitmap, 80, 35, "");
+        assert_blue_pixel(r, &bitmap, 127, 63, "");
+        let options = Options {
+            zero_initialized: ZeroInitialized::No,
+            subset: None,
+            frame_index: 0,
+            prior_frame: skia_rust_codec::NO_FRAME,
+        };
+        let info = bitmap.info.clone();
+        let row_bytes = bitmap.row_bytes;
+        let result =
+            codec.start_incremental_decode(&info, &mut bitmap.data, row_bytes, Some(&options));
+        reporter_assert!(r, result == Result::Success);
+        let (result, rows_decoded) = codec.incremental_decode(&mut bitmap.data);
+        reporter_assert!(r, result == Result::IncompleteInput);
+        reporter_assert!(
+            r,
+            rows_decoded == Some(10),
+            "actual rowsDecoded = {rows_decoded:?}"
+        );
+        assert_red_pixel(r, &bitmap, 0, 0, "");
+        assert_blue_pixel(r, &bitmap, 40, 29, "");
+        assert_blue_pixel(r, &bitmap, 80, 35, "");
+        assert_blue_pixel(r, &bitmap, 127, 63, "");
+        retained.add_new_data(full_length);
+        let frame_count = codec.get_frame_count();
+        reporter_assert!(r, frame_count == 1);
+        let (result, rows_decoded) = codec.incremental_decode(&mut bitmap.data);
+        reporter_assert!(r, result == Result::Success);
+        // Not set when `kSuccess`.
+        reporter_assert!(r, rows_decoded.is_none());
+        assert_red_pixel(r, &bitmap, 0, 0, "");
+        assert_red_pixel(r, &bitmap, 40, 29, "");
+        assert_red_pixel(r, &bitmap, 80, 35, "");
+        assert_red_pixel(r, &bitmap, 127, 63, "");
+    }
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1002-L1027 (RustPngCodec_apng_blend_ops_source_on_solid)
 def_test!(RustPngCodec_apng_blend_ops_source_on_solid, |r| {
@@ -860,29 +900,35 @@ def_test!(RustPngCodec_apng_blend_ops_source_on_solid, |r| {
 });
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1029-L1050 (RustPngCodec_apng_blend_ops_source_on_nearly_transparent)
-def_test!(RustPngCodec_apng_blend_ops_source_on_nearly_transparent, |r| {
-    let resource = "images/apng-test-suite--blend-ops--source-on-nearly-transparent.png";
-    let Some(buf) = decode_last_frame(r, resource) else {
-        return;
-    };
-    assert_pixel_color(
-        r,
-        &buf,
-        0,
-        0,
-        Color::from(0x0200_FF00),
-        "Expecting a nearly transparent pixel",
-    );
-});
+def_test!(
+    RustPngCodec_apng_blend_ops_source_on_nearly_transparent,
+    |r| {
+        let resource = "images/apng-test-suite--blend-ops--source-on-nearly-transparent.png";
+        let Some(buf) = decode_last_frame(r, resource) else {
+            return;
+        };
+        assert_pixel_color(
+            r,
+            &buf,
+            0,
+            0,
+            Color::from(0x0200_FF00),
+            "Expecting a nearly transparent pixel",
+        );
+    }
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1052-L1068 (RustPngCodec_apng_blend_ops_over_on_solid_and_transparent)
-def_test!(RustPngCodec_apng_blend_ops_over_on_solid_and_transparent, |r| {
-    let resource = "images/apng-test-suite--blend-ops--over-on-solid-and-transparent.png";
-    let Some(buf) = decode_last_frame(r, resource) else {
-        return;
-    };
-    assert_green_pixel(r, &buf, 0, 0, "");
-});
+def_test!(
+    RustPngCodec_apng_blend_ops_over_on_solid_and_transparent,
+    |r| {
+        let resource = "images/apng-test-suite--blend-ops--over-on-solid-and-transparent.png";
+        let Some(buf) = decode_last_frame(r, resource) else {
+            return;
+        };
+        assert_green_pixel(r, &buf, 0, 0, "");
+    }
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1070-L1086 (RustPngCodec_apng_blend_ops_over_repeatedly)
 def_test!(RustPngCodec_apng_blend_ops_over_repeatedly, |r| {
@@ -926,15 +972,18 @@ def_test!(RustPngCodec_apng_num_plays_2, |r| {
 });
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1154-L1167 (RustPngCodec_apng_invalid_num_frames_outside_valid_range)
-def_test!(RustPngCodec_apng_invalid_num_frames_outside_valid_range, |r| {
-    let Some(mut codec) = png_rust_decoder_decode(
-        r,
-        "images/apng-test-suite--invalid--num-frames-outside-valid-range.png",
-    ) else {
-        return;
-    };
-    reporter_assert!(r, codec.get_frame_count() == 1);
-});
+def_test!(
+    RustPngCodec_apng_invalid_num_frames_outside_valid_range,
+    |r| {
+        let Some(mut codec) = png_rust_decoder_decode(
+            r,
+            "images/apng-test-suite--invalid--num-frames-outside-valid-range.png",
+        ) else {
+            return;
+        };
+        reporter_assert!(r, codec.get_frame_count() == 1);
+    }
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1169-L1187 (RustPngCodec_png_swizzling_target_unimplemented)
 def_test!(RustPngCodec_png_swizzling_target_unimplemented, |r| {
@@ -959,26 +1008,29 @@ def_test!(RustPngCodec_png_swizzling_target_unimplemented, |r| {
 });
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1189-L1206 (RustPngCodec_png_was_encoded_with_16_bits_or_more_per_component)
-def_test!(RustPngCodec_png_was_encoded_with_16_bits_or_more_per_component, |r| {
-    let tests = [
-        // 4 bit (16 level) grayscale
-        ("images/pngsuite/basn0g04.png", false),
-        // 3x8 bits rgb color
-        ("images/pngsuite/basn2c08.png", false),
-        // 3x16 bits rgb color
-        ("images/pngsuite/basn2c16.png", true),
-        // 1 bit (2 color) paletted
-        ("images/pngsuite/basn3p01.png", false),
-    ];
-    for (filename, encoded_with_16_bits) in tests {
-        if let Some(codec) = png_rust_decoder_decode(r, filename) {
-            reporter_assert!(
-                r,
-                codec.has_high_bit_depth_encoded_data() == encoded_with_16_bits
-            );
+def_test!(
+    RustPngCodec_png_was_encoded_with_16_bits_or_more_per_component,
+    |r| {
+        let tests = [
+            // 4 bit (16 level) grayscale
+            ("images/pngsuite/basn0g04.png", false),
+            // 3x8 bits rgb color
+            ("images/pngsuite/basn2c08.png", false),
+            // 3x16 bits rgb color
+            ("images/pngsuite/basn2c16.png", true),
+            // 1 bit (2 color) paletted
+            ("images/pngsuite/basn3p01.png", false),
+        ];
+        for (filename, encoded_with_16_bits) in tests {
+            if let Some(codec) = png_rust_decoder_decode(r, filename) {
+                reporter_assert!(
+                    r,
+                    codec.has_high_bit_depth_encoded_data() == encoded_with_16_bits
+                );
+            }
         }
     }
-});
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1208-L1225 (RustPngCodec_png_cicp)
 def_test!(RustPngCodec_png_cicp, |r| {
@@ -991,11 +1043,7 @@ def_test!(RustPngCodec_png_cicp, |r| {
     };
     let cs = skia_rust_core::color_space::ColorSpace::make(profile);
     let tf = cs.map(|cs| cs.transfer_fn());
-    reporter_assert!(
-        r,
-        tf.is_some_and(|tf| tf.is_pqish()
-            || tf.is_pq())
-    );
+    reporter_assert!(r, tf.is_some_and(|tf| tf.is_pqish() || tf.is_pq()));
 });
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1227-L1245 (RustPngCodec_green15x15)
@@ -1149,10 +1197,10 @@ fn codecs_make_codec_from_stream(
 /// at (`x`, `y`).
 fn copy_tile(src: &Buf, dst: &mut Buf, x: i32, y: i32) {
     let bpp = src.info.bytes_per_pixel();
-    let row_len = src.info.width() as usize * bpp;
-    for row in 0..src.info.height() as usize {
+    let row_len = dim(src.info.width()) * bpp;
+    for row in 0..dim(src.info.height()) {
         let s = row * src.row_bytes;
-        let d = (y as usize + row) * dst.row_bytes + x as usize * bpp;
+        let d = (dim(y) + row) * dst.row_bytes + dim(x) * bpp;
         dst.data[d..d + row_len].copy_from_slice(&src.data[s..s + row_len]);
     }
 }
@@ -1184,30 +1232,30 @@ def_test!(RustPngCodec_exactRead_overshoot, |r| {
     let Some(data) = get_resource_as_data(path) else {
         return;
     };
-    const NUM_IMAGES: usize = 2;
+    let num_images: usize = 2;
     let size = data.len();
-    let mut multi_data = Vec::with_capacity(size * NUM_IMAGES);
-    for _ in 0..NUM_IMAGES {
+    let mut multi_data = Vec::with_capacity(size * num_images);
+    for _ in 0..num_images {
         multi_data.extend_from_slice(&data);
     }
     drop(data);
     let stream = Arc::new(Mutex::new(*MemoryStream::make_copy(&multi_data)));
-    for i in 0..NUM_IMAGES {
+    for i in 0..num_images {
         let codec = png_rust_codec::make_from_stream(Box::new(SharedStream(Arc::clone(&stream))));
         if i == 0 {
-            let mut codec = match codec {
-                Ok(codec) => codec,
-                Err(_) => {
-                    errorf!(r, "Failed to create a codec from {path}, iteration {i}");
-                    return;
-                }
+            let Ok(mut codec) = codec else {
+                errorf!(r, "Failed to create a codec from {path}, iteration {i}");
+                return;
             };
             let info = codec.info().with_color_type(ColorType::N32);
             let mut bm = Buf::new(info.clone());
             let row_bytes = bm.row_bytes;
             let result = codec.get_pixels(&info, &mut bm.data, row_bytes, None);
             if result != Result::Success {
-                errorf!(r, "Failed to getPixels from {path}, iteration {i} error {result:?}");
+                errorf!(
+                    r,
+                    "Failed to getPixels from {path}, iteration {i} error {result:?}"
+                );
                 return;
             }
         } else {
@@ -1287,7 +1335,6 @@ fn assert_android_decode_refused(
             subset: use_subset.then_some(subset),
             ..Options::default()
         },
-        ..AndroidOptions::default()
     };
     let result = android.get_android_pixels(
         &info,
@@ -1302,7 +1349,9 @@ fn assert_android_decode_refused(
          (sampleSize={sample_size}, useSubset={use_subset}, rowBytes={row_bytes})"
     );
     let guard_bytes_intact = buffer[..GUARD_BYTES].iter().all(|&b| b == GUARD_VALUE)
-        && buffer[GUARD_BYTES + pixel_bytes..].iter().all(|&b| b == GUARD_VALUE);
+        && buffer[GUARD_BYTES + pixel_bytes..]
+            .iter()
+            .all(|&b| b == GUARD_VALUE);
     reporter_assert!(
         r,
         guard_bytes_intact,
@@ -1428,63 +1477,75 @@ def_test!(RustPngCodec_missingOrCorruptIendSucceeds_sampled, |r| {
 });
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1405-L1470 (RustPngCodec_interlaced_partial_decode_covers_all_pixels)
-def_test!(RustPngCodec_interlaced_partial_decode_covers_all_pixels, |r| {
-    let path = "images/plane_interlaced.png";
-    let Some(data) = get_resource_as_data(path) else {
-        errorf!(r, "Missing resource: {path}");
-        return;
-    };
-    let full_length = data.len();
-    // Enough bytes to cover the initial Adam7 passes, but not the whole image.
-    let initial_bytes = full_length / 4;
-    let halting = HaltingStream::new(&data, initial_bytes);
-    let retained = halting.clone();
-    let mut codec = match png_rust_codec::make_from_stream(Box::new(halting)) {
-        Ok(codec) => codec,
-        Err(result) => {
-            assert_successful_codec_result!(r, result);
+def_test!(
+    RustPngCodec_interlaced_partial_decode_covers_all_pixels,
+    |r| {
+        let path = "images/plane_interlaced.png";
+        let Some(data) = get_resource_as_data(path) else {
+            errorf!(r, "Missing resource: {path}");
             return;
-        }
-    };
-    let mut bitmap = Buf::new(codec.info());
-    // Fill `bitmap` with a sentinel colour, so that pixels the codec never wrote are detectable.
-    let sentinel = Color::from(0xFF12_3456);
-    bitmap.erase(sentinel);
-    let options = Options {
-        zero_initialized: ZeroInitialized::No,
-        ..Options::default()
-    };
-    let info = bitmap.info.clone();
-    let row_bytes = bitmap.row_bytes;
-    let result = codec.start_incremental_decode(&info, &mut bitmap.data, row_bytes, Some(&options));
-    assert_successful_codec_result!(r, result);
-    let (result, _) = codec.incremental_decode(&mut bitmap.data);
-    reporter_assert!(r, result == Result::IncompleteInput, "result = {result:?}");
-    let mut untouched_pixels = 0;
-    for y in 0..bitmap.info.height() {
-        for x in 0..bitmap.info.width() {
-            if bitmap.color(x, y) == sentinel {
-                untouched_pixels += 1;
+        };
+        let full_length = data.len();
+        // Enough bytes to cover the initial Adam7 passes, but not the whole image.
+        let initial_bytes = full_length / 4;
+        let halting = HaltingStream::new(&data, initial_bytes);
+        let retained = halting.clone();
+        let mut codec = match png_rust_codec::make_from_stream(Box::new(halting)) {
+            Ok(codec) => codec,
+            Err(result) => {
+                assert_successful_codec_result!(r, result);
+                return;
+            }
+        };
+        let mut bitmap = Buf::new(codec.info());
+        // Fill `bitmap` with a sentinel colour, so that pixels the codec never wrote are detectable.
+        let sentinel = Color::from(0xFF12_3456);
+        bitmap.erase(sentinel);
+        let options = Options {
+            zero_initialized: ZeroInitialized::No,
+            ..Options::default()
+        };
+        let info = bitmap.info.clone();
+        let row_bytes = bitmap.row_bytes;
+        let result =
+            codec.start_incremental_decode(&info, &mut bitmap.data, row_bytes, Some(&options));
+        assert_successful_codec_result!(r, result);
+        let (result, _) = codec.incremental_decode(&mut bitmap.data);
+        reporter_assert!(r, result == Result::IncompleteInput, "result = {result:?}");
+        let mut untouched_pixels = 0;
+        for y in 0..bitmap.info.height() {
+            for x in 0..bitmap.info.width() {
+                if bitmap.color(x, y) == sentinel {
+                    untouched_pixels += 1;
+                }
             }
         }
-    }
-    reporter_assert!(r, untouched_pixels == 0, "untouchedPixels = {untouched_pixels}");
+        reporter_assert!(
+            r,
+            untouched_pixels == 0,
+            "untouchedPixels = {untouched_pixels}"
+        );
 
-    // Finishing the decode has to produce exactly the same pixels as a decode that had all the
-    // input available from the start.
-    retained.add_new_data(full_length);
-    let (result, _) = codec.incremental_decode(&mut bitmap.data);
-    assert_successful_codec_result!(r, result);
-    let Some(mut reference_codec) = png_rust_decoder_decode(r, path) else {
-        return;
-    };
-    let mut reference = Buf::new(bitmap.info.clone());
-    let reference_row_bytes = reference.row_bytes;
-    let result =
-        reference_codec.get_pixels(&bitmap.info, &mut reference.data, reference_row_bytes, None);
-    assert_successful_codec_result!(r, result);
-    compare_bitmaps_by_color(r, &bitmap, &reference);
-});
+        // Finishing the decode has to produce exactly the same pixels as a decode that had all the
+        // input available from the start.
+        retained.add_new_data(full_length);
+        let (result, _) = codec.incremental_decode(&mut bitmap.data);
+        assert_successful_codec_result!(r, result);
+        let Some(mut reference_codec) = png_rust_decoder_decode(r, path) else {
+            return;
+        };
+        let mut reference = Buf::new(bitmap.info.clone());
+        let reference_row_bytes = reference.row_bytes;
+        let result = reference_codec.get_pixels(
+            &bitmap.info,
+            &mut reference.data,
+            reference_row_bytes,
+            None,
+        );
+        assert_successful_codec_result!(r, result);
+        compare_bitmaps_by_color(r, &bitmap, &reference);
+    }
+);
 
 // Port of: tests/SkPngRustDecoderTest.cpp#L1472-L1495 (RustPngCodec_interlaced_animated_blending)
 def_test!(RustPngCodec_interlaced_animated_blending, |r| {
