@@ -5,8 +5,8 @@
 
 //! `SkPicturePriv`: the private picture helpers (`MakePicture`, `ApproximateOpCount`, ...).
 //!
-//! skia-rust: the serialization half (`MakeFromBuffer`, `Flatten`, the version history) and the
-//! drawable snapshot array (`SkSnapshotArray`) are not ported.
+//! skia-rust: the serialization half (`MakeFromBuffer`, `Flatten`, the version history) is not
+//! ported here. The drawable snapshot array (`SkSnapshotArray`) is a `Vec<Picture>`.
 
 use std::sync::Arc;
 
@@ -92,10 +92,17 @@ pub fn added_to_cache(pic: &Picture) {
 pub fn make_picture(
     cull: Rect,
     record: Option<Arc<Record>>,
+    drawable_picts: Option<Vec<Picture>>,
     bbh: Option<Arc<dyn BBoxHierarchy>>,
     approx_bytes_used_by_sub_pictures: usize,
 ) -> Picture {
-    Picture::new(cull, record, bbh, approx_bytes_used_by_sub_pictures)
+    Picture::new(
+        cull,
+        record,
+        drawable_picts,
+        bbh,
+        approx_bytes_used_by_sub_pictures,
+    )
 }
 
 /// A picture with an empty cull rect and no commands (`MakeEmptyPicture`).
@@ -103,7 +110,7 @@ pub fn make_picture(
 #[doc(alias = "MakeEmptyPicture")]
 #[must_use]
 pub fn make_empty_picture() -> Picture {
-    make_picture(Rect::new_empty(), Some(Arc::new(Record::new())), None, 0)
+    make_picture(Rect::new_empty(), Some(Arc::new(Record::new())), None, None, 0)
 }
 
 /// The commands of `pic`; `None` for a placeholder (`GetRecord`).
@@ -140,6 +147,21 @@ pub fn approximate_op_count(pic: &Picture, depth: usize, nested: bool) -> usize 
         match record.get(i) {
             Command::DrawPicture(op) => {
                 count += 1 + approximate_op_count(&op.picture, depth + 1, true);
+            }
+            Command::DrawDrawable(op) => {
+                // Adding one for the DrawDrawable itself at the beginning
+                count += 1;
+
+                let Some(drawable_picts) = pic.drawable_picts() else {
+                    continue;
+                };
+
+                if let Some(drawable_pict) = usize::try_from(op.index)
+                    .ok()
+                    .and_then(|index| drawable_picts.get(index))
+                {
+                    count += approximate_op_count(drawable_pict, depth + 1, true);
+                }
             }
             _ => count += 1,
         }
