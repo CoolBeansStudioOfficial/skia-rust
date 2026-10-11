@@ -117,131 +117,142 @@ crate::def_simple_gm_can_fail!(makecolorspace, canvas, error_msg, 128 * 3, 128 *
 });
 
 // Port of: gm/makecolorspace.cpp#L99-L164 (chrome/m156), DEF_SIMPLE_GM_BG(makecolortypeandspace, ...)
-crate::def_simple_gm_bg!(makecolortypeandspace, canvas, 128 * 3, 128 * 4, Color::WHITE, {
-    let mut images: [Option<Image>; 2] = [
-        get_resource_as_image("images/mandrill_128.png"),
-        get_resource_as_image("images/color_wheel.png"),
-    ];
-    let rec2020 = ColorSpace::new_rgb(&named_transfer_fn::SRGB, &named_gamut::REC2020)
-        .expect("a valid color space");
+crate::def_simple_gm_bg!(
+    makecolortypeandspace,
+    canvas,
+    128 * 3,
+    128 * 4,
+    Color::WHITE,
+    {
+        let mut images: [Option<Image>; 2] = [
+            get_resource_as_image("images/mandrill_128.png"),
+            get_resource_as_image("images/color_wheel.png"),
+        ];
+        let rec2020 = ColorSpace::new_rgb(&named_transfer_fn::SRGB, &named_gamut::REC2020)
+            .expect("a valid color space");
 
-    // Use the lazy images on the first iteration, and concrete (raster) images on the second
-    for lazy in [true, false] {
-        for slot in &mut images {
-            // `continue` in the C++ skips the translate below as well.
-            let Some(image) = slot.clone() else {
-                continue;
-            };
+        // Use the lazy images on the first iteration, and concrete (raster) images on the second
+        for lazy in [true, false] {
+            for slot in &mut images {
+                // `continue` in the C++ skips the translate below as well.
+                let Some(image) = slot.clone() else {
+                    continue;
+                };
 
-            // Unmodified
-            canvas.draw_image(&image, (0.0, 0.0), None);
+                // Unmodified
+                canvas.draw_image(&image, (0.0, 0.0), None);
 
-            // 565 in a wide color space (should be visibly quantized).
-            let image565 = image.make_color_type_and_color_space(
-                ColorType::RGB565,
-                rec2020.clone(),
-                RequiredProperties::default(),
-            );
-            if let Some(image565) = image565 {
-                if !lazy || image565.is_texture_backed() || image565.to_raster_image().is_some() {
+                // 565 in a wide color space (should be visibly quantized).
+                let image565 = image.make_color_type_and_color_space(
+                    ColorType::RGB565,
+                    rec2020.clone(),
+                    RequiredProperties::default(),
+                );
+                if let Some(image565) = image565.filter(|image565| {
+                    !lazy || image565.is_texture_backed() || image565.to_raster_image().is_some()
+                }) {
                     canvas.draw_image(&image565, (128.0, 0.0), None);
                 }
-            }
 
-            // Grayscale in the original color space.
-            let image_gray = image.make_color_type_and_color_space(
-                ColorType::Gray8,
-                image.color_space(),
-                RequiredProperties::default(),
-            );
-            if let Some(image_gray) = image_gray {
-                if !lazy || image_gray.is_texture_backed() || image_gray.to_raster_image().is_some()
-                {
+                // Grayscale in the original color space.
+                let image_gray = image.make_color_type_and_color_space(
+                    ColorType::Gray8,
+                    image.color_space(),
+                    RequiredProperties::default(),
+                );
+                if let Some(image_gray) = image_gray.filter(|image_gray| {
+                    !lazy
+                        || image_gray.is_texture_backed()
+                        || image_gray.to_raster_image().is_some()
+                }) {
                     canvas.draw_image(&image_gray, (256.0, 0.0), None);
                 }
-            }
 
-            // No GPU context: the raster copy.
-            *slot = image.to_raster_image();
-            canvas.translate((0.0, 128.0));
+                // No GPU context: the raster copy.
+                *slot = image.to_raster_image();
+                canvas.translate((0.0, 128.0));
+            }
         }
     }
-});
+);
+
+// Draws `image` reinterpreted as `cs` (the GM's `reinterpretColorSpace` columns).
+fn reinterpreted(image: Option<&Image>, cs: &ColorSpace) -> Option<Image> {
+    image?.reinterpret_color_space(cs.clone())
+}
+
+// Draws the `makeColorSpace(spin)` of `image`, reinterpreted as sRGB (the GM's third column).
+fn spun_back(image: Option<&Image>, spin: &ColorSpace, srgb: &ColorSpace) -> Option<Image> {
+    image?
+        .make_color_space(spin.clone(), RequiredProperties::default())?
+        .reinterpret_color_space(srgb.clone())
+}
 
 // Port of: gm/makecolorspace.cpp#L166-L231 (chrome/m156), DEF_SIMPLE_GM_CAN_FAIL(reinterpretcolorspace, ...)
-crate::def_simple_gm_can_fail!(reinterpretcolorspace, canvas, error_msg, 128 * 3, 128 * 3, {
-    // We draw a 3x3 grid. The three rows are lazy (encoded), raster, and GPU (or another copy of
-    // raster so all configs look similar). In each row, we draw three variants.
-    let srgb = ColorSpace::new_srgb();
-    let spin = srgb.make_color_spin();
-    let Some(image) = get_resource_as_image("images/color_wheel.png") else {
-        error_msg.clear();
-        error_msg.push_str("Failed to load image. Did you forget to set the resourcePath?");
-        return DrawResult::Fail;
-    };
+crate::def_simple_gm_can_fail!(
+    reinterpretcolorspace,
+    canvas,
+    error_msg,
+    128 * 3,
+    128 * 3,
+    {
+        // We draw a 3x3 grid. The three rows are lazy (encoded), raster, and GPU (or another copy of
+        // raster so all configs look similar). In each row, we draw three variants.
+        let srgb = ColorSpace::new_srgb();
+        let spin = srgb.make_color_spin();
+        let Some(image) = get_resource_as_image("images/color_wheel.png") else {
+            error_msg.clear();
+            error_msg.push_str("Failed to load image. Did you forget to set the resourcePath?");
+            return DrawResult::Fail;
+        };
 
-    // Lazy images
-    canvas.draw_image(&image, (0.0, 0.0), None);
-    draw_opt(
-        canvas,
-        image.reinterpret_color_space(spin.clone()).as_ref(),
-        128.0,
-        0.0,
-    );
-    let spun = image.make_color_space(spin.clone(), RequiredProperties::default());
-    draw_opt(
-        canvas,
-        spun.and_then(|spun| spun.reinterpret_color_space(srgb.clone()))
-            .as_ref(),
-        256.0,
-        0.0,
-    );
-    canvas.translate((0.0, 128.0));
+        // Lazy images
+        canvas.draw_image(&image, (0.0, 0.0), None);
+        draw_opt(
+            canvas,
+            reinterpreted(Some(&image), &spin).as_ref(),
+            128.0,
+            0.0,
+        );
+        draw_opt(
+            canvas,
+            spun_back(Some(&image), &spin, &srgb).as_ref(),
+            256.0,
+            0.0,
+        );
+        canvas.translate((0.0, 128.0));
 
-    // Raster images
-    let image = image.to_raster_image();
-    draw_opt(canvas, image.as_ref(), 0.0, 0.0);
-    draw_opt(
-        canvas,
-        image
-            .as_ref()
-            .and_then(|image| image.reinterpret_color_space(spin.clone()))
-            .as_ref(),
-        128.0,
-        0.0,
-    );
-    let spun = image
-        .as_ref()
-        .and_then(|image| image.make_color_space(spin.clone(), RequiredProperties::default()));
-    draw_opt(
-        canvas,
-        spun.and_then(|spun| spun.reinterpret_color_space(srgb.clone()))
-            .as_ref(),
-        256.0,
-        0.0,
-    );
-    canvas.translate((0.0, 128.0));
+        // Raster images
+        let image = image.to_raster_image();
+        draw_opt(canvas, image.as_ref(), 0.0, 0.0);
+        draw_opt(
+            canvas,
+            reinterpreted(image.as_ref(), &spin).as_ref(),
+            128.0,
+            0.0,
+        );
+        draw_opt(
+            canvas,
+            spun_back(image.as_ref(), &spin, &srgb).as_ref(),
+            256.0,
+            0.0,
+        );
+        canvas.translate((0.0, 128.0));
 
-    // GPU images: there is no GPU context, so the GPU row is another copy of the raster image.
-    draw_opt(canvas, image.as_ref(), 0.0, 0.0);
-    draw_opt(
-        canvas,
-        image
-            .as_ref()
-            .and_then(|image| image.reinterpret_color_space(spin.clone()))
-            .as_ref(),
-        128.0,
-        0.0,
-    );
-    let spun = image
-        .as_ref()
-        .and_then(|image| image.make_color_space(spin.clone(), RequiredProperties::default()));
-    draw_opt(
-        canvas,
-        spun.and_then(|spun| spun.reinterpret_color_space(srgb.clone()))
-            .as_ref(),
-        256.0,
-        0.0,
-    );
-    DrawResult::Ok
-});
+        // GPU images: there is no GPU context, so the GPU row is another copy of the raster image.
+        draw_opt(canvas, image.as_ref(), 0.0, 0.0);
+        draw_opt(
+            canvas,
+            reinterpreted(image.as_ref(), &spin).as_ref(),
+            128.0,
+            0.0,
+        );
+        draw_opt(
+            canvas,
+            spun_back(image.as_ref(), &spin, &srgb).as_ref(),
+            256.0,
+            0.0,
+        );
+        DrawResult::Ok
+    }
+);

@@ -119,11 +119,11 @@ fn draw_something(canvas: &Canvas, bounds: &Rect) {
 }
 
 // The image makers of `gProcs`: each gives an image of the picture, or None.
-type ImageMakerProc = fn(&Picture, ImageInfo) -> Option<Image>;
+type ImageMakerProc = fn(&Picture, &ImageInfo) -> Option<Image>;
 
 // Port of: gm/image_shader.cpp#L56-L63 (chrome/m156), make_raster
-fn make_raster(picture: &Picture, info: ImageInfo) -> Option<Image> {
-    let mut surface = surfaces::raster(&info, None, None)?;
+fn make_raster(picture: &Picture, info: &ImageInfo) -> Option<Image> {
+    let mut surface = surfaces::raster(info, None, None)?;
     surface.shared_canvas().clear(Color::TRANSPARENT);
     surface.shared_canvas().draw_picture(picture, None, None);
     surface.image_snapshot()
@@ -131,12 +131,12 @@ fn make_raster(picture: &Picture, info: ImageInfo) -> Option<Image> {
 
 // The GPU variant: without a GPU context the C++ returns null, so the GM skips it on the raster
 // sink (`make_texture`, Port of: gm/image_shader.cpp#L65-L81 (chrome/m156)).
-fn make_texture(_picture: &Picture, _info: ImageInfo) -> Option<Image> {
+fn make_texture(_picture: &Picture, _info: &ImageInfo) -> Option<Image> {
     None
 }
 
 // Port of: gm/image_shader.cpp#L83-L92 (chrome/m156), make_pict_gen
-fn make_pict_gen(picture: &Picture, info: ImageInfo) -> Option<Image> {
+fn make_pict_gen(picture: &Picture, info: &ImageInfo) -> Option<Image> {
     deferred_from_picture(
         picture.clone(),
         info.dimensions(),
@@ -149,7 +149,7 @@ fn make_pict_gen(picture: &Picture, info: ImageInfo) -> Option<Image> {
 }
 
 // Port of: gm/image_shader.cpp#L94-L106 (chrome/m156), make_encode_gen
-fn make_encode_gen(picture: &Picture, info: ImageInfo) -> Option<Image> {
+fn make_encode_gen(picture: &Picture, info: &ImageInfo) -> Option<Image> {
     let src = make_raster(picture, info)?;
     let encoded = png_encoder::encode_image(&src, &png_encoder::Options::default())?;
     deferred_from_encoded_data(Some(encoded), None)
@@ -214,7 +214,7 @@ impl GM for ImageShaderGm {
             return;
         };
         for make in G_PROCS {
-            if let Some(image) = make(picture, info.clone()) {
+            if let Some(image) = make(picture, &info) {
                 Self::test_image(canvas, &image);
             }
             canvas.translate((120.0, 0.0));
