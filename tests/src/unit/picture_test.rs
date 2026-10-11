@@ -17,8 +17,8 @@ use skia_rust_core::canvas::{
     Canvas, CanvasHooks, SaveLayerRec, SaveLayerStrategy, SrcRectConstraint,
 };
 use skia_rust_core::clip_op::ClipOp;
-use skia_rust_core::drawable::{Drawable, DrawableBase};
 use skia_rust_core::color::Color;
+use skia_rust_core::drawable::{Drawable, DrawableBase};
 use skia_rust_core::font::Font;
 use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::image_info::ImageInfo;

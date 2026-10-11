@@ -52,3 +52,12 @@ pub fn wrap_pixels<'a>(
         .unwrap_or_else(|| image_info.min_row_bytes());
     Surface::wrap_slice(image_info, pixels, row_bytes, props)
 }
+
+/// A surface that draws nothing: its canvas ignores every draw and it has no pixels, so it makes
+/// no image snapshot (`SkSurfaces::Null`). `None` if a dimension is less than 1.
+// Port of: src/image/SkSurface_Null.cpp#L57-L63 (chrome/m156)
+#[doc(alias = "Null")]
+#[must_use]
+pub fn null(width: i32, height: i32) -> Option<Surface<'static>> {
+    Surface::new_null(width, height)
+}

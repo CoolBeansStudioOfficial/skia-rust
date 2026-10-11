@@ -120,8 +120,7 @@ impl CanvasStack {
     #[must_use]
     pub fn new(width: i32, height: i32) -> CanvasStack {
         let canvas_data: StackData = Rc::new(RefCell::new(Vec::new()));
-        let (canvas, list) =
-            NWayCanvas::make_canvas(width, height, Some(Rc::clone(&canvas_data)));
+        let (canvas, list) = NWayCanvas::make_canvas(width, height, Some(Rc::clone(&canvas_data)));
         CanvasStack {
             n_way: NWayCanvas::from_parts(canvas, Rc::clone(&list)),
             list,

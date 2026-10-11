@@ -93,7 +93,14 @@ def_test!(RecordDraw_Abort, |r| {
     let canvas = RecordCanvas::new(&rerecord, W, H);
 
     let mut callback = JustOneDraw::new();
-    record_draw(&record.borrow(), &canvas, None, None, None, Some(&mut callback));
+    record_draw(
+        &record.borrow(),
+        &canvas,
+        None,
+        None,
+        None,
+        Some(&mut callback),
+    );
 
     reporter_assert!(
         r,
@@ -137,7 +144,14 @@ def_test!(RecordDraw_SetMatrixClobber, |r| {
     translate.set_translate((20.0, 20.0));
     translate_canvas.set_matrix(&M44::from(&translate));
 
-    record_draw(&scale_record.borrow(), &translate_canvas, None, None, None, None);
+    record_draw(
+        &scale_record.borrow(),
+        &translate_canvas,
+        None,
+        None,
+        None,
+        None,
+    );
     reporter_assert!(r, 4 == translate_record.borrow().count());
     assert_type::<SetM44>(r, &translate_record.borrow(), 0);
     assert_type::<Save>(r, &translate_record.borrow(), 1);

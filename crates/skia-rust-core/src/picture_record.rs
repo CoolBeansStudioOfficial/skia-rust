@@ -23,9 +23,9 @@ use crate::canvas::{
 };
 use crate::clip_op::ClipOp;
 use crate::color::Color;
+use crate::drawable::Drawable;
 use crate::image::Image;
 use crate::m44::M44;
-use crate::drawable::Drawable;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
 use crate::path::Path;
@@ -632,7 +632,14 @@ impl CanvasHooks for PictureRecordHooks {
     }
 
     // Port of: src/core/SkPictureRecord.cpp#L594-L607 (chrome/m156), onDrawTextBlob
-    fn on_draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) -> bool {
+    fn on_draw_text_blob(
+        &mut self,
+        blob: &TextBlob,
+        x: scalar,
+        y: scalar,
+        paint: &Paint,
+        _total_matrix: &Matrix,
+    ) -> bool {
         self.with(|state| {
             // op + paint index + blob index + x/y
             state.add_draw(draw_type::DRAW_TEXT_BLOB, 3 * 4 + 2 * 4);

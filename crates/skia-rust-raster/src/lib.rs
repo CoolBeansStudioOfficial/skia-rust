@@ -25,6 +25,7 @@ pub mod image_picture;
 pub mod images;
 pub mod mask_filter_base;
 pub mod oracle_n32;
+pub mod overdraw_canvas;
 pub mod picture_shader;
 mod pixel_rows;
 pub mod pixmap_draw;
