@@ -113,6 +113,9 @@ pub mod find_cubic_convex180_chops_test;
 pub mod float16_test;
 #[cfg(test)]
 pub mod floating_point_test;
+
+// Port of: tests/FilterResultTest.cpp (raster suites)
+pub mod filter_result_test;
 #[cfg(test)]
 pub mod font_host_stream_test;
 #[cfg(test)]
@@ -150,6 +153,7 @@ pub mod icc_test;
 #[cfg(test)]
 pub mod image_bitmap_test;
 #[cfg(test)]
+pub mod image_filter_cache_test;
 pub mod image_filter_test;
 #[cfg(test)]
 pub mod image_from565_bitmap;

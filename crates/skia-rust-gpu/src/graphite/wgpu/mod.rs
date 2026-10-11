@@ -33,6 +33,7 @@ macro_rules! trace {
     };
 }
 
+pub mod async_rescale;
 pub mod async_wait;
 pub mod backend_texture;
 pub mod buffer;

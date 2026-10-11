@@ -11,10 +11,13 @@
 //! provider (`ContextPriv::resource_provider`), not a borrow of the context, so the test can keep
 //! using the context while it lives.
 
+use std::sync::Arc;
+
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_gpu::gpu::gpu_types::{Mipmapped, Protected, Renderable};
+use skia_rust_gpu::gpu::ref_cnted_callback::CallbackProc;
 use skia_rust_gpu::graphite::backend_texture::BackendTexture;
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use skia_rust_gpu::graphite::recorder::Recorder;
@@ -96,6 +99,44 @@ impl ManagedGraphiteTexture {
             return None;
         }
         Some(mbet)
+    }
+
+    /// `MakeMipmappedFromPixmaps(recorder, levels, renderable, isProtected)`: a mipmapped texture
+    /// of the size and color type of `levels[0]`, with each pixmap of `levels` written to the
+    /// mip level of its index.
+    // Port of: tools/gpu/ManagedBackendTexture.cpp#L238-L260 (chrome/m156)
+    #[doc(alias = "MakeMipmappedFromPixmaps")]
+    #[must_use]
+    pub fn make_mipmapped_from_pixmaps(
+        context: &WgpuContext,
+        recorder: &mut Recorder,
+        levels: &[Pixmap<'_>],
+        renderable: Renderable,
+        is_protected: Protected,
+    ) -> Option<Self> {
+        let first = levels.first()?;
+        let mbet = Self::make_uninit(
+            ContextPriv::resource_provider(context).clone(),
+            recorder,
+            first.info(),
+            Mipmapped::Yes,
+            renderable,
+            is_protected,
+        )?;
+        if !recorder.update_backend_texture(&mbet.texture, levels, None) {
+            return None;
+        }
+        Some(mbet)
+    }
+
+    /// `releaseContext()`: a release callback for a wrapped texture that keeps this texture alive
+    /// until the wrapping image's texture is released.
+    // Port of: tools/gpu/ManagedBackendTexture.cpp#L168-L170 (chrome/m156)
+    #[doc(alias = "releaseContext")]
+    #[must_use]
+    pub fn release_context(self: &Arc<Self>) -> CallbackProc {
+        let keep_alive = Arc::clone(self);
+        CallbackProc::Result(Box::new(move |_| drop(keep_alive)))
     }
 
     /// `texture()`: the backend texture.
