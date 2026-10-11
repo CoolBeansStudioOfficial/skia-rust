@@ -18,6 +18,7 @@
 
 use crate::blender::Blender;
 use crate::color_filter::ColorFilter;
+use crate::image_filter::ImageFilter;
 use crate::mask_filter::MaskFilter;
 use crate::path_effect::PathEffect;
 use crate::read_buffer::ReadBuffer;
@@ -47,6 +48,12 @@ pub type ShaderFactory = fn(&mut ReadBuffer<'_>, &FlattenableRegistry) -> Option
 #[doc(alias = "SkFlattenable::Factory")]
 pub type ColorFilterFactory = fn(&mut ReadBuffer<'_>, &FlattenableRegistry) -> Option<ColorFilter>;
 
+/// Rebuilds an image filter from the body that its `flatten` wrote (`SkFlattenable::Factory` for
+/// `SkImageFilter`).
+// Port of: include/core/SkFlattenable.h#L41 (chrome/m156), `Factory`
+#[doc(alias = "SkFlattenable::Factory")]
+pub type ImageFilterFactory = fn(&mut ReadBuffer<'_>, &FlattenableRegistry) -> Option<ImageFilter>;
+
 /// Rebuilds a blender from the body that its `flatten` wrote (`SkFlattenable::Factory` for
 /// `SkBlender`).
 // Port of: include/core/SkFlattenable.h#L41 (chrome/m156), `Factory`
@@ -71,6 +78,8 @@ pub struct FlattenableRegistry {
     pub color_filters: &'static [(&'static str, ColorFilterFactory)],
     /// The blenders, by name.
     pub blenders: &'static [(&'static str, BlenderFactory)],
+    /// The image filters, by name.
+    pub image_filters: &'static [(&'static str, ImageFilterFactory)],
 }
 
 impl FlattenableRegistry {
@@ -81,6 +90,7 @@ impl FlattenableRegistry {
         shaders: &[],
         color_filters: &[],
         blenders: &[],
+        image_filters: &[],
     };
 
     /// The factory of the path effect registered as `name` (`NameToFactory`).
@@ -105,6 +115,12 @@ impl FlattenableRegistry {
     #[must_use]
     pub fn color_filter_factory(&self, name: &str) -> Option<ColorFilterFactory> {
         lookup(self.color_filters, name)
+    }
+
+    /// The factory of the image filter registered as `name` (`NameToFactory`).
+    #[must_use]
+    pub fn image_filter_factory(&self, name: &str) -> Option<ImageFilterFactory> {
+        lookup(self.image_filters, name)
     }
 
     /// The factory of the blender registered as `name` (`NameToFactory`).

@@ -7,16 +7,20 @@
 //! Each axis is one pass of the `LinearMorphology` known runtime effect, followed by passes of the
 //! `SparseMorphology` effect that double the radius each step.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags, default_sampling};
 use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place, size_round};
 use skia_rust_core::known_runtime_effects::{StableKey, get_known_runtime_effect};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::IPoint;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::runtime_effect::{ChildPtr, RuntimeShaderBuilder};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::{ISize, Size};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 use skia_rust_core::tile_mode::TileMode;
@@ -253,6 +257,24 @@ impl ImageFilterBase for MorphologyImageFilter {
         &self.common
     }
 
+    // Port of: src/effects/imagefilters/SkMorphologyImageFilter.cpp#L57 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkMorphologyImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkMorphologyImageFilter.cpp#L157-L162 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_scalar(self.radii.width);
+        buffer.write_scalar(self.radii.height);
+        // `kErode` is 0 and `kDilate` is 1 in C++.
+        let morph_type = match self.morph_type {
+            MorphType::Erode => 0,
+            MorphType::Dilate => 1,
+        };
+        buffer.write_int(morph_type);
+    }
+
     // Port of: src/effects/imagefilters/SkMorphologyImageFilter.cpp#L271-L300 (chrome/m156)
     fn on_filter_image(&self, ctx: &Context<'_>) -> FilterResult {
         let required_input = self.required_input(ctx.mapping(), ctx.desired_output());
@@ -374,4 +396,24 @@ pub fn erode(
     crop_rect: Option<Rect>,
 ) -> Option<ImageFilter> {
     make_morphology(MorphType::Erode, radius, input, crop_rect)
+}
+
+/// `SkMorphologyImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkMorphologyImageFilter.cpp#L244-L258 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 1, registry)?;
+    let width = buffer.read_scalar();
+    let height = buffer.read_scalar();
+    // `kLastType` is `kDilate`, so a value past it reads as 0 (`kErode`), which is refused below.
+    let filter_type = buffer.read32_le(1);
+    if filter_type == 1 {
+        dilate((width, height), input_at(&inputs, 0), crop_rect)
+    } else if filter_type == 0 {
+        erode((width, height), input_at(&inputs, 0), crop_rect)
+    } else {
+        None
+    }
 }

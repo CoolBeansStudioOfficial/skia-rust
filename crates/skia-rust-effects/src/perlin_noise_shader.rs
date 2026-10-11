@@ -16,16 +16,20 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::effect_priv::StageRec;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
 use skia_rust_core::raster_pipeline::Stage;
 use skia_rust_core::raster_pipeline::contexts::{PerlinNoiseCtx, PerlinNoiseShaderType};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scalar::{
     scalar, scalar_ceil_to_scalar, scalar_floor_to_scalar, scalar_round_to_int, scalar_trunc_to_int,
 };
+use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::{MatrixRec, ShaderBase, ShaderType};
 use skia_rust_core::size::ISize;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 /// `SkPerlinNoiseShader::kBlockSize`.
 const BLOCK_SIZE: usize = 256;
@@ -376,6 +380,26 @@ impl PerlinNoiseShader {
 }
 
 impl ShaderBase for PerlinNoiseShader {
+    // Port of: src/shaders/SkPerlinNoiseShaderImpl.cpp#L128-L131 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkPerlinNoiseShader"
+    }
+
+    // Port of: src/shaders/SkPerlinNoiseShaderImpl.cpp (SkPerlinNoiseShader::flatten, chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        // `SkPerlinNoiseShaderType`: kFractalNoise is 0, kTurbulence is 1.
+        let noise_type = match self.noise_type {
+            PerlinNoiseShaderType::FractalNoise => 0,
+            PerlinNoiseShaderType::Turbulence => 1,
+        };
+        buffer.write_int(noise_type);
+        buffer.write_scalar(self.base_frequency_x);
+        buffer.write_scalar(self.base_frequency_y);
+        buffer.write_int(self.num_octaves);
+        buffer.write_scalar(self.seed);
+        buffer.write_int(self.tile_size.width);
+        buffer.write_int(self.tile_size.height);
+    }
     fn is_opaque(&self) -> bool {
         false
     }
@@ -531,5 +555,29 @@ pub mod shaders {
             seed,
             tile_size,
         )))
+    }
+}
+
+/// `SkPerlinNoiseShader::CreateProc`.
+// Port of: src/shaders/SkPerlinNoiseShaderImpl.cpp#L63-L84 (chrome/m156), CreateProc
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, _registry: &FlattenableRegistry) -> Option<Shader> {
+    let noise_type = match buffer.read32_le(1) {
+        1 => PerlinNoiseShaderType::Turbulence,
+        _ => PerlinNoiseShaderType::FractalNoise,
+    };
+    let freq_x = buffer.read_scalar();
+    let freq_y = buffer.read_scalar();
+    // `kMaxOctaves`, the largest count of octaves.
+    let octaves = buffer.read32_le(255);
+    let seed = buffer.read_scalar();
+    let tile_size = ISize::new(buffer.read_int(), buffer.read_int());
+    let octaves = usize::try_from(octaves).ok()?;
+    match noise_type {
+        PerlinNoiseShaderType::FractalNoise => {
+            shaders::fractal_noise((freq_x, freq_y), octaves, seed, tile_size)
+        }
+        PerlinNoiseShaderType::Turbulence => {
+            shaders::turbulence((freq_x, freq_y), octaves, seed, tile_size)
+        }
     }
 }

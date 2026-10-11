@@ -6,15 +6,21 @@
 //! `SkMatrixTransformImageFilter`: transforms its input by a matrix. `Offset` is a matrix transform
 //! by a translation with nearest sampling.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{
     Context, Mapping, MatrixCapability, inverse_map_irect, map_irect,
 };
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
+use skia_rust_core::sampling_priv::{LegacyFQ, MediumAs, from_fq};
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 
@@ -58,6 +64,18 @@ impl MatrixTransformImageFilter {
 impl ImageFilterBase for MatrixTransformImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkMatrixTransformImageFilter.cpp#L52 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkMatrixTransformImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkMatrixTransformImageFilter.cpp#L190-L194 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_matrix(&self.transform);
+        buffer.write_sampling(&self.sampling);
     }
 
     // Port of: src/effects/imagefilters/SkMatrixTransformImageFilter.cpp#L34 (chrome/m156)
@@ -145,4 +163,49 @@ pub fn offset(
         offset = crop(&crop_rect, TileMode::Decal, offset);
     }
     offset
+}
+
+/// `SkMatrixTransformImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkMatrixTransformImageFilter.cpp#L154-L170 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, _) = unflatten_common(buffer, 1, registry)?;
+    let matrix = buffer.read_matrix();
+    let sampling = if buffer.is_version_lt(picture_priv::VERSION_MATRIX_IMAGE_FILTER_SAMPLING) {
+        from_fq(
+            legacy_fq(buffer.read32_le(LEGACY_FQ_LAST)),
+            MediumAs::Linear,
+        )
+    } else {
+        buffer.read_sampling()
+    };
+    matrix_transform(&matrix, sampling, input_at(&inputs, 0))
+}
+
+/// `SkMatrixTransformImageFilter::LegacyOffsetCreateProc`: the offset of the old names.
+// Port of: src/effects/imagefilters/SkMatrixTransformImageFilter.cpp#L142-L148 (chrome/m156)
+pub fn legacy_offset_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 1, registry)?;
+    let point = buffer.read_point();
+    offset((point.x, point.y), input_at(&inputs, 0), crop_rect)
+}
+
+/// `kLast_SkLegacyFQ`.
+// Port of: src/core/SkSamplingPriv.h#L28 (chrome/m156)
+const LEGACY_FQ_LAST: u32 = 3;
+
+/// The legacy filter quality of `value`, which the reader has checked is at most
+/// [`LEGACY_FQ_LAST`].
+fn legacy_fq(value: u32) -> LegacyFQ {
+    match value {
+        1 => LegacyFQ::Low,
+        2 => LegacyFQ::Medium,
+        3 => LegacyFQ::High,
+        _ => LegacyFQ::None,
+    }
 }

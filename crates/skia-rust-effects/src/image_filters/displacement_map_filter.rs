@@ -7,11 +7,14 @@
 //! channels of its displacement input, evaluated by the `Displacement` known runtime effect.
 
 use skia_rust_core::color::{Color, ColorChannel};
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags, default_sampling};
 use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place, size_ceil};
 use skia_rust_core::known_runtime_effects::{StableKey, get_known_runtime_effect};
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::runtime_effect::{ChildPtr, RuntimeShaderBuilder};
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
@@ -19,6 +22,7 @@ use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders;
 use skia_rust_core::size::Size;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 
@@ -119,6 +123,19 @@ fn make_displacement_shader(
 impl ImageFilterBase for DisplacementMapImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkDisplacementMapImageFilter.cpp#L64 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkDisplacementMapImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkDisplacementMapImageFilter.cpp#L233-L238 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_int(self.x_channel as i32);
+        buffer.write_int(self.y_channel as i32);
+        buffer.write_scalar(self.scale);
     }
 
     // Port of: src/effects/imagefilters/SkDisplacementMapImageFilter.cpp#L121-L164 (chrome/m156)
@@ -278,4 +295,35 @@ pub fn displacement_map(
         filter = crop(&rect, TileMode::Decal, filter);
     }
     filter
+}
+
+/// The color channel of the value `value` (`SkColorChannel`), as `read32LE(kLastEnum)` reads it.
+/// Past the last channel the reader gives 0, which is `R`.
+fn color_channel(value: u32) -> ColorChannel {
+    match value {
+        1 => ColorChannel::G,
+        2 => ColorChannel::B,
+        3 => ColorChannel::A,
+        _ => ColorChannel::R,
+    }
+}
+
+/// `SkDisplacementMapImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkDisplacementMapImageFilter.cpp#L221-L231 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 2, registry)?;
+    // `SkColorChannel::kLastEnum` is `kA`, which is 3.
+    let xsel = color_channel(buffer.read32_le(3));
+    let ysel = color_channel(buffer.read32_le(3));
+    let scale = buffer.read_scalar();
+    displacement_map(
+        (xsel, ysel),
+        scale,
+        input_at(&inputs, 0),
+        input_at(&inputs, 1),
+        crop_rect,
+    )
 }

@@ -33,11 +33,13 @@ use skia_rust_core::raster_pipeline::contexts::{
     DecalTileCtx, EvenlySpaced2StopGradientCtx, GradientCtx,
 };
 use skia_rust_core::raster_pipeline::{RasterPipeline, Stage};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scalar::{SCALAR_1, Scalar, scalar};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::{self, MatrixRec};
 use skia_rust_core::t_pin::t_pin;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::gradient::interpolation::{ColorSpace as InterpColorSpace, HueMethod, InPremul};
 use crate::gradient::{Colors, Gradient, Interpolation};
@@ -71,6 +73,182 @@ pub struct GradientBaseShader {
     cached_bitmap: OnceLock<Bitmap>,
 }
 
+/// The flag that says the positions are written (`kHasPosition_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L49 (chrome/m156)
+const K_HAS_POSITION_GSF: u32 = 0x8000_0000;
+/// The flag that says a legacy local matrix is written (`kHasLegacyLocalMatrix_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L50 (chrome/m156)
+const K_HAS_LEGACY_LOCAL_MATRIX_GSF: u32 = 0x4000_0000;
+/// The flag that says a color space is written (`kHasColorSpace_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L51 (chrome/m156)
+const K_HAS_COLOR_SPACE_GSF: u32 = 0x2000_0000;
+/// The shift of the tile mode in the flags (`kTileModeShift_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L56 (chrome/m156)
+const K_TILE_MODE_SHIFT_GSF: u32 = 8;
+/// The mask of the tile mode in the flags (`kTileModeMask_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L57 (chrome/m156)
+const K_TILE_MODE_MASK_GSF: u32 = 0xF;
+/// The shift of the interpolation color space in the flags (`kInterpolationColorSpaceShift_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L60 (chrome/m156)
+const K_INTERPOLATION_COLOR_SPACE_SHIFT_GSF: u32 = 4;
+/// The mask of the interpolation color space (`kInterpolationColorSpaceMask_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L61 (chrome/m156)
+const K_INTERPOLATION_COLOR_SPACE_MASK_GSF: u32 = 0xF;
+/// The shift of the hue method in the flags (`kInterpolationHueMethodShift_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L64 (chrome/m156)
+const K_INTERPOLATION_HUE_METHOD_SHIFT_GSF: u32 = 1;
+/// The mask of the hue method (`kInterpolationHueMethodMask_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L65 (chrome/m156)
+const K_INTERPOLATION_HUE_METHOD_MASK_GSF: u32 = 0x7;
+/// The flag that says the interpolation is in premultiplied colors (`kInterpolationInPremul_GSF`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L68 (chrome/m156)
+const K_INTERPOLATION_IN_PREMUL_GSF: u32 = 0x1;
+
+/// The interpolation color space as its flag bits.
+fn interpolation_color_space_bits(space: InterpColorSpace) -> u32 {
+    space as u32
+}
+
+/// The hue method as its flag bits.
+fn interpolation_hue_method_bits(method: HueMethod) -> u32 {
+    method as u32
+}
+
+/// The interpolation color space of the flag bits. A value past the last space is not one C++
+/// writes; the port reads it as the destination space.
+fn interpolation_color_space_from_bits(bits: u32) -> InterpColorSpace {
+    match bits {
+        1 => InterpColorSpace::SRGBLinear,
+        2 => InterpColorSpace::Lab,
+        3 => InterpColorSpace::OKLab,
+        4 => InterpColorSpace::OKLabGamutMap,
+        5 => InterpColorSpace::LCH,
+        6 => InterpColorSpace::OKLCH,
+        7 => InterpColorSpace::OKLCHGamutMap,
+        8 => InterpColorSpace::SRGB,
+        9 => InterpColorSpace::HSL,
+        10 => InterpColorSpace::HWB,
+        11 => InterpColorSpace::DisplayP3,
+        12 => InterpColorSpace::Rec2020,
+        13 => InterpColorSpace::ProphotoRGB,
+        14 => InterpColorSpace::A98RGB,
+        _ => InterpColorSpace::Destination,
+    }
+}
+
+/// The hue method of the flag bits (see [`interpolation_color_space_from_bits`]).
+fn hue_method_from_bits(bits: u32) -> HueMethod {
+    match bits {
+        1 => HueMethod::Longer,
+        2 => HueMethod::Increasing,
+        3 => HueMethod::Decreasing,
+        _ => HueMethod::Shorter,
+    }
+}
+
+/// Writes `colors` as an array (`writeColor4fArray`): the count, then the colors.
+// Port of: src/core/SkWriteBuffer.cpp#L96-L99 (chrome/m156), writeColor4fArray
+fn write_color4f_array(buffer: &mut BinaryWriteBuffer, colors: &[Color4f]) {
+    buffer.write_int(i32::try_from(colors.len()).unwrap_or(i32::MAX));
+    for &color in colors {
+        buffer.write_color4f(color);
+    }
+}
+
+/// A gradient read back by [`unflatten_gradient`]: the owned parts of an `SkGradient`, and the
+/// legacy local matrix (`SkGradientScope`).
+#[derive(Debug)]
+pub(crate) struct UnflattenedGradient {
+    pub(crate) colors: Vec<Color4f>,
+    pub(crate) positions: Option<Vec<f32>>,
+    pub(crate) tile_mode: TileMode,
+    pub(crate) color_space: Option<ColorSpace>,
+    pub(crate) interpolation: Interpolation,
+    pub(crate) legacy_local_matrix: Matrix,
+}
+
+/// `validate_array`: the buffer can hold `count` elements of `element_size` bytes.
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L112-L122 (chrome/m156), validate_array
+fn validate_array(buffer: &mut ReadBuffer<'_>, count: usize, element_size: usize) -> bool {
+    buffer.validate_can_read_n(count, element_size)
+}
+
+/// Reads a gradient written by [`GradientBaseShader::flatten_gradient`]
+/// (`SkGradientScope::unflatten`).
+// Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L124-L178 (chrome/m156), unflatten
+pub(crate) fn unflatten_gradient(buffer: &mut ReadBuffer<'_>) -> Option<UnflattenedGradient> {
+    // New gradient format. Includes floating point color, color space, densely packed flags
+    let flags = buffer.read_uint();
+    let tile_mode =
+        TileMode::from_i32(((flags >> K_TILE_MODE_SHIFT_GSF) & K_TILE_MODE_MASK_GSF).cast_signed())
+            .unwrap_or_default();
+    let color_space = interpolation_color_space_from_bits(
+        (flags >> K_INTERPOLATION_COLOR_SPACE_SHIFT_GSF) & K_INTERPOLATION_COLOR_SPACE_MASK_GSF,
+    );
+    let hue_method = hue_method_from_bits(
+        (flags >> K_INTERPOLATION_HUE_METHOD_SHIFT_GSF) & K_INTERPOLATION_HUE_METHOD_MASK_GSF,
+    );
+    let in_premul = if flags & K_INTERPOLATION_IN_PREMUL_GSF != 0 {
+        InPremul::Yes
+    } else {
+        InPremul::No
+    };
+
+    let count = buffer.get_array_count() as usize;
+    if !validate_array(buffer, count, 16) {
+        return None;
+    }
+    // `readColor4fArray`: the count, which must be the size of the span, then the colors.
+    let read_count = buffer.read_int();
+    if !buffer.validate(usize::try_from(read_count).ok() == Some(count)) {
+        return None;
+    }
+    let colors: Vec<Color4f> = (0..count).map(|_| buffer.read_color4f()).collect();
+    if !buffer.is_valid() {
+        return None;
+    }
+
+    let mut space = None;
+    if flags & K_HAS_COLOR_SPACE_GSF != 0
+        && let Some(data) = buffer.read_byte_array_as_data()
+    {
+        space = ColorSpace::deserialize(data.as_bytes());
+    }
+
+    let mut positions = None;
+    if flags & K_HAS_POSITION_GSF != 0 {
+        if !validate_array(buffer, count, 4) {
+            return None;
+        }
+        let mut values = vec![0.0; count];
+        if !buffer.read_scalar_array(&mut values) {
+            return None;
+        }
+        positions = Some(values);
+    }
+
+    let mut legacy_local_matrix = Matrix::default();
+    if flags & K_HAS_LEGACY_LOCAL_MATRIX_GSF != 0 {
+        legacy_local_matrix = buffer.read_matrix();
+    }
+
+    if !buffer.is_valid() {
+        return None;
+    }
+    Some(UnflattenedGradient {
+        colors,
+        positions,
+        tile_mode,
+        color_space: space,
+        interpolation: Interpolation {
+            in_premul,
+            color_space,
+            hue_method,
+        },
+        legacy_local_matrix,
+    })
+}
+
 /// `kDegenerateThreshold`: the default `SkScalarNearlyZero` threshold of .0024 is too big and
 /// causes regressions for svg gradients defined in the wild.
 // Port of: src/shaders/gradients/SkGradientBaseShader.h#L84-L86 (chrome/m156)
@@ -79,6 +257,50 @@ pub struct GradientBaseShader {
 pub const DEGENERATE_THRESHOLD: scalar = SCALAR_1 / (1 << 15) as scalar;
 
 impl GradientBaseShader {
+    /// Writes the gradient (`SkGradientBaseShader::flatten`): the flags, the colors (without the
+    /// implicit stops), the color space if there is one, and the positions.
+    // Port of: src/shaders/gradients/SkGradientBaseShader.cpp#L71-L110 (chrome/m156), flatten
+    pub(crate) fn flatten_gradient(&self, buffer: &mut BinaryWriteBuffer) {
+        let mut flags: u32 = 0;
+        if self.positions.is_some() {
+            flags |= K_HAS_POSITION_GSF;
+        }
+        let color_space_data = self.color_space.serialize();
+        if !color_space_data.is_empty() {
+            flags |= K_HAS_COLOR_SPACE_GSF;
+        }
+        if self.interpolation.in_premul == InPremul::Yes {
+            flags |= K_INTERPOLATION_IN_PREMUL_GSF;
+        }
+        flags |= (self.tile_mode as u32) << K_TILE_MODE_SHIFT_GSF;
+        flags |= (interpolation_color_space_bits(self.interpolation.color_space))
+            << K_INTERPOLATION_COLOR_SPACE_SHIFT_GSF;
+        flags |= (interpolation_hue_method_bits(self.interpolation.hue_method))
+            << K_INTERPOLATION_HUE_METHOD_SHIFT_GSF;
+        buffer.write_uint(flags);
+
+        // If we injected implicit first/last stops at construction time, omit those when serializing:
+        let mut color_count = self.colors.len();
+        let mut colors: &[Color4f] = &self.colors;
+        let mut positions: Option<&[f32]> = self.positions.as_deref();
+        if self.first_stop_is_implicit {
+            color_count -= 1;
+            colors = &colors[1..];
+            positions = positions.map(|p| &p[1..]);
+        }
+        if self.last_stop_is_implicit {
+            color_count -= 1;
+        }
+
+        write_color4f_array(buffer, &colors[..color_count]);
+        if !color_space_data.is_empty() {
+            buffer.write_byte_array(&color_space_data);
+        }
+        if let Some(positions) = positions {
+            buffer.write_scalar_array(&positions[..color_count]);
+        }
+    }
+
     /// `SkGradientBaseShader(desc, ptsToUnit)`.
     ///
     /// # Panics

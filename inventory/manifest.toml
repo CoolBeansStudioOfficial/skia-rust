@@ -15799,8 +15799,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
-status = "todo"
-reason = "needs SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L228), the buffer reader of a serialized picture, which is not ported (Picture::from_data reads the stream form, another function); Skia may signalBug on every input here, since serialize writes a tag where MakeFromBuffer reads its marker; needs an oracle check"
+status = "failing"
+reason = "Skia itself signals a bug on every input: SkPicture::serialize writes the stream form (the SkPictInfo, the sentinel byte 1, then the SkPictureData), but SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L226-L252) reads a 32-bit sentinel of 1 straight after the info, which the stream's byte 1 followed by the reader tag is not, so it returns null and fuzz->signalBug() raises SIGSEGV. The port follows Skia, so the replay is #[ignore]d until the upstream mismatch is fixed (docs/design/fuzz.md section 5, step 2); the reproducer is fuzz/regressions/RasterN32CanvasViaSerialization/one-zero-byte"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
@@ -15809,8 +15809,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
-status = "todo"
-reason = "the fuzz crate (docs/design/fuzz.md) is not on main; SvgDevice and svg::canvas::make are ready for it"
+status = "passing"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -15819,8 +15818,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L107-L167"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilter::serialize and SkImageFilter::Deserialize, which are not ported; the bit flips read once per serialized byte, so the reads depend on the output"
+status = "passing"
 span_hash = "856b16a4f26126f72b3e99aff969d63f6cce7cd0b33b56825981db99d64ce6d2"
 
 [[test]]
@@ -15895,8 +15893,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L57-L76"
 module = "codec"
-status = "todo"
-reason = "deferred: the fuzz crate (skia-rust-fuzz, docs/PORTING.md 14) is on origin/port/fuzz, not on this base; port after port/fuzz lands. The encoder itself is ported (SkPngRustEncoder, C-R1)"
+status = "passing"
 span_hash = "543b7e8452e854872c285d411fdb70b0a56eafb38de0e430abb3e04a00cf9a52"
 
 [[test]]
