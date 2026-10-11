@@ -211,6 +211,16 @@ fn skottie_resources() -> Option<PathBuf> {
         .find(|dir| dir.is_dir())
 }
 
+/// Lottie files whose CC Sphere / Fractal Noise content is a picture shader with a 2048x2048 tile
+/// (Skia's `kMaxTileArea` clamp), re-rasterized on every seek as in Skia. In a debug build that is
+/// minutes of raster-pipeline interpretation, so they run only in optimized builds (the
+/// test-release CI jobs), where the whole test takes about 25 s.
+const HEAVY_IN_DEBUG: &[&str] = &[
+    "skottie-fractalnoise-sphere.json",
+    "skottie-sphere-controls.json",
+    "skottie-sphere-lighting-types.json",
+];
+
 /// Builds, seeks and renders every Lottie file of Skia's resources: none may panic.
 #[test]
 fn every_lottie_resource_builds_and_renders() {
@@ -230,6 +240,14 @@ fn every_lottie_resource_builds_and_renders() {
 
     let mut built = 0;
     for path in files {
+        if cfg!(debug_assertions)
+            && path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| HEAVY_IN_DEBUG.contains(&name))
+        {
+            continue;
+        }
         let Ok(data) = std::fs::read(&path) else {
             continue;
         };

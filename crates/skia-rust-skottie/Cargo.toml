@@ -14,10 +14,10 @@ skia-rust-core.workspace = true
 skia-rust-sksg.workspace = true
 skia-rust-resources.workspace = true
 skia-rust-effects.workspace = true
+skia-rust-raster.workspace = true
 bitflags.workspace = true
 
 [dev-dependencies]
-skia-rust-raster.workspace = true
 
 [lints]
 workspace = true

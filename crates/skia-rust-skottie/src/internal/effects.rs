@@ -12,8 +12,17 @@
 
 use std::rc::Rc;
 
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::picture::Picture;
+use skia_rust_core::picture_recorder::PictureRecorder;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::FilterMode;
+use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
-use skia_rust_sksg::RenderNode;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_raster::picture_shader::PictureShaderExt;
+use skia_rust_sksg::invalidation_controller::InvalidationController;
+use skia_rust_sksg::{MaskShaderEffect, RenderNode};
 
 use crate::json::{ArrayValue, ObjectValue, Value};
 use crate::skottie::LoggerLevel;
@@ -26,14 +35,24 @@ use super::animator::{
 use super::composition::CompositionBuilder;
 use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
+mod bulge;
+mod cc_toner;
 mod color;
 mod convolution;
 mod corner_pin;
+mod displacement_map;
 mod filters;
+mod fractal_noise;
+mod gradient_ramp;
+mod linear_wipe;
+mod motion_tile;
+mod radial_wipe;
 mod runtime;
 mod shift_channels;
+mod sphere;
 mod styles;
 mod transform_effect;
+mod venetian_blinds;
 
 /// Attaches an adapter (`attachDiscardableAdapter`) and returns its node.
 // Port of: modules/skottie/src/SkottiePriv.h#L168-L181 (chrome/m156) (`attachDiscardableAdapter<T>`)
@@ -48,6 +67,62 @@ where
 {
     abuilder.attach_discardable_adapter(adapter);
     node as Rc<dyn RenderNode>
+}
+
+/// The mask of a mask-shader effect: its shader, and whether the layer is visible
+/// (`MaskShaderEffectBase::MaskInfo`).
+// Port of: modules/skottie/src/effects/Effects.h#L162-L165 (chrome/m156) (`MaskShaderEffectBase::MaskInfo`)
+pub(super) struct MaskInfo {
+    /// The mask shader, or `None` for no mask.
+    pub(super) shader: Option<Shader>,
+    /// False if the layer is fully hidden.
+    pub(super) visible: bool,
+}
+
+/// The mask-shader node that masks the layer: the `MaskShaderEffect` of the base class.
+// Port of: modules/skottie/src/effects/Effects.cpp#L207-L209 (chrome/m156) (`MaskShaderEffectBase::MaskShaderEffectBase`)
+pub(super) fn make_mask_shader_node(layer: Rc<dyn RenderNode>) -> Rc<MaskShaderEffect> {
+    MaskShaderEffect::make(Some(layer), None).expect("the layer is not null")
+}
+
+/// Records the content of a node into a picture (`get_content_picture` of the displacement and
+/// bulge effects): the node is revalidated, and rendered into a recording of its bounds.
+// Port of: modules/skottie/src/effects/DisplacementMapEffect.cpp#L144-L153 (chrome/m156) (`get_content_picture`)
+pub(super) fn get_content_picture(
+    node: Option<&Rc<dyn RenderNode>>,
+    ic: Option<&mut InvalidationController>,
+    ctm: &Matrix,
+) -> Option<Picture> {
+    let node = node?;
+    let bounds = node.revalidate(ic, ctm);
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(bounds, false);
+    node.render(canvas, None);
+    recorder.finish_recording_as_picture(None)
+}
+
+/// The layer content recorded at `size`, as a repeating picture shader: the content of the bulge
+/// and sphere shaders (`contentShader`).
+// Port of: modules/skottie/src/effects/BulgeEffect.cpp#L126-L139 (chrome/m156) (`BulgeNode::contentShader`)
+pub(super) fn repeating_content_shader(child: &Rc<dyn RenderNode>, size: Size) -> Option<Shader> {
+    child.revalidate(None, &Matrix::new_identity());
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(Rect::from_size(size), false);
+    child.render(canvas, None);
+    let picture = recorder.finish_recording_as_picture(None)?;
+    picture.to_shader(
+        (TileMode::Repeat, TileMode::Repeat),
+        FilterMode::Linear,
+        None::<&Matrix>,
+        None::<&Rect>,
+    )
+}
+
+/// Pushes a mask to its node (`MaskShaderEffectBase::onSync`).
+// Port of: modules/skottie/src/effects/Effects.cpp#L211-L217 (chrome/m156) (`MaskShaderEffectBase::onSync`)
+pub(super) fn sync_mask_shader(node: &MaskShaderEffect, info: MaskInfo) {
+    node.set_visible(info.visible);
+    node.set_shader(info.shader);
 }
 
 /// The syntactic helper that binds the properties of an effect by index (`EffectBinder`).
@@ -108,28 +183,48 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
         "ADBE Brightness & Contrast 2",
         color::attach_brightness_contrast_effect,
     ),
+    ("ADBE Bulge", bulge::attach_bulge_effect),
     ("ADBE Corner Pin", corner_pin::attach_corner_pin_effect),
+    (
+        "ADBE Displacement Map",
+        displacement_map::attach_displacement_map_effect,
+    ),
     ("ADBE Drop Shadow", filters::attach_drop_shadow_effect),
     ("ADBE Easy Levels2", color::attach_easy_levels_effect),
     ("ADBE Fill", color::attach_fill_effect),
+    (
+        "ADBE Fractal Noise",
+        fractal_noise::attach_fractal_noise_effect,
+    ),
     ("ADBE Gaussian Blur 2", filters::attach_gaussian_blur_effect),
     ("ADBE Geometry2", transform_effect::attach_transform_effect),
     ("ADBE HUE SATURATION", color::attach_hue_saturation_effect),
     ("ADBE Invert", color::attach_invert_effect),
+    ("ADBE Linear Wipe", linear_wipe::attach_linear_wipe_effect),
     (
         "ADBE Motion Blur",
         convolution::attach_directional_blur_effect,
     ),
     ("ADBE Pro Levels2", color::attach_pro_levels_effect),
+    ("ADBE Radial Wipe", radial_wipe::attach_radial_wipe_effect),
+    ("ADBE Ramp", gradient_ramp::attach_gradient_effect),
     ("ADBE Sharpen", convolution::attach_sharpen_effect),
     (
         "ADBE Shift Channels",
         shift_channels::attach_shift_channels_effect,
     ),
     ("ADBE Threshold2", color::attach_threshold_effect),
+    ("ADBE Tile", motion_tile::attach_motion_tile_effect),
     ("ADBE Tint", color::attach_tint_effect),
     ("ADBE Tritone", color::attach_tritone_effect),
+    (
+        "ADBE Venetian Blinds",
+        venetian_blinds::attach_venetian_blinds_effect,
+    ),
+    ("CC Sphere", sphere::attach_sphere_effect),
+    ("CC Toner", cc_toner::attach_cc_toner_effect),
     ("SkSL Color Filter", runtime::attach_sksl_color_filter),
+    ("SkSL Shader", runtime::attach_sksl_shader),
 ];
 
 /// The legacy effect types (`ty`) of the clients that do not name the effect (`mn`).
@@ -137,6 +232,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
 const LEGACY_TINT_EFFECT: i32 = 20;
 const LEGACY_FILL_EFFECT: i32 = 21;
 const LEGACY_TRITONE_EFFECT: i32 = 23;
+const LEGACY_RADIAL_WIPE_EFFECT: i32 = 26;
 const LEGACY_DROP_SHADOW_EFFECT: i32 = 25;
 const LEGACY_GAUSSIAN_BLUR_EFFECT: i32 = 29;
 
@@ -221,6 +317,7 @@ impl<'a, 'j> EffectBuilder<'a, 'j> {
             LEGACY_TINT_EFFECT => Some(color::attach_tint_effect),
             LEGACY_FILL_EFFECT => Some(color::attach_fill_effect),
             LEGACY_TRITONE_EFFECT => Some(color::attach_tritone_effect),
+            LEGACY_RADIAL_WIPE_EFFECT => Some(radial_wipe::attach_radial_wipe_effect),
             LEGACY_DROP_SHADOW_EFFECT => Some(filters::attach_drop_shadow_effect),
             LEGACY_GAUSSIAN_BLUR_EFFECT => Some(filters::attach_gaussian_blur_effect),
             _ => None,
