@@ -78,6 +78,9 @@ pub struct WgpuBackendContext {
     /// "non-yielding": `SyncToCpu::kYes` is disallowed and the client must guarantee that GPU
     /// work has completed before destroying the `Context`.
     pub has_tick: bool,
+    /// The usages the adapter allows each texture format, when the context was made from an
+    /// adapter (see [`AdapterFormatUsages`]). `None` for a device of unknown origin.
+    pub adapter_format_usages: Option<AdapterFormatUsages>,
 }
 
 impl WgpuBackendContext {
@@ -88,7 +91,82 @@ impl WgpuBackendContext {
             device,
             queue,
             has_tick: !cfg!(target_arch = "wasm32"),
+            adapter_format_usages: None,
         }
+    }
+
+    /// This context with the usages `adapter` allows each texture format.
+    #[must_use]
+    pub fn with_adapter_format_usages(mut self, usages: AdapterFormatUsages) -> Self {
+        self.adapter_format_usages = Some(usages);
+        self
+    }
+}
+
+/// The usages wgpu validates texture creation against, for each texture format of the port.
+///
+/// Dawn's format table is gated on device features alone, and Dawn validates the rest itself.
+/// wgpu validates a texture's usages against `Device::describe_format_features`: the adapter's
+/// own usages when the device has `TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES`, and the guaranteed
+/// usages of its features otherwise. Lavapipe, for one, allows `RENDER_ATTACHMENT` on `R16Unorm`,
+/// but the guaranteed usages do not, so a texture with it is rejected. The caps intersect the
+/// table with these usages, so they never claim what creation rejects.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct AdapterFormatUsages {
+    usages: Vec<(wgpu::TextureFormat, wgpu::TextureUsages)>,
+}
+
+impl AdapterFormatUsages {
+    /// The usages a device with `device_features` made from `adapter` validates texture creation
+    /// against.
+    #[must_use]
+    pub fn from_adapter(adapter: &wgpu::Adapter, device_features: wgpu::Features) -> Self {
+        let adapter_specific =
+            device_features.contains(wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES);
+        Self::collect(|format| {
+            if adapter_specific {
+                adapter.get_texture_format_features(format).allowed_usages
+            } else {
+                format
+                    .guaranteed_format_features(device_features)
+                    .allowed_usages
+            }
+        })
+    }
+
+    /// The usages a device with `device_features` validates texture creation against when it was
+    /// not made from an adapter, or `None` if it has `TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES`
+    /// (its usages then come from the adapter, which is not known).
+    #[must_use]
+    pub fn guaranteed(device_features: wgpu::Features) -> Option<Self> {
+        if device_features.contains(wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES) {
+            return None;
+        }
+        Some(Self::collect(|format| {
+            format
+                .guaranteed_format_features(device_features)
+                .allowed_usages
+        }))
+    }
+
+    fn collect(usages_of: impl Fn(wgpu::TextureFormat) -> wgpu::TextureUsages) -> Self {
+        let usages = crate::graphite::texture_format::TextureFormat::ALL
+            .iter()
+            .filter_map(|&format| {
+                crate::graphite::wgpu::graphite_utils::texture_format_to_wgpu_format(format)
+            })
+            .map(|format| (format, usages_of(format)))
+            .collect();
+        Self { usages }
+    }
+
+    /// The usages allowed for `format`, or `None` if it was not asked about.
+    #[must_use]
+    pub fn get(&self, format: wgpu::TextureFormat) -> Option<wgpu::TextureUsages> {
+        self.usages
+            .iter()
+            .find(|(f, _)| *f == format)
+            .map(|(_, usages)| *usages)
     }
 }
 
@@ -200,7 +278,11 @@ impl WgpuSharedContext {
         backend_context: &WgpuBackendContext,
         options: &ContextOptions,
     ) -> Option<Arc<Self>> {
-        let profile = CapsProfile::from_device(&backend_context.device, backend_context.has_tick);
+        let mut profile =
+            CapsProfile::from_device(&backend_context.device, backend_context.has_tick);
+        if let Some(usages) = &backend_context.adapter_format_usages {
+            profile.adapter_format_usages = Some(usages.clone());
+        }
         Self::make_with_profile(backend_context, &profile, options)
     }
 

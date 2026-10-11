@@ -59,7 +59,7 @@ pub mod trace;
 pub use backend_texture::backend_textures;
 pub use caps::{CapsProfile, DeviceFeatures, WgpuCaps};
 pub use context::{WgpuContext, make_context};
-pub use shared_context::{WgpuBackendContext, WgpuSharedContext};
+pub use shared_context::{AdapterFormatUsages, WgpuBackendContext, WgpuSharedContext};
 pub use texture_info::{WgpuTextureInfo, texture_infos};
 
 #[cfg(not(target_arch = "wasm32"))]

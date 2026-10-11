@@ -926,7 +926,7 @@ fn graphite_read_pixels_test_driver<T: SourceInfo>(
 def_graphite_adapter_test!(
     #[cfg_attr(
         skia_rust_adapter_tests,
-        ignore = "aborts the test binary: the conversion texture of the R16Unorm, Rg16Unorm and Rgba16Unorm read-backs fails wgpu validation (RENDER_ATTACHMENT), and the uncaptured error panics; see the manifest reason"
+        ignore = "aborts the test binary: the wrapped source texture is deleted (release callback of ManagedGraphiteTexture) while the read-back submission still uses it, so Queue::submit reports a destroyed texture; see the manifest reason"
     )]
     ImageAsyncReadPixelsGraphite,
     |reporter, context| {
@@ -984,7 +984,7 @@ def_graphite_adapter_test!(
 def_graphite_adapter_test!(
     #[cfg_attr(
         skia_rust_adapter_tests,
-        ignore = "912 of the read-backs fail: the conversion texture of the R16Unorm, Rg16Unorm and Rgba16Unorm reads fails wgpu validation (RENDER_ATTACHMENT); see the manifest reason"
+        ignore = "912 of the read-backs fail: the wrapped source texture is deleted while the read-back submission still uses it (Queue::submit: texture destroyed); see the manifest reason"
     )]
     SurfaceAsyncReadPixelsGraphite,
     |reporter, context| {

@@ -62,6 +62,7 @@ use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
 use crate::graphite::wgpu::graphite_utils::{
     FormatFlag, texture_format_support, texture_format_to_wgpu_format,
 };
+use crate::graphite::wgpu::shared_context::AdapterFormatUsages;
 use crate::graphite::wgpu::texture_info::{WgpuTextureInfo, WgpuTextureInfoData, texture_infos};
 
 bitflags! {
@@ -193,6 +194,9 @@ pub struct CapsProfile {
     pub limits: DeviceLimits,
     /// `DawnBackendContext::fTick != nullptr`: whether the context can wait for the GPU.
     pub has_tick: bool,
+    /// The usages the adapter allows each format, when the device came from an adapter. The
+    /// format table is intersected with them (see [`AdapterFormatUsages`]); `None` skips that.
+    pub adapter_format_usages: Option<AdapterFormatUsages>,
 }
 
 impl CapsProfile {
@@ -304,6 +308,7 @@ impl CapsProfile {
                 min_texel_copy_buffer_row_alignment: None,
             },
             has_tick,
+            adapter_format_usages: AdapterFormatUsages::guaranteed(wgpu_features),
         }
     }
 
@@ -335,6 +340,7 @@ impl CapsProfile {
                 ..DeviceLimits::default()
             },
             has_tick: true,
+            adapter_format_usages: None,
         }
     }
 
@@ -365,6 +371,7 @@ impl CapsProfile {
                 ..DeviceLimits::default()
             },
             has_tick: true,
+            adapter_format_usages: None,
         }
     }
 
@@ -790,7 +797,29 @@ impl WgpuCaps {
             let Some(format) = texture_format_to_wgpu_format(tf) else {
                 continue;
             };
-            let format_caps = texture_format_support(features, format);
+            let mut format_caps = texture_format_support(features, format);
+            // wgpu also validates the usages the adapter allows for the format: a flag whose
+            // usage it does not allow is dropped, so the caps never claim what creation rejects.
+            if let Some(usages) = self
+                .profile
+                .adapter_format_usages
+                .as_ref()
+                .and_then(|adapter| adapter.get(format))
+            {
+                if !usages.contains(wgpu::TextureUsages::RENDER_ATTACHMENT) {
+                    format_caps = format_caps.difference(
+                        FormatFlag::RENDER
+                            | FormatFlag::BLEND
+                            | FormatFlag::MSAA
+                            | FormatFlag::RESOLVE,
+                    );
+                }
+                if !usages.contains(wgpu::TextureUsages::STORAGE_BINDING) {
+                    format_caps = format_caps.difference(
+                        FormatFlag::WRITE_ONLY | FormatFlag::READ_ONLY | FormatFlag::READ_WRITE,
+                    );
+                }
+            }
 
             // The Dawn backend currently only supports optimal tiling
             if format_caps.is_empty() {

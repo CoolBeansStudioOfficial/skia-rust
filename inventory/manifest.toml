@@ -52635,7 +52635,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L559-L646"
 module = "gpu"
 status = "failing"
-reason = "aborts the test binary: the copy-as-draw conversion texture of the R16Unorm, Rg16Unorm and Rgba16Unorm read-backs is rejected by wgpu 30.0.1 (RENDER_ATTACHMENT is not allowed), an uncaptured validation error that panics, then a buffer destructor panics and aborts. wgpu/graphite_utils.rs lists these formats as renderable under the TIER1 and UNORM16 features, so the caps need a decision for the 16-bit norm formats. Ignored (cfg skia_rust_adapter_tests) until then"
+reason = "aborts the test binary on lavapipe: the 16-bit norm caps now follow wgpu's device validation (AdapterFormatUsages), so the R16/RG16/RGBA16 conversion textures are no longer created with RENDER_ATTACHMENT. The remaining abort is a separate lifetime bug: the test wraps a ManagedGraphiteTexture whose release callback deletes the backend texture (on_delete_backend_texture) while the read-back submission still uses it, so Queue::submit reports a destroyed texture and a buffer destructor panics. Ignored (cfg skia_rust_adapter_tests) until that is fixed"
 span_hash = "26e9b48f9bfc7306afb4a9e0703cded74a6fd3382ffd71a690224ce2a4370a1c"
 
 [[test]]
@@ -52645,7 +52645,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L648-L712"
 module = "gpu"
 status = "failing"
-reason = "912 read-backs fail, all at the copy-as-draw conversion texture (AsyncReadPixelsConversionTexture) for the R16Unorm, Rg16Unorm and Rgba16Unorm read types, which wgpu 30.0.1 rejects as render attachments while wgpu/graphite_utils.rs lists them as renderable; no pixel mismatches are reported. Ignored (cfg skia_rust_adapter_tests) until the 16-bit norm caps are decided"
+reason = "912 read-backs fail on lavapipe: the 16-bit norm conversion textures no longer fail validation (caps follow wgpu device validation), but the wrapped source texture is deleted by its release callback while the read-back submission still uses it, so Queue::submit reports a destroyed texture. No pixel mismatches are reported. Ignored (cfg skia_rust_adapter_tests) until that lifetime bug is fixed"
 span_hash = "e0d9bfd0cb3e1a96a52445d291210c63dd40a0934fadee247cdd9447090d8fb8"
 
 [[test]]
