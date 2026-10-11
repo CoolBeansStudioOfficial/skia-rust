@@ -12,4 +12,5 @@ pub mod jpeg_gainmap_encoder;
 pub mod png_encoder;
 pub(crate) mod png_encoder_base;
 pub(crate) mod png_encoder_impl;
+pub mod png_rust_encoder;
 pub mod webp_encoder;

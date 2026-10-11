@@ -13,7 +13,7 @@ use skia_rust_core::stream::{MemoryStream, Stream};
 
 use crate::codec_priv::{
     ScopedCodecDecoders, make_ico_from_png_resource, make_ico_with_png, png_decoder,
-    serial_test_lock,
+    png_rust_decoder, serial_test_lock,
 };
 use crate::resources::get_resource_as_data;
 use crate::{Reporter, def_test, reporter_assert, skip_missing_resource};
@@ -89,4 +89,10 @@ fn test_bad_png_in_ico_does_not_fallback(reporter: &mut Reporter, png: Decoder) 
 def_test!(Ico_malformedPngWithLibpngNoRedundantFallback, |r| {
     let _lock = serial_test_lock();
     test_bad_png_in_ico_does_not_fallback(r, png_decoder());
+});
+
+// Port of: tests/BadIcoTest.cpp#L115-L117 (chrome/m156), `SK_CODEC_DECODES_PNG_WITH_RUST`
+def_test!(Ico_malformedPngWithRustDecoderDoesNotFallback, |r| {
+    let _lock = serial_test_lock();
+    test_bad_png_in_ico_does_not_fallback(r, png_rust_decoder());
 });

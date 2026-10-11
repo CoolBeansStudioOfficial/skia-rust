@@ -7,7 +7,7 @@
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use skia_rust_codec::codecs::{self, Decoder};
-use skia_rust_codec::{ico_codec, png_codec};
+use skia_rust_codec::{ico_codec, png_codec, png_rust_codec};
 
 use crate::resources::get_resource_as_data;
 
@@ -62,6 +62,16 @@ pub fn png_decoder() -> Decoder {
         id: "png",
         is_format: png_codec::is_png_format,
         make_from_stream: png_codec::make_from_stream,
+    }
+}
+
+/// The Rust PNG decoder entry as Skia's `SkPngRustDecoder::Decoder()` gives it.
+#[must_use]
+pub fn png_rust_decoder() -> Decoder {
+    Decoder {
+        id: "png",
+        is_format: png_rust_codec::is_png_format,
+        make_from_stream: png_rust_codec::make_from_stream,
     }
 }
 
