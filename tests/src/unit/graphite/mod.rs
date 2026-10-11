@@ -14,6 +14,7 @@ pub mod graphite_resource_cache_test;
 pub mod graphite_yuva_promise_image_test;
 pub mod image_origin_test;
 pub mod image_shader_test;
+pub mod image_wrap_texture_mipmaps_test;
 pub mod inner_fill_test;
 pub mod intersection_tree_test;
 pub mod key_test;
