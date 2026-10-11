@@ -833,6 +833,27 @@ adapter-gated tests run and a missing adapter fails. The request is `adapter_bac
 with `Backends::all()`, which reads no environment variable, so no `WGPU_BACKEND` is set. The
 arm64 Linux, Windows and macOS jobs do not get the cfg, so those tests stay ignored there.
 
+**One device per test binary, one adapter test at a time.** The `test-release (windows-latest)`
+job twice died in `cargo test --release -p skia-rust-gpu --test surface_readback` with
+`0xc0000005 STATUS_ACCESS_VIOLATION` after three of the binary's four tests had passed. Windows
+runners use the WARP D3D12 software adapter and the crate has no `unsafe`, so the fault is inside
+wgpu-hal / D3D12 / WARP. The tests had each made, and dropped, their own `wgpu::Instance`,
+adapter and device, concurrently on libtest's parallel threads, so a device was being created
+or destroyed (DXGI factory and adapter enumeration, `ID3D12Device` creation, descriptor heaps and
+fence/event handles in wgpu-hal's `Device`/`Queue` `Drop`) while another test was using
+WARP. wgpu 30.0.1's dx12 backend has no documented guard for that (no changelog entry or
+in-tree note covers it), so the most likely trigger is concurrent device creation/destruction,
+with process-exit teardown a lesser candidate. This could not be reproduced: there is no
+Windows host here, and lavapipe does not show it.
+
+The mitigation removes both: `graphite::wgpu::serialized_adapter_context` (adapter.rs) makes
+the device once per process (`OnceLock`, never dropped, so no teardown either), gives each test
+its own `Context` made from clones of that device and queue, and holds a process-wide mutex
+for the life of the context (poison ignored), so the adapter tests of a binary run one at a time.
+Every adapter-using binary in `crates/skia-rust-gpu/tests` (`real_context()`) and the tests
+crate's `def_graphite_adapter_test!` macros (`tools::graphite_test_context::real_context*`)
+use it. What the tests check is unchanged.
+
 `xtask inventory verify` treats the adapter-gated tests as follows. With the cfg, an ignored
 adapter-gated test that is `passing` is a regression, since it should have run. Without the cfg
 (a plain `cargo xtask inventory verify` on a machine with no adapter), it is listed as "NOT

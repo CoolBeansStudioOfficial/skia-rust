@@ -197,7 +197,7 @@ macro_rules! def_graphite_adapter_test {
                 reporter.set_context(Some(context_name));
                 let run = |$reporter: &mut $crate::Reporter,
                            $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
-                run(&mut reporter, &mut context);
+                run(&mut reporter, &mut *context);
                 reporter.set_context(None);
             }
             reporter.finish();
@@ -241,7 +241,7 @@ macro_rules! def_graphite_adapter_test_with_options {
                 reporter.set_context(Some(context_name));
                 let run = |$reporter: &mut $crate::Reporter,
                            $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
-                run(&mut reporter, &mut context);
+                run(&mut reporter, &mut *context);
                 reporter.set_context(None);
             }
             reporter.finish();

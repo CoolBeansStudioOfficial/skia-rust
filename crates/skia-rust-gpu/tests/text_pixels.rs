@@ -38,15 +38,21 @@ use skia_rust_gpu::graphite::graphite_types::{
     InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
 };
 use skia_rust_gpu::graphite::resource_types::LoadOp;
-use skia_rust_gpu::graphite::wgpu::{WgpuContext, adapter_backend_context, make_context};
+use skia_rust_gpu::graphite::wgpu::{
+    AdapterTestContext, WgpuContext, make_context, serialized_adapter_context,
+};
 use skia_rust_tools::font_tool_utils::{add_to_text_blob, default_typeface};
 
 const SIZE: i32 = 512;
 
 /// A context on a real adapter, or `None` (after saying so) if the machine has no adapter that
 /// renders.
-fn real_context() -> Option<WgpuContext> {
-    let Some((backend_context, info)) = adapter_backend_context(wgpu::Backends::all()) else {
+/// A context on the binary's one shared device, with the adapter test lock held (see
+/// `skia_rust_gpu::graphite::wgpu::serialized_adapter_context`).
+fn real_context() -> Option<AdapterTestContext<WgpuContext>> {
+    let Some((context, info)) = serialized_adapter_context(|backend_context| {
+        make_context(backend_context, &ContextOptions::default()).expect("a context")
+    }) else {
         assert!(
             std::env::var_os("SKIA_RUST_REQUIRE_ADAPTER").is_none(),
             "SKIA_RUST_REQUIRE_ADAPTER is set but there is no adapter"
@@ -58,7 +64,7 @@ fn real_context() -> Option<WgpuContext> {
         "adapter: {} ({:?}, {:?})",
         info.name, info.backend, info.device_type
     );
-    Some(make_context(&backend_context, &ContextOptions::default()).expect("a context"))
+    Some(context)
 }
 
 fn font(size: f32) -> Font {
