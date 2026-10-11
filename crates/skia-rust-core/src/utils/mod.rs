@@ -1,7 +1,9 @@
 //! Ports of Skia's `include/utils` and `src/utils`.
 
+pub mod canvas_stack;
 pub mod char_to_glyph_cache;
 pub mod matrix22;
+pub mod n_way_canvas;
 pub mod parse;
 pub mod parse_color;
 pub mod parse_path;

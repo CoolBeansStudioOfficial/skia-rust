@@ -46,10 +46,12 @@ use crate::color::{Color, Color4f};
 use crate::color_filters;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
+use crate::data::Data;
 use crate::device::{
     CreateInfo, Device, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyph, PendingGlyphKind,
     clip_shader,
 };
+use crate::drawable::Drawable;
 use crate::floating_point::is_finite_all;
 use crate::font::Font;
 use crate::font_types::{GlyphId, TextEncoding};
@@ -459,6 +461,45 @@ pub trait CanvasHooks {
         _picture: &Picture,
         _matrix: Option<&Matrix>,
         _paint: Option<&Paint>,
+    ) -> bool {
+        false
+    }
+    /// `onDrawDrawable`.
+    fn on_draw_drawable(&mut self, _drawable: &Drawable, _matrix: Option<&Matrix>) -> bool {
+        false
+    }
+    /// `onDrawAnnotation`.
+    fn on_draw_annotation(&mut self, _rect: &Rect, _key: &str, _value: Option<&Data>) -> bool {
+        false
+    }
+    /// `onDrawMesh`.
+    fn on_draw_mesh(&mut self, _mesh: &Mesh, _blender: &Blender, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawSlug`.
+    fn on_draw_slug(&mut self, _slug: &Slug, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawEdgeAAQuad`.
+    fn on_draw_edge_aa_quad(
+        &mut self,
+        _rect: &Rect,
+        _clip: Option<&[Point; 4]>,
+        _aa_flags: QuadAAFlags,
+        _color: &Color4f,
+        _mode: BlendMode,
+    ) -> bool {
+        false
+    }
+    /// `onDrawEdgeAAImageSet2`.
+    fn on_draw_edge_aa_image_set2(
+        &mut self,
+        _image_set: &[ImageSetEntry],
+        _dst_clips: &[Point],
+        _preview_matrices: &[Matrix],
+        _sampling: &SamplingOptions,
+        _paint: Option<&Paint>,
+        _constraint: SrcRectConstraint,
     ) -> bool {
         false
     }
@@ -1740,6 +1781,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2710-L2716 (chrome/m156)
     fn on_draw_annotation(&mut self, rect: &Rect, key: &str, value: Option<&crate::data::Data>) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_annotation(rect, key, value)
+        {
+            return;
+        }
         if self.predraw_notify() {
             self.top_device_mut().draw_annotation(rect, key, value);
         }
@@ -1840,6 +1886,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2607-L2617 (chrome/m156)
     fn on_draw_mesh(&mut self, mesh: &Mesh, blender: Blender, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_mesh(mesh, &blender, paint)
+        {
+            return;
+        }
         let simple_paint = Self::clean_paint_for_draw_vertices(paint);
         if let Some(auto_layer) = self.about_to_draw(&simple_paint, None, PredrawFlags::NONE) {
             self.top_device_mut().draw_mesh(mesh, blender, paint);
@@ -2204,6 +2255,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2488-L2498 (chrome/m156), onDrawSlug
     fn draw_slug(&mut self, slug: &Slug, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_slug(slug, paint)
+        {
+            return;
+        }
         let bounds = slug.source_bounds_with_origin();
         if self.internal_quick_reject(&bounds, paint, None) {
             return;
@@ -2378,6 +2434,12 @@ impl CanvasState {
     ) {
         debug_assert!(r.is_sorted());
 
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_edge_aa_quad(r, clip, edge_aa, &color, mode)
+        {
+            return;
+        }
+
         let mut paint = Paint::default();
         paint.set_color4f(color, None);
         paint.set_blend_mode(mode);
@@ -2403,6 +2465,19 @@ impl CanvasState {
         paint: Option<&Paint>,
         constraint: SrcRectConstraint,
     ) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_edge_aa_image_set2(
+                image_set,
+                dst_clips,
+                preview_matrices,
+                sampling,
+                paint,
+                constraint,
+            )
+        {
+            return;
+        }
+
         let count = image_set.len();
         if count == 0 {
             // Nothing to draw
@@ -4397,7 +4472,7 @@ impl Canvas {
     /// (see [`Device::on_draw_glyph_run_list_step`]).
     // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), and
     // src/core/SkGlyphRunPainter.cpp#L296-L322
-    fn draw_glyph_run_list(&self, list: &GlyphRunList<'_>, paint: &Paint) {
+    pub(crate) fn draw_glyph_run_list(&self, list: &GlyphRunList<'_>, paint: &Paint) {
         let Some(auto_layer) = self.state.borrow_mut().begin_glyph_run_list(list, paint) else {
             return;
         };
@@ -4448,6 +4523,48 @@ impl Canvas {
             self.restore_to_count(save_count);
         }
         self.state.borrow_mut().end_auto_layer(&auto_layer);
+    }
+
+    /// Draws `drawable` using the current clip and matrix, concatenated with `matrix` if any
+    /// (`drawDrawable(SkDrawable*, const SkMatrix*)`). A recording canvas references the
+    /// drawable instead of drawing it, so that it can be drawn when the recording is played.
+    // Port of: src/core/SkCanvas.cpp#L2668-L2677 (chrome/m156)
+    #[doc(alias = "drawDrawable")]
+    pub fn draw_drawable(&self, drawable: &Drawable, matrix: Option<&Matrix>) {
+        let matrix = matrix.filter(|m| !m.is_identity());
+        self.on_draw_drawable(drawable, matrix);
+    }
+
+    /// Draws `drawable` offset by `offset` (`drawDrawable(SkDrawable*, SkScalar, SkScalar)`).
+    // Port of: src/core/SkCanvas.cpp#L2655-L2666 (chrome/m156)
+    #[doc(alias = "drawDrawable")]
+    pub fn draw_drawable_at(&self, drawable: &Drawable, offset: impl Into<Point>) {
+        let offset = offset.into();
+        if offset.x != 0.0 || offset.y != 0.0 {
+            let matrix = Matrix::translate(Vector::new(offset.x, offset.y));
+            self.on_draw_drawable(drawable, Some(&matrix));
+        } else {
+            self.on_draw_drawable(drawable, None);
+        }
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2679-L2685 (chrome/m156)
+    fn on_draw_drawable(&self, drawable: &Drawable, matrix: Option<&Matrix>) {
+        {
+            let mut s = self.state.borrow_mut();
+            if let Some(hooks) = s.hooks.as_mut()
+                && hooks.on_draw_drawable(drawable, matrix)
+            {
+                return;
+            }
+            // drawable bounds are no longer reliable (e.g. android displaylist)
+            // so don't use them for quick-reject
+            if !s.predraw_notify() {
+                return;
+            }
+        }
+        // SkDevice::drawDrawable: drawable->draw(canvas, matrix)
+        drawable.draw(self, matrix);
     }
 
     /// Draws a path (`drawPath`).
