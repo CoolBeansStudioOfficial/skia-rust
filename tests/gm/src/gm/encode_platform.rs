@@ -3,6 +3,14 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/encode_platform.cpp (chrome/m156)
 
+// Mirrors the C++ int/scalar casts and sizes of the GM: the values are small constants.
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
+
 use crate::prelude::*;
 use crate::tool_utils::get_resource_as_bitmap;
 use skia_rust_codec::encode::{jpeg_encoder, png_encoder, webp_encoder};

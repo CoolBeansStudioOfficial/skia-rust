@@ -21708,7 +21708,7 @@ macro = "DEF_GM"
 source = "gm/image.cpp#L369-L369"
 module = "raster"
 status = "todo"
-reason = "needs SkImages::DeferredFromPicture, a PNG encoder (SkPngEncoder) for make_codec, and SkPixmap::scalePixels for show_scaled_pixels; none on main"
+reason = "needs SkImage::scalePixels for lazy codec images (SkCodecs::DeferredImage) and picture images (DeferredFromPicture); SkImage::scalePixels is not ported"
 span_hash = "aa20d177008cda2664b23d80ad5967dc81d8bce23e9f02371e8ca5ae6de7f87d"
 
 [[test]]
@@ -21718,7 +21718,7 @@ macro = "DEF_GM"
 source = "gm/image.cpp#L370-L370"
 module = "raster"
 status = "todo"
-reason = "needs SkImages::DeferredFromPicture, a PNG encoder (SkPngEncoder) for make_codec, and SkPixmap::scalePixels for show_scaled_pixels; none on main"
+reason = "needs SkImage::makeScaled (not ported)"
 span_hash = "15cc182d8f1a021d04c45e057f5dec612e3d62b51129409ab7b7ed9a9920e029"
 
 [[test]]
@@ -21756,8 +21756,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L518-L536"
 module = "raster"
-status = "todo"
-reason = "needs SkPixmap::scalePixels (pixmap.rs: not ported; it draws through an image shader)"
+status = "passing"
 span_hash = "5269b85352a2f7e8608fc0f087a040fb003ab35e7b75bed42ef9641cc1a9728c"
 
 [[test]]
@@ -23413,8 +23412,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathopsblend.cpp#L61-L131"
 module = "pathops"
-status = "todo"
-reason = "PathOps slice 5 covers the unit tests; this GM is left for a GM slice (needs the GM harness and golden hashes on every tier, not checked in this slice)"
+status = "passing"
 span_hash = "dac07e0911e1234a39a6b7954cef8689387bc46fb9bb80900a4c21079ef0e86e"
 
 [[test]]
@@ -23423,8 +23421,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pathopsinverse.cpp#L108-L108"
 module = "pathops"
-status = "todo"
-reason = "PathOps slice 5 covers the unit tests; this GM is left for a GM slice (needs the GM harness and golden hashes on every tier, not checked in this slice)"
+status = "failing"
+reason = "ported; Union of inverse-filled rects differs from the golden (magenta in the Union column of the diff, all tiers). Suspect the skia-rust-pathops op result for inverse fill types. One diagnostic pass done; #[ignore]d"
 span_hash = "fca6d4ad40adf0d4c30fc4d043550fc4e1951edb11d4b0232201c62778f9b8d6"
 
 [[test]]
@@ -23433,8 +23431,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathopsinverse.cpp#L114-L148"
 module = "pathops"
-status = "todo"
-reason = "PathOps slice 5 covers the unit tests; this GM is left for a GM slice (needs the GM harness and golden hashes on every tier, not checked in this slice)"
+status = "passing"
 span_hash = "f905f940a7380cd7f07c4c9595ab79195181752c08a2621f414b87beb1a53798"
 
 [[test]]
