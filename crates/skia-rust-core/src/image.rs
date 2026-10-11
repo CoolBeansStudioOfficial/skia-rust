@@ -51,6 +51,33 @@ pub struct RequiredProperties {
 ///
 /// Equality is identity, as Skia compares `sk_sp`s ([`Image::ptr_eq`]).
 // Port of: include/core/SkImage.h#L48-L110 (chrome/m156)
+/// `SkImage::RescaleGamma`: whether `asyncRescaleAndReadPixels` rescales in the source's gamma or
+/// in linear gamma (`SkSurface::RescaleGamma` is the same type).
+// Port of: include/core/SkImage.h#L591 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+pub enum RescaleGamma {
+    /// Rescale in the gamma of the source (`kSrc`).
+    #[default]
+    Src,
+    /// Rescale in linear gamma (`kLinear`).
+    Linear,
+}
+
+/// `SkImage::RescaleMode`: how `asyncRescaleAndReadPixels` filters when it rescales.
+// Port of: include/core/SkImage.h#L593-L598 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+pub enum RescaleMode {
+    /// Nearest-neighbour sampling, one step (`kNearest`).
+    #[default]
+    Nearest,
+    /// Bilinear sampling, one step (`kLinear`).
+    Linear,
+    /// Bilinear sampling, one halving step at a time (`kRepeatedLinear`).
+    RepeatedLinear,
+    /// Bicubic sampling, one halving step at a time (`kRepeatedCubic`).
+    RepeatedCubic,
+}
+
 #[doc(alias = "SkImage")]
 #[derive(Clone)]
 pub struct Image(Arc<dyn ImageBase>);

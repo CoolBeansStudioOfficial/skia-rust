@@ -762,6 +762,23 @@ impl ColorSpace {
         ColorSpace::new_unchecked(self.0.transfer_fn, spun_to_xyz)
     }
 
+    /// Returns a color space with the same gamut as `self` and a linear (1.0) gamma; `self` if its
+    /// gamma is already linear (`SkColorSpace::makeLinearGamma`).
+    ///
+    /// # Panics
+    /// Never: the linear transfer function is always valid.
+    // Port of: src/core/SkColorSpace.cpp#L272-L277 (chrome/m156)
+    #[doc(alias = "makeLinearGamma")]
+    #[must_use]
+    pub fn make_linear_gamma(&self) -> ColorSpace {
+        if self.gamma_is_linear() {
+            return self.clone();
+        }
+        // MakeRGB(kLinear, fToXYZD50): the named linear transfer function is always valid.
+        ColorSpace::new_rgb(&named_transfer_fn::LINEAR, &self.0.to_xyzd50)
+            .expect("the linear transfer function is valid")
+    }
+
     /// Creates a [`ColorSpace`] from code points specified in Rec. ITU-T H.273. Returns `None`
     /// for an invalid or unsupported combination of code points.
     ///

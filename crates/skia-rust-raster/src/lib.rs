@@ -31,6 +31,7 @@ pub mod raster_clip;
 pub mod raster_clip_stack;
 pub mod raster_pipeline_blitter;
 pub mod region_path;
+pub mod rescale_and_read_pixels;
 pub mod scan;
 pub mod scan_aaa_path;
 pub mod scan_anti_path;
