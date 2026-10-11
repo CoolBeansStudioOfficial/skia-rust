@@ -23,6 +23,14 @@ use skia_rust_gpu::graphite::wgpu::{
     make_context, noop_backend_context, noop_backend_context_for_profile,
 };
 
+/// `skiatest::IsDawnContextType` for a context name from [`all_contexts`]: the Dawn profiles are
+/// named `dawn-…`; the noop device is not Dawn.
+// Port of: tests/Test.h#L217 (chrome/m156), `IsDawnContextType`
+#[must_use]
+pub fn is_dawn_context(context_name: &str) -> bool {
+    context_name.starts_with("dawn-")
+}
+
 /// The contexts `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` tests run on, with a name for each.
 #[must_use]
 pub fn all_contexts() -> Vec<(String, WgpuContext)> {

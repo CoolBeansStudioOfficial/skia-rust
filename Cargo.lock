@@ -1381,6 +1381,7 @@ dependencies = [
  "skia-rust-tools",
  "skia-rust-unicode",
  "skia-rust-zlib",
+ "wgpu",
 ]
 
 [[package]]

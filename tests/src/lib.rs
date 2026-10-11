@@ -315,6 +315,39 @@ macro_rules! def_graphite_adapter_test_with_options {
 /// once per context of [`tools::graphite_test_context::all_contexts`], with the context's name
 /// prefixed to each failure.
 ///
+/// Port of `DEF_GRAPHITE_TEST_FOR_DAWN_CONTEXT(name, reporter, context, testContext)`: the body
+/// runs once per Dawn context of [`all_contexts`](tools::graphite_test_context::all_contexts)
+/// (`IsDawnContextType`); the noop device is skipped.
+///
+/// ```ignore
+/// def_graphite_test_for_dawn_context!(DawnOnlyTest, |reporter, context| { /* ... */ });
+/// ```
+#[macro_export]
+macro_rules! def_graphite_test_for_dawn_context {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident, $context:ident| $body:block) => {
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            for (context_name, mut context) in $crate::tools::graphite_test_context::all_contexts()
+                .into_iter()
+                .filter(|(context_name, _)| {
+                    $crate::tools::graphite_test_context::is_dawn_context(context_name)
+                })
+            {
+                reporter.set_context(Some(context_name));
+                // A closure, as in `def_test!`: an early `return` ends this context only.
+                let run = |$reporter: &mut $crate::Reporter,
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
+            }
+            reporter.set_context(None);
+            reporter.finish();
+        }
+    };
+}
+
 /// ```ignore
 /// def_graphite_test_for_all_contexts!(BackendTextureTest, |reporter, context| {
 ///     reporter_assert!(reporter, context.backend() == BackendApi::Dawn);

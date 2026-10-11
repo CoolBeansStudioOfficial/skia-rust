@@ -24,6 +24,7 @@ skia-rust-libpng.workspace = true
 skia-rust-libwebp.workspace = true
 skia-rust-sksl = { workspace = true, features = ["wgsl"] }
 skia-rust-tools.workspace = true
+wgpu.workspace = true
 skia-rust-text.workspace = true
 skia-rust-unicode.workspace = true
 skia-rust-pdf.workspace = true
