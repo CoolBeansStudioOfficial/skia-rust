@@ -21,6 +21,7 @@ use crate::canvas::{
     Canvas, CanvasHooks, Lattice, PointMode, SaveLayerRec, SaveLayerStrategy, SrcRectConstraint,
 };
 use crate::clip_op::ClipOp;
+use crate::data::Data;
 use crate::drawable::Drawable;
 use crate::glyph_run::GlyphRunList;
 use crate::image::Image;
@@ -32,10 +33,10 @@ use crate::picture::Picture;
 use crate::point::Point;
 use crate::record::Record;
 use crate::records::{
-    ClipOpAndAA, ClipPath, ClipRRect, ClipRect, ClipRegion, ClipShader, Concat44, DrawArc,
-    DrawDRRect, DrawDrawable, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint, DrawPath,
-    DrawPicture, DrawPoints, DrawRRect, DrawRect, DrawRegion, DrawTextBlob, ResetClip, Restore,
-    Save, SaveLayer, Scale, SetM44, Translate,
+    ClipOpAndAA, ClipPath, ClipRRect, ClipRect, ClipRegion, ClipShader, Concat44, DrawAnnotation,
+    DrawArc, DrawDRRect, DrawDrawable, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint,
+    DrawPath, DrawPicture, DrawPoints, DrawRRect, DrawRect, DrawRegion, DrawTextBlob, ResetClip,
+    Restore, Save, SaveLayer, Scale, SetM44, Translate,
 };
 use crate::rect::{IRect, Rect, RoundOut};
 use crate::region::Region;
@@ -359,6 +360,16 @@ impl CanvasHooks for RecordHooks {
             src: lattice.bounds.expect("the lattice has bounds"), // SkASSERT(lattice.fBounds)
             dst: *dst,
             filter,
+        });
+        true
+    }
+
+    // Port of: src/core/SkRecordCanvas.cpp#L345-L347 (chrome/m156)
+    fn on_draw_annotation(&mut self, rect: &Rect, key: &str, value: Option<&Data>) -> bool {
+        self.append(DrawAnnotation {
+            rect: *rect,
+            key: key.to_owned(),
+            value: value.cloned(),
         });
         true
     }

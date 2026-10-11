@@ -34,6 +34,8 @@ use skia_rust_core::shaders::working_color_space_shader::create_proc as working_
 use skia_rust_core::table_color_filter::table_create_proc;
 use skia_rust_core::working_format_color_filter::create_proc as working_format_color_filter;
 
+use skia_rust_raster::picture_shader::create_proc as picture_shader;
+
 use crate::corner_path_effect::create_proc as corner_path_effect;
 use crate::dash_impl::create_proc as dash_impl;
 use crate::discrete_path_effect::create_proc as discrete_path_effect;
@@ -81,6 +83,7 @@ const SHADERS: &[(&str, ShaderFactory)] = &[
     ("SkShader_Blend", blend_shader),
     ("SkColorFilterShader", color_filter_shader),
     ("SkWorkingColorSpaceShader", working_color_space_shader),
+    ("SkPictureShader", picture_shader),
 ];
 
 /// The color filters registered by Skia, by name (`SkFlattenable::Register`), the ones that are

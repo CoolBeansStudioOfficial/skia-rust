@@ -229,6 +229,9 @@ impl<'a> Draw<'a> {
                     canvas.draw_picture(&picts[index], r.matrix.as_ref(), None);
                 }
             }
+            Command::DrawAnnotation(r) => {
+                canvas.draw_annotation(r.rect, &r.key, r.value.as_ref());
+            }
             Command::DrawOval(r) => {
                 canvas.draw_oval(r.oval, &r.paint);
             }
@@ -620,6 +623,7 @@ impl<'r, 'o> FillBounds<'r, 'o> {
 
                 self.adjust_and_map(dst, Some(&op.paint))
             }
+            Command::DrawAnnotation(op) => self.adjust_and_map(op.rect, None),
             Command::DrawDrawable(op) => self.adjust_and_map(op.worst_case_bounds, None),
             Command::DrawPicture(op) => {
                 let mut dst = op.picture.cull_rect();

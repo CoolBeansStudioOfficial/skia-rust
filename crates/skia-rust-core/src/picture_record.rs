@@ -23,6 +23,7 @@ use crate::canvas::{
 };
 use crate::clip_op::ClipOp;
 use crate::color::Color;
+use crate::data::Data;
 use crate::drawable::Drawable;
 use crate::image::Image;
 use crate::m44::M44;
@@ -64,6 +65,8 @@ struct PictureRecordState {
     text_blobs: Vec<TextBlob>,
     /// `fImages`: the distinct images, in the order of their 0-based indices.
     images: Vec<Image>,
+    /// `fPictures`: the distinct pictures, in the order of their 1-based indices.
+    pictures: Vec<Picture>,
     /// Set when the picture has a command that is not encoded yet.
     unsupported: bool,
 }
@@ -77,6 +80,13 @@ fn sampling_flat_size(sampling: &SamplingOptions) -> usize {
         size += 3 * size_of::<u32>();
     }
     size
+}
+
+/// The number of bytes `Writer32::write_string` writes for `key` (`SkWriter32::WriteStringSize`):
+/// the length word, the characters and the terminating zero, padded to 4 bytes.
+// Port of: src/core/SkWriter32.cpp#L55-L59 (chrome/m156), WriteStringSize
+fn write_string_size(key: &str) -> usize {
+    4 + (key.len() + 1).next_multiple_of(4)
 }
 
 /// The word of an unsigned count or index, as `SkToU32` gives it.
@@ -225,6 +235,23 @@ impl PictureRecordState {
             });
         // images are written 0-based, unlike paths and text blobs
         self.add_int(i32::try_from(position).expect("SkToS32"));
+    }
+
+    /// Writes a picture's 1-based index, adding the picture if it is new (`addPicture`). Pictures
+    /// are the same when they have the same unique id (`equals`).
+    // Port of: src/core/SkPictureRecord.cpp#L898-L901 (chrome/m156), addPicture, with
+    // find_or_append from src/core/SkPictureRecord.cpp#L847-L857 (chrome/m156)
+    fn add_picture(&mut self, picture: &Picture) {
+        let position = self
+            .pictures
+            .iter()
+            .position(|known| known.unique_id() == picture.unique_id())
+            .unwrap_or_else(|| {
+                self.pictures.push(picture.clone());
+                self.pictures.len() - 1
+            });
+        // follow the convention of recording a 1-based index
+        self.add_int(i32::try_from(position + 1).expect("SkToS32"));
     }
 
     /// Writes the sampling options (`addSampling`).
@@ -661,6 +688,19 @@ impl CanvasHooks for PictureRecordHooks {
         self.unsupported()
     }
 
+    // Port of: src/core/SkPictureRecord.cpp#L763-L773 (chrome/m156), onDrawAnnotation
+    fn on_draw_annotation(&mut self, rect: &Rect, key: &str, value: Option<&Data>) -> bool {
+        self.with(|state| {
+            // op + rect + key + value
+            let size = 4 + 16 + write_string_size(key) + Writer32::write_data_size(value);
+            state.add_draw(draw_type::DRAW_ANNOTATION, size);
+            state.add_rect(rect);
+            state.writer.write_string(Some(key));
+            state.writer.write_data(value);
+        });
+        true
+    }
+
     // Drawables are not encoded yet (`DRAW_DRAWABLE`, the `DRAWABLE` section).
     fn on_draw_drawable(&mut self, _drawable: &Drawable, _matrix: Option<&Matrix>) -> bool {
         self.unsupported()
@@ -692,14 +732,31 @@ impl CanvasHooks for PictureRecordHooks {
         self.unsupported()
     }
 
-    // Nested pictures are not encoded yet (their section is not ported).
+    // Port of: src/core/SkPictureRecord.cpp#L619-L637 (chrome/m156), onDrawPicture
     fn on_draw_picture(
         &mut self,
-        _picture: &Picture,
-        _matrix: Option<&Matrix>,
-        _paint: Option<&Paint>,
+        picture: &Picture,
+        matrix: Option<&Matrix>,
+        paint: Option<&Paint>,
     ) -> bool {
-        self.unsupported()
+        self.with(|state| {
+            // op + picture index
+            let mut size = 2 * size_of::<u32>();
+            if matrix.is_none() && paint.is_none() {
+                state.add_draw(draw_type::DRAW_PICTURE, size);
+                state.add_picture(picture);
+            } else {
+                let identity = Matrix::new_identity();
+                let m = matrix.unwrap_or(&identity);
+                // matrix + paint
+                size += 9 * size_of::<scalar>() + size_of::<u32>();
+                state.add_draw(draw_type::DRAW_PICTURE_MATRIX_PAINT, size);
+                state.add_paint_ptr(paint);
+                state.writer.write_matrix(m);
+                state.add_picture(picture);
+            }
+        });
+        true
     }
 
     // Port of: src/core/SkPictureRecord.cpp#L562-L577 (chrome/m156), onDrawImageRect2
@@ -763,5 +820,6 @@ pub(crate) fn backport(picture: &Picture) -> Option<PictureData> {
         state.paths,
         state.text_blobs,
         state.images,
+        state.pictures,
     ))
 }

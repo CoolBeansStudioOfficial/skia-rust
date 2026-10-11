@@ -163,6 +163,13 @@ impl<'a> ReadBuffer<'a> {
         buffer
     }
 
+    /// The procs the buffer reads with (`getDeserialProcs`).
+    #[doc(alias = "getDeserialProcs")]
+    #[must_use]
+    pub fn deserial_procs(&self) -> &DeserialProcs {
+        &self.deserial_procs
+    }
+
     /// `setTypefaceArray(array, count)`: the typefaces that the index arm of a typeface refers to.
     // Port of: src/core/SkReadBuffer.h (setTypefaceArray, chrome/m156)
     #[doc(alias = "setTypefaceArray")]

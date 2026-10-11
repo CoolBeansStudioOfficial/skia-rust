@@ -21,6 +21,27 @@ use crate::rect::Rect;
 // Port of: src/core/SkPicturePriv.h#L41-L41 (chrome/m156)
 pub const DEFAULT_RECURSION_LIMIT: usize = 100;
 
+/// [`DEFAULT_RECURSION_LIMIT`] as the `int` the readers count down from.
+pub(crate) const DEFAULT_RECURSION_LIMIT_I32: i32 = 100;
+
+/// Writes `picture` into `buffer` as the member of another object (`SkPicturePriv::Flatten`).
+// Port of: src/core/SkPicture.cpp#L332-L353 (chrome/m156), Flatten
+#[doc(alias = "Flatten")]
+pub fn flatten(picture: &Picture, buffer: &mut crate::write_buffer::BinaryWriteBuffer) {
+    picture.flatten(buffer);
+}
+
+/// Reads a picture written by [`flatten`] (`SkPicturePriv::MakeFromBuffer`).
+// Port of: src/core/SkPicture.cpp#L226-L252 (chrome/m156), MakeFromBuffer
+#[doc(alias = "MakeFromBuffer")]
+#[must_use]
+pub fn make_from_buffer(
+    buffer: &mut crate::read_buffer::ReadBuffer<'_>,
+    registry: &crate::flattenable::FlattenableRegistry,
+) -> Option<Picture> {
+    Picture::make_from_buffer(buffer, registry)
+}
+
 /// The oldest picture format that can be read (`SkPicturePriv::kMin_Version`).
 // Port of: src/core/SkPicturePriv.h#L201 (chrome/m156)
 pub(crate) const MIN_VERSION: u32 = 82;
