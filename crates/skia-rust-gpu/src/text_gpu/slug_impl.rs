@@ -18,6 +18,7 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::slug::SlugBase;
+use skia_rust_core::strike::StrikeForGpuCacheInterface;
 
 use crate::text_gpu::sub_run_container::{
     StrikeDeviceInfo, SubRunContainer, SubRunCreationBehavior,
@@ -66,6 +67,7 @@ impl SlugImpl {
         glyph_run_list: &GlyphRunList<'_>,
         paint: &Paint,
         strike_device_info: &StrikeDeviceInfo,
+        strike_cache: &dyn StrikeForGpuCacheInterface,
     ) -> Option<SlugImpl> {
         let position_matrix = Self::position_matrix(view_matrix, glyph_run_list.origin());
 
@@ -74,6 +76,7 @@ impl SlugImpl {
             &position_matrix,
             paint,
             strike_device_info,
+            strike_cache,
             SubRunCreationBehavior::AddSubRuns,
         );
 

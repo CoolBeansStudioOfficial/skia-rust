@@ -2,7 +2,6 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/core/SkStrike.{h,cpp}, src/core/SkStrikeRef.cpp, src/text/StrikeForGPU.{h,cpp}
-// (the parts without remote glyph caching, T23)
 
 //! `SkStrike`: the glyphs of one strike (a descriptor with its scaler context), the cache of
 //! their metrics, images, paths and drawables, and the memory each one adds.
@@ -13,25 +12,27 @@
 //! each take the lock for their own call. Memory is added to the cache when the guard (or the
 //! method) is dropped, as `SkStrike::unlock` does.
 //!
-//! Not ported: `mergeFromBuffer` and the flatten functions (remote glyph cache, T23),
-//! `findIntercepts` (T15b), `glyphIDsToPaths`/`glyphIDsToDrawables` (GPU, Phase 6), and `dump`.
+//! Not ported: `findIntercepts` (T15b), `glyphIDsToPaths`/`glyphIDsToDrawables` (GPU, Phase 6),
+//! and `dump`.
 
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
-use crate::descriptor::Descriptor;
+use crate::descriptor::{AutoDescriptor, Descriptor};
 use crate::font_metrics::FontMetrics;
 use crate::font_types::GlyphId;
 use crate::glyph::{ActionType, Glyph, GlyphAction, GlyphDigest, GlyphPositionRoundingSpec};
 use crate::mask::MaskFormat;
 use crate::packed_glyph_id::PackedGlyphId;
+use crate::read_buffer::ReadBuffer;
 use crate::rect::Rect;
 use crate::scalar::scalar;
 use crate::scaler_context::ScalerContext;
-use crate::strike_cache::{CacheState, lock_unpoisoned};
+use crate::strike_cache::{CacheState, StrikeCache, lock_unpoisoned};
 use crate::strike_spec::StrikeSpec;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// `sizeof(SkStrike)` on x64 Linux (g++). The strike starts with this much memory accounted to
 /// it (`fMemoryUsed{sizeof(SkStrike)}`). Tests compare totals, so the value is the C++ size, not
@@ -224,6 +225,108 @@ impl Strike {
         }
     }
 
+    /// `SkStrike::verifyPinnedStrike`: checks the pinner's invariants, if there is a pinner.
+    // Port of: src/core/SkStrike.h#L132-L136 (chrome/m156)
+    #[doc(alias = "verifyPinnedStrike")]
+    pub fn verify_pinned_strike(&self) {
+        if let Some(pinner) = lock_unpoisoned(&self.pinner).as_ref() {
+            pinner.assert_valid();
+        }
+    }
+
+    /// `SkStrike::FlattenGlyphsByType`: writes the count and then the metrics and data of each of
+    /// the glyphs with images, paths and drawables.
+    ///
+    /// # Panics
+    /// If a count does not fit an `int`, where C++ has `SkASSERT_RELEASE`.
+    // Port of: src/core/SkStrike.cpp#L86-L115 (chrome/m156)
+    #[doc(alias = "FlattenGlyphsByType")]
+    pub fn flatten_glyphs_by_type(
+        buffer: &mut BinaryWriteBuffer,
+        images: &[Glyph],
+        paths: &[Glyph],
+        drawables: &[Glyph],
+    ) {
+        let count = |n: usize| i32::try_from(n).expect("SkASSERT_RELEASE(SkTFitsIn<int>)");
+
+        buffer.write_int(count(images.len()));
+        for glyph in images {
+            glyph.flatten_metrics(buffer);
+            glyph.flatten_image(buffer);
+        }
+
+        buffer.write_int(count(paths.len()));
+        for glyph in paths {
+            glyph.flatten_metrics(buffer);
+            glyph.flatten_path(buffer);
+        }
+
+        buffer.write_int(count(drawables.len()));
+        for glyph in drawables {
+            glyph.flatten_metrics(buffer);
+            glyph.flatten_drawable(buffer);
+        }
+    }
+
+    /// `SkStrike::mergeFromBuffer`: reads the glyphs that
+    /// [`flatten_glyphs_by_type`](Self::flatten_glyphs_by_type) wrote, and adds their images,
+    /// paths and drawables to this strike. Returns false if the buffer is invalid.
+    // Port of: src/core/SkStrike.cpp#L117-L162 (chrome/m156)
+    #[doc(alias = "mergeFromBuffer")]
+    pub fn merge_from_buffer(&self, buffer: &mut ReadBuffer<'_>) -> bool {
+        // Read glyphs with images for the current strike.
+        let images_count = buffer.read_int();
+        if images_count == 0 && !buffer.is_valid() {
+            return false;
+        }
+        {
+            let mut guard = self.lock();
+            for _ in 0..images_count {
+                if !guard.merge_glyph_and_image_from_buffer(buffer) {
+                    return false;
+                }
+            }
+        }
+
+        // Read glyphs with paths for the current strike.
+        let paths_count = buffer.read_int();
+        if paths_count == 0 && !buffer.is_valid() {
+            return false;
+        }
+        {
+            let mut guard = self.lock();
+            for _ in 0..paths_count {
+                if !guard.merge_glyph_and_path_from_buffer(buffer) {
+                    return false;
+                }
+            }
+        }
+
+        // Read glyphs with drawables for the current strike.
+        let drawables_count = buffer.read_int();
+        if drawables_count == 0 && !buffer.is_valid() {
+            return false;
+        }
+        {
+            let mut guard = self.lock();
+            for _ in 0..drawables_count {
+                if !guard.merge_glyph_and_drawable_from_buffer(buffer) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    /// `SkStrikeTestingPeer::GetGlyph`: a copy of the glyph for `packed_id`, made if it is new.
+    // Port of: tests/SkStrikeTest.cpp#L184-L189 (chrome/m156)
+    #[doc(hidden)]
+    #[must_use]
+    pub fn glyph_for_testing(&self, packed_id: PackedGlyphId) -> Glyph {
+        self.lock().glyph_clone_for_id(packed_id)
+    }
+
     /// `SkStrike::metrics`: the metrics of each glyph (no images or paths). The glyphs are copies
     /// of the strike's records, so an image or path already prepared comes along.
     // Port of: src/core/SkStrike.cpp#L218-L223 (chrome/m156), kMetricsOnly
@@ -349,6 +452,66 @@ impl StrikeGuard<'_> {
     // Port of: src/core/SkStrike.cpp#L388-L396 (chrome/m156)
     pub fn prepare_for_drawable(&mut self, digest: GlyphDigest) -> bool {
         self.inner.prepare_for_drawable(digest.index())
+    }
+
+    /// `SkStrike::mergeGlyphFromBuffer`: reads a glyph's metrics, and adds a glyph for them if
+    /// the strike has none for the id yet. Returns the index of the strike's glyph.
+    // Port of: src/core/SkStrike.cpp#L397-L415 (chrome/m156)
+    fn merge_glyph_from_buffer(&mut self, buffer: &mut ReadBuffer<'_>) -> Option<usize> {
+        debug_assert!(buffer.is_valid());
+        let prototype_glyph = Glyph::make_from_buffer(buffer);
+        if !buffer.validate(prototype_glyph.is_some()) {
+            return None;
+        }
+        let prototype_glyph = prototype_glyph?;
+
+        // Check if this glyph has already been seen.
+        if let Some(digest) = self.inner.digests.get(&prototype_glyph.packed_id()) {
+            return Some(digest.index());
+        }
+
+        // This is the first time. Allocate a new glyph.
+        self.inner.memory_increase += SIZEOF_GLYPH;
+        Some(self.inner.add_glyph_and_digest(prototype_glyph).index())
+    }
+
+    /// `SkStrike::mergeGlyphAndImageFromBuffer`.
+    // Port of: src/core/SkStrike.cpp#L417-L425 (chrome/m156)
+    fn merge_glyph_and_image_from_buffer(&mut self, buffer: &mut ReadBuffer<'_>) -> bool {
+        debug_assert!(buffer.is_valid());
+        let index = self.merge_glyph_from_buffer(buffer);
+        if !buffer.validate(index.is_some()) {
+            return false;
+        }
+        let Some(index) = index else { return false };
+        self.inner.memory_increase += self.inner.glyphs[index].add_image_from_buffer(buffer);
+        buffer.is_valid()
+    }
+
+    /// `SkStrike::mergeGlyphAndPathFromBuffer`.
+    // Port of: src/core/SkStrike.cpp#L427-L435 (chrome/m156)
+    fn merge_glyph_and_path_from_buffer(&mut self, buffer: &mut ReadBuffer<'_>) -> bool {
+        debug_assert!(buffer.is_valid());
+        let index = self.merge_glyph_from_buffer(buffer);
+        if !buffer.validate(index.is_some()) {
+            return false;
+        }
+        let Some(index) = index else { return false };
+        self.inner.memory_increase += self.inner.glyphs[index].add_path_from_buffer(buffer);
+        buffer.is_valid()
+    }
+
+    /// `SkStrike::mergeGlyphAndDrawableFromBuffer`.
+    // Port of: src/core/SkStrike.cpp#L437-L445 (chrome/m156)
+    fn merge_glyph_and_drawable_from_buffer(&mut self, buffer: &mut ReadBuffer<'_>) -> bool {
+        debug_assert!(buffer.is_valid());
+        let index = self.merge_glyph_from_buffer(buffer);
+        if !buffer.validate(index.is_some()) {
+            return false;
+        }
+        let Some(index) = index else { return false };
+        self.inner.memory_increase += self.inner.glyphs[index].add_drawable_from_buffer(buffer);
+        buffer.is_valid()
     }
 
     /// `SkStrike::glyph(SkPackedGlyphID)`: the digest for `DirectMask`, and the glyph (cloned).
@@ -549,6 +712,49 @@ impl StrikePromise {
         }
     }
 
+    /// `SkStrikePromise::MakeFromBuffer`: reads the descriptor that [`flatten`](Self::flatten)
+    /// wrote and promises the strike in `strike_cache` that it names. If there is a client, then
+    /// the descriptor is from a different process: its typeface id is translated from the
+    /// strike server's to the client's. Returns `None` if the buffer is bad, the translation
+    /// fails or the cache has no such strike.
+    // Port of: src/text/gpu/StrikeCache.cpp#L174-L197 (chrome/m156)
+    #[doc(alias = "MakeFromBuffer")]
+    #[must_use]
+    pub fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+        strike_cache: &StrikeCache,
+    ) -> Option<Self> {
+        let descriptor = AutoDescriptor::make_from_buffer(buffer);
+        if !buffer.validate(descriptor.is_some()) {
+            return None;
+        }
+        let mut descriptor = descriptor?;
+
+        // If there is a client, then this from a different process. Translate the SkTypefaceID
+        // from the strike server (Renderer) process to strike client (GPU) process.
+        if let Some(client) = client {
+            if !client.translate_typeface_id(&mut descriptor) {
+                return None;
+            }
+        }
+
+        // C++ has SkASSERT(strike != nullptr) here, which aborts a debug build on a descriptor
+        // from bad data. The validation below is what release builds do.
+        let strike = strike_cache.find_strike(descriptor.get_desc());
+        if !buffer.validate(strike.is_some()) {
+            return None;
+        }
+
+        strike.map(Self::from_strike)
+    }
+
+    /// `SkStrikePromise::flatten`: writes the descriptor.
+    // Port of: src/text/StrikeForGPU.cpp#L49-L51 (chrome/m156)
+    pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        self.descriptor().flatten(buffer);
+    }
+
     /// `SkStrikePromise::descriptor`.
     // Port of: src/text/StrikeForGPU.cpp#L41-L47 (chrome/m156)
     #[must_use]
@@ -557,6 +763,91 @@ impl StrikePromise {
             Self::Strike(strike) => strike.descriptor(),
             Self::Spec(spec) => spec.descriptor(),
         }
+    }
+}
+
+/// What `SkStrikePromise::MakeFromBuffer` needs of the strike client
+/// (`SkStrikeClient::translateTypefaceID`): rewrites the typeface id in a descriptor from the
+/// strike server's to the client's.
+// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L141-L143 (chrome/m156)
+pub trait TypefaceIdTranslator {
+    /// `SkStrikeClient::translateTypefaceID`. Returns false if the descriptor has no record or
+    /// names a typeface the client has not received.
+    fn translate_typeface_id(&self, descriptor: &mut AutoDescriptor) -> bool;
+}
+
+/// A strike as the GPU text code sees it (`sktext::StrikeForGPU`): a real [`Strike`], or the
+/// strike server's record of the glyphs a client needs.
+///
+/// skia-rust: `prepareForImage`, `prepareForPath` and `prepareForDrawable` are not part of the
+/// trait. Only the remote strike calls them (on its own glyphs) and the strike keeps its own.
+// Port of: src/text/StrikeForGPU.h#L70-L93 (chrome/m156)
+#[doc(alias = "StrikeForGPU")]
+pub trait StrikeForGpu: Send + Sync {
+    /// `lock` and `unlock` as `StrikeMutationMonitor` uses them: the lock is held until the
+    /// result is dropped.
+    #[doc(alias = "StrikeMutationMonitor")]
+    fn lock_for_gpu(&self) -> Box<dyn StrikeForGpuLock + '_>;
+
+    /// `getDescriptor`.
+    fn descriptor_for_gpu(&self) -> &Descriptor;
+
+    /// `roundingSpec`.
+    fn rounding_spec_for_gpu(&self) -> &GlyphPositionRoundingSpec;
+
+    /// `strikePromise`. Takes the handle, as the strike hands a reference to itself to the
+    /// promise (`sk_ref_sp<SkStrike>(this)`).
+    fn strike_promise(self: Arc<Self>) -> StrikePromise;
+}
+
+/// The locked strike (`StrikeMutationMonitor`): the operations that need the lock.
+// Port of: src/text/StrikeForGPU.h#L70-L93 (chrome/m156)
+pub trait StrikeForGpuLock {
+    /// `digestFor`: the digest of `packed_id` for `action`, deciding its action if it has not
+    /// been decided yet.
+    fn digest_for(&mut self, action: ActionType, packed_id: PackedGlyphId) -> GlyphDigest;
+}
+
+/// `sktext::StrikeForGPUCacheInterface`: where the GPU text code gets its strikes.
+// Port of: src/text/StrikeForGPU.h#L121-L125 (chrome/m156)
+#[doc(alias = "StrikeForGPUCacheInterface")]
+pub trait StrikeForGpuCacheInterface {
+    /// `findOrCreateScopedStrike`.
+    fn find_or_create_scoped_strike(&self, spec: &StrikeSpec) -> Arc<dyn StrikeForGpu>;
+}
+
+impl StrikeForGpu for Strike {
+    // Port of: src/core/SkStrike.h (lock/unlock, chrome/m156)
+    fn lock_for_gpu(&self) -> Box<dyn StrikeForGpuLock + '_> {
+        Box::new(self.lock())
+    }
+
+    // Port of: src/core/SkStrike.h#L120-L122 (chrome/m156)
+    fn descriptor_for_gpu(&self) -> &Descriptor {
+        self.descriptor()
+    }
+
+    // Port of: src/core/SkStrike.h#L124-L126 (chrome/m156)
+    fn rounding_spec_for_gpu(&self) -> &GlyphPositionRoundingSpec {
+        self.rounding_spec()
+    }
+
+    // Port of: src/core/SkStrike.h#L118-L120 (chrome/m156)
+    fn strike_promise(self: Arc<Self>) -> StrikePromise {
+        StrikePromise::from_strike(self)
+    }
+}
+
+impl StrikeForGpuLock for StrikeGuard<'_> {
+    fn digest_for(&mut self, action: ActionType, packed_id: PackedGlyphId) -> GlyphDigest {
+        self.digest_for_id(action, packed_id)
+    }
+}
+
+impl StrikeForGpuCacheInterface for StrikeCache {
+    // Port of: src/core/SkStrikeCache.cpp (findOrCreateScopedStrike, chrome/m156)
+    fn find_or_create_scoped_strike(&self, spec: &StrikeSpec) -> Arc<dyn StrikeForGpu> {
+        self.find_or_create_strike(spec)
     }
 }
 

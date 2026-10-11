@@ -55,7 +55,7 @@ use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{Scalar, scalar, scalar_floor_to_scalar, scalar_sqrt};
 use skia_rust_core::scaler_context::ScalerContextBuildFlags;
-use skia_rust_core::strike::StrikePromise;
+use skia_rust_core::strike::{StrikeForGpu, StrikeForGpuCacheInterface, StrikePromise};
 use skia_rust_core::strike_spec::StrikeSpec;
 use skia_rust_core::stroke_rec::StrokeRec;
 use skia_rust_core::surface_props::SurfaceProps;
@@ -706,14 +706,14 @@ type Rejected = Vec<(GlyphId, Point)>;
 /// `prepare_for_SDFT_drawing`.
 // Port of: src/text/gpu/SubRunContainer.cpp#L1131-L1166 (chrome/m156)
 fn prepare_for_sdft_drawing(
-    strike: &skia_rust_core::strike::Strike,
+    strike: &dyn StrikeForGpu,
     creation_matrix: &Matrix,
     source: &[(GlyphId, Point)],
 ) -> (Vec<(PackedGlyphId, Point)>, Rejected, Rect) {
     let mut accepted = Vec::new();
     let mut rejected = Vec::new();
     let mut bounding_rect = skglyph::empty_rect();
-    let mut guard = strike.lock();
+    let mut guard = strike.lock_for_gpu();
     for &(glyph_id, pos) in source {
         if !is_finite_position(pos) {
             continue;
@@ -738,12 +738,12 @@ fn prepare_for_sdft_drawing(
 /// `prepare_for_direct_mask_drawing`.
 // Port of: src/text/gpu/SubRunContainer.cpp#L1168-L1214 (chrome/m156)
 fn prepare_for_direct_mask_drawing(
-    strike: &skia_rust_core::strike::Strike,
+    strike: &dyn StrikeForGpu,
     position_matrix: &Matrix,
     source: &[(GlyphId, Point)],
     action_type: ActionType,
 ) -> (AcceptedMasks, Rejected, Rect) {
-    let rounding_spec: &GlyphPositionRoundingSpec = strike.rounding_spec();
+    let rounding_spec: &GlyphPositionRoundingSpec = strike.rounding_spec_for_gpu();
     let mask = rounding_spec.ignore_position_field_mask;
     let half_sample_freq = rounding_spec.half_axis_sample_freq;
 
@@ -755,7 +755,7 @@ fn prepare_for_direct_mask_drawing(
     let mut accepted = Vec::new();
     let mut rejected = Vec::new();
     let mut bounding_rect = skglyph::empty_rect();
-    let mut guard = strike.lock();
+    let mut guard = strike.lock_for_gpu();
     for &(glyph_id, pos) in source {
         if !is_finite_position(pos) {
             continue;
@@ -784,14 +784,14 @@ fn prepare_for_direct_mask_drawing(
 /// `prepare_for_mask_drawing`.
 // Port of: src/text/gpu/SubRunContainer.cpp#L1216-L1253 (chrome/m156)
 fn prepare_for_mask_drawing(
-    strike: &skia_rust_core::strike::Strike,
+    strike: &dyn StrikeForGpu,
     creation_matrix: &Matrix,
     source: &[(GlyphId, Point)],
 ) -> (AcceptedMasks, Rejected, Rect) {
     let mut accepted = Vec::new();
     let mut rejected = Vec::new();
     let mut bounding_rect = skglyph::empty_rect();
-    let mut guard = strike.lock();
+    let mut guard = strike.lock_for_gpu();
     for &(glyph_id, pos) in source {
         if !is_finite_position(pos) {
             continue;
@@ -817,13 +817,13 @@ fn prepare_for_mask_drawing(
 /// action.
 // Port of: src/text/gpu/SubRunContainer.cpp#L1255-L1309 (chrome/m156)
 fn prepare_for_path_or_drawable_drawing(
-    strike: &skia_rust_core::strike::Strike,
+    strike: &dyn StrikeForGpu,
     action_type: ActionType,
     source: &[(GlyphId, Point)],
 ) -> (Vec<(GlyphId, Point)>, Rejected) {
     let mut accepted = Vec::new();
     let mut rejected = Vec::new();
-    let mut guard = strike.lock();
+    let mut guard = strike.lock_for_gpu();
     for &(glyph_id, pos) in source {
         if !is_finite_position(pos) {
             continue;
@@ -844,10 +844,10 @@ fn prepare_for_path_or_drawable_drawing(
 /// `find_maximum_glyph_dimension`: the largest dimension of the mask of any of the glyphs.
 // Port of: src/text/gpu/SubRunContainer.cpp#L1112-L1122 (chrome/m156)
 fn find_maximum_glyph_dimension(
-    strike: &skia_rust_core::strike::Strike,
+    strike: &dyn StrikeForGpu,
     glyphs: &[GlyphId],
 ) -> scalar {
-    let mut guard = strike.lock();
+    let mut guard = strike.lock_for_gpu();
     let mut max_dimension: scalar = 0.0;
     for &glyph_id in glyphs {
         let digest = guard.digest_for(ActionType::Mask, PackedGlyphId::from_glyph_id(glyph_id));
@@ -1003,6 +1003,7 @@ impl SubRunContainer {
         position_matrix: &Matrix,
         run_paint: &Paint,
         strike_device_info: &StrikeDeviceInfo,
+        strike_cache: &dyn StrikeForGpuCacheInterface,
         creation_behavior: SubRunCreationBehavior,
     ) -> SubRunContainer {
         let mut container = SubRunContainer::new(position_matrix);
@@ -1045,7 +1046,7 @@ impl SubRunContainer {
                     );
 
                     if !strike_to_source_scale.nearly_zero(None) {
-                        let strike = strike_spec.find_or_create_strike();
+                        let strike = strike_cache.find_or_create_scoped_strike(&strike_spec);
 
                         // The creationMatrix needs to scale the strike data when inverted and
                         // multiplied by the positionMatrix. The final CTM should be:
@@ -1061,7 +1062,7 @@ impl SubRunContainer {
                         ));
 
                         let (accepted, rejected, creation_bounds) =
-                            prepare_for_sdft_drawing(&strike, &creation_matrix, &source);
+                            prepare_for_sdft_drawing(&*strike, &creation_matrix, &source);
                         source = rejected;
 
                         if add_sub_runs && !accepted.is_empty() {
@@ -1069,7 +1070,7 @@ impl SubRunContainer {
                                 AtlasSubRun::make_sdft(
                                     &accepted,
                                     run_font,
-                                    StrikePromise::from_strike(strike),
+                                    strike.strike_promise(),
                                     &creation_matrix,
                                     creation_bounds,
                                     matrix_range,
@@ -1099,7 +1100,7 @@ impl SubRunContainer {
                         position_matrix,
                     );
 
-                    let strike = strike_spec.find_or_create_strike();
+                    let strike = strike_cache.find_or_create_scoped_strike(&strike_spec);
 
                     // Bilerp sampling requires 1px atlas padding so interpolation doesn't bleed
                     // into adjacent glyphs. kMask calls fitsInAtlasInterpolated()
@@ -1115,7 +1116,7 @@ impl SubRunContainer {
                         ActionType::DirectMask
                     };
                     let (accepted, rejected, creation_bounds) = prepare_for_direct_mask_drawing(
-                        &strike,
+                        &*strike,
                         position_matrix,
                         &source,
                         action_type,
@@ -1132,7 +1133,7 @@ impl SubRunContainer {
                                         creation_bounds,
                                         subrun,
                                         &initial_position,
-                                        StrikePromise::from_strike(Arc::clone(&strike)),
+                                        Arc::clone(&strike).strike_promise(),
                                         format,
                                     ),
                                 )));
@@ -1151,10 +1152,10 @@ impl SubRunContainer {
                     StrikeSpec::make_path(run_font, run_paint, device_props, scaler_context_flags);
 
                 if !strike_to_source_scale.nearly_zero(None) {
-                    let strike = strike_spec.find_or_create_strike();
+                    let strike = strike_cache.find_or_create_scoped_strike(&strike_spec);
 
                     let (accepted, rejected) = prepare_for_path_or_drawable_drawing(
-                        &strike,
+                        &*strike,
                         ActionType::Drawable,
                         &source,
                     );
@@ -1165,7 +1166,7 @@ impl SubRunContainer {
                             drawing: DrawableOpSubmitter::make(
                                 &accepted,
                                 strike_to_source_scale,
-                                StrikePromise::from_strike(strike),
+                                strike.strike_promise(),
                             ),
                         }));
                     }
@@ -1179,10 +1180,10 @@ impl SubRunContainer {
                     StrikeSpec::make_path(run_font, run_paint, device_props, scaler_context_flags);
 
                 if !strike_to_source_scale.nearly_zero(None) {
-                    let strike = strike_spec.find_or_create_strike();
+                    let strike = strike_cache.find_or_create_scoped_strike(&strike_spec);
 
                     let (accepted, rejected) =
-                        prepare_for_path_or_drawable_drawing(&strike, ActionType::Path, &source);
+                        prepare_for_path_or_drawable_drawing(&*strike, ActionType::Path, &source);
                     source = rejected;
 
                     if add_sub_runs && !accepted.is_empty() {
@@ -1193,7 +1194,7 @@ impl SubRunContainer {
                                 &accepted,
                                 is_anti_aliased,
                                 strike_to_source_scale,
-                                StrikePromise::from_strike(strike),
+                                strike.strike_promise(),
                             ),
                         }));
                     }
@@ -1245,14 +1246,14 @@ impl SubRunContainer {
                         scaler_context_flags,
                         m,
                     );
-                    let gauging_strike = strike_spec.find_or_create_strike();
+                    let gauging_strike = strike_cache.find_or_create_scoped_strike(&strike_spec);
                     // TODO: There is a problem where a small character (say .) and a large
                     //  character (say M) are in the same run. If the run is scaled to be very
                     //  large, then the M may return 0 because its dimensions are > 65535, but
                     //  the small character produces regular result because its largest dimension
                     //  is < 65535. This will create an improper scale factor causing the M to
                     //  be too large to fit in the atlas. Tracked by skbug.com/40044801.
-                    find_maximum_glyph_dimension(&gauging_strike, &glyphs)
+                    find_maximum_glyph_dimension(&*gauging_strike, &glyphs)
                 };
 
                 // Condition the creationMatrix so that glyphs fit in the atlas.
@@ -1276,10 +1277,10 @@ impl SubRunContainer {
                     &creation_matrix,
                 );
 
-                let strike = strike_spec.find_or_create_strike();
+                let strike = strike_cache.find_or_create_scoped_strike(&strike_spec);
 
                 let (accepted, _rejected, creation_bounds) =
-                    prepare_for_mask_drawing(&strike, &creation_matrix, &source);
+                    prepare_for_mask_drawing(&*strike, &creation_matrix, &source);
 
                 if add_sub_runs && !accepted.is_empty() {
                     let initial_position = container.initial_position().clone();
@@ -1290,7 +1291,7 @@ impl SubRunContainer {
                                 AtlasSubRun::make_transformed_mask(
                                     subrun,
                                     &initial_position,
-                                    StrikePromise::from_strike(Arc::clone(&strike)),
+                                    Arc::clone(&strike).strike_promise(),
                                     &creation_matrix,
                                     creation_bounds,
                                     format,
