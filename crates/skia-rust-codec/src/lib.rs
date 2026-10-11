@@ -41,6 +41,8 @@ mod mask_swizzler;
 mod masks;
 pub mod png_codec;
 mod png_codec_base;
+pub mod png_rust_codec;
+mod png_rust_ffi;
 pub mod png_composite_chunk_reader;
 mod sampled_codec;
 pub mod sampler;

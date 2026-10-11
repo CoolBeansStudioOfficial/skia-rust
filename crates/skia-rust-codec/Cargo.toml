@@ -17,6 +17,7 @@ skia-rust-wuffs.workspace = true
 skia-rust-libwebp.workspace = true
 skia-rust-libjpeg.workspace = true
 bitflags.workspace = true
+png.workspace = true
 
 [lints]
 workspace = true
