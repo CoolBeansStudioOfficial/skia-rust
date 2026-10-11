@@ -366,3 +366,50 @@ def_test!(canvas_empty_clip, |reporter| {
         reporter_assert!(reporter, canvas.is_clip_empty());
     });
 });
+
+// Port of: tests/CanvasTest.cpp#L627-L635 (chrome/m156)
+def_test!(
+    Canvas_SaveLayerWithNullBoundsAndZeroBoundsImageFilter,
+    |r| {
+        let mut surface = surfaces::raster_n32_premul((10, 10)).expect("surface");
+        let canvas = surface.canvas();
+        let mut p = Paint::default();
+        p.set_image_filter(skia_rust_effects::image_filters::empty());
+        // This should not fail any assert.
+        canvas.save_layer(&SaveLayerRec::default().paint(&p));
+        // An empty device clip is reported as None.
+        reporter_assert!(r, canvas.device_clip_bounds().is_none_or(|b| b.is_empty()));
+        canvas.restore();
+    }
+);
+
+// Port of: tests/CanvasTest.cpp#L656-L678 (chrome/m156)
+def_test!(Canvas_ClippedOutImageFilter, |reporter| {
+    let mut surface = surfaces::raster_n32_premul((100, 100)).expect("surface");
+    let canvas = surface.canvas();
+
+    let mut p = Paint::default();
+    p.set_color(Color::GREEN);
+    p.set_image_filter(skia_rust_effects::image_filters::blur(
+        3.0,
+        3.0,
+        skia_rust_core::tile_mode::TileMode::Decal,
+        None,
+        None,
+    ));
+
+    let mut blurred_rect = Rect::from_xywh(60.0, 10.0, 30.0, 30.0);
+
+    let inv_m = skia_rust_core::matrix::Matrix::rotate_deg(-45.0);
+    blurred_rect = inv_m.map_rect(blurred_rect).0;
+
+    let clip_rect = Rect::from_xywh(0.0, 50.0, 50.0, 50.0);
+
+    canvas.clip_rect(clip_rect, None, None);
+
+    canvas.rotate(45.0, None);
+    let pre_ctm = canvas.total_matrix();
+    canvas.draw_rect(blurred_rect, &p);
+    let post_ctm = canvas.total_matrix();
+    reporter_assert!(reporter, pre_ctm == post_ctm);
+});

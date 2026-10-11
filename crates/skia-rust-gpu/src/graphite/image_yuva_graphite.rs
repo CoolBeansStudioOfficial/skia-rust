@@ -370,6 +370,10 @@ impl ImageBase for ImageYuva {
         &self.info
     }
 
+    fn texture_size(&self) -> usize {
+        ImageYuva::texture_size(self)
+    }
+
     fn unique_id(&self) -> u32 {
         self.unique_id
     }

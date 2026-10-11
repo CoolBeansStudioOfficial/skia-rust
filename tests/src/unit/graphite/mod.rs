@@ -5,6 +5,8 @@ pub mod bounds_manager_test;
 pub mod buffer_manager_test;
 pub mod cache_budget_test;
 pub mod compute_test;
+pub mod crbug_513836996;
+pub mod dawn_backend_texture_test;
 pub mod device_test;
 pub mod draw_atlas_test;
 pub mod graphite_promise_image_test;
