@@ -21703,8 +21703,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image.cpp#L369-L369"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::scalePixels for lazy codec images (SkCodecs::DeferredImage) and picture images (DeferredFromPicture); SkImage::scalePixels is not ported"
+status = "passing"
 span_hash = "aa20d177008cda2664b23d80ad5967dc81d8bce23e9f02371e8ca5ae6de7f87d"
 
 [[test]]
@@ -21713,8 +21712,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image.cpp#L370-L370"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::makeScaled (not ported)"
+status = "passing"
 span_hash = "15cc182d8f1a021d04c45e057f5dec612e3d62b51129409ab7b7ed9a9920e029"
 
 [[test]]
@@ -21723,8 +21721,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L615-L644"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::makeScaled (not ported)"
+status = "passing"
 span_hash = "fd4a8cec806633fb20aed93717c8687109ec1d104e8b2781e5af78be420ebc04"
 
 [[test]]
