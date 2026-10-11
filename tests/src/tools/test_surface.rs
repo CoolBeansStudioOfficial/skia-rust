@@ -22,6 +22,12 @@ pub trait TestSurface {
     /// `readPixels(bitmap.info(), bitmap.getPixels(), bitmap.rowBytes(), 0, 0)`, and whether it
     /// succeeded.
     fn read_pixels(&mut self, bitmap: &mut Bitmap) -> bool;
+    /// `writePixels(bitmap, x, y)`.
+    fn write_pixels(&mut self, bitmap: &Bitmap, x: i32, y: i32);
+    /// `generationID()`.
+    fn generation_id(&self) -> u32;
+    /// Whether the surface is GPU-backed (`getCanvas()->recordingContext() || recorder()`).
+    fn is_gpu(&self) -> bool;
 }
 
 impl TestSurface for Surface<'_> {
@@ -33,6 +39,15 @@ impl TestSurface for Surface<'_> {
     }
     fn read_pixels(&mut self, bitmap: &mut Bitmap) -> bool {
         self.read_pixels_to_bitmap(bitmap, (0, 0))
+    }
+    fn write_pixels(&mut self, bitmap: &Bitmap, x: i32, y: i32) {
+        self.write_pixels_from_bitmap(bitmap, (x, y));
+    }
+    fn generation_id(&self) -> u32 {
+        Surface::generation_id(self)
+    }
+    fn is_gpu(&self) -> bool {
+        false
     }
 }
 
@@ -67,5 +82,15 @@ impl TestSurface for GraphiteTestSurface<'_> {
         };
         self.context
             .read_surface_pixels(self.surface, &mut pm, 0, 0)
+    }
+    fn write_pixels(&mut self, bitmap: &Bitmap, x: i32, y: i32) {
+        // `SkSurface::writePixels` goes through the surface's canvas.
+        let _ = self.surface.canvas().write_pixels_from_bitmap(bitmap, (x, y));
+    }
+    fn generation_id(&self) -> u32 {
+        self.surface.generation_id()
+    }
+    fn is_gpu(&self) -> bool {
+        true
     }
 }
