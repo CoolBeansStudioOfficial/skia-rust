@@ -52012,7 +52012,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ImageWrapTextureMipmapsTest.cpp#L25-L159"
 module = "gpu"
 status = "todo"
-reason = "portable now (SkImages::WrapTexture, SkSurfaces::RenderTarget and read_image_pixels exist); not ported in this sweep; the readback needs a real adapter (lavapipe job)"
+reason = "Blocked on missing APIs: Context::asyncRescaleAndReadPixels (the Image and Surface overloads with RescaleGamma/RescaleMode) is not ported to the wgpu context, and ManagedGraphiteTexture::MakeMipmappedFromPixmaps is not in tests/src/tools. Not a substitute read: the test reads its result through the async rescale (tests/graphite/ImageWrapTextureMipmapsTest.cpp#L25-L159)."
 span_hash = "70d48fa524bfc7e47f591b1d5ccc68650033055447b6dfd4809162c11f7e24ed"
 
 [[test]]
@@ -52446,8 +52446,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L32-L55"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "bf80ebfd8bf69ebc51624f20b8091dc79bfca61f1f393693d2e5e7cddfa12c31"
 
 [[test]]
@@ -52456,8 +52455,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L428-L472"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "461b6d6cbc0d478cea70fa75629cf06938a5e340c0cd6e70eed6cbc3abdb68b1"
 
 [[test]]
@@ -52466,8 +52464,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L59-L90"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "51b37ae404e1c4193283ad258042523e9bd6659ff8849e7095a7f4dacebbe38e"
 
 [[test]]
@@ -52476,8 +52473,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L160-L185"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "6161c31d6a34c7f29b0fcfbb5ab3d3bad7d8f09e2d5bc2c518d50e752092d1c6"
 
 [[test]]
@@ -52486,8 +52482,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L188-L211"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "5dfaeeae270429f078f5f2489b9b2587d6e585d6f849792cc32c4019fece8064"
 
 [[test]]
@@ -52496,8 +52491,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L215-L249"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "a0ea5201dd8aae025f2f573fba6b9258e24734d5a4f626813df329fd2f7a35b2"
 
 [[test]]
@@ -52506,8 +52500,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L252-L269"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "b63722db183ee8c5fb393cb691a04bfe37f8abe38c26cde24d00ac904805b957"
 
 [[test]]
@@ -52516,8 +52509,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L272-L319"
 module = "gpu"
-status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+status = "passing"
 span_hash = "ffbc33d25bcb7d0f4286c23d6bcca38d30fe9a4aef1ee67a7c87b75be6e8d852"
 
 [[test]]
@@ -52527,7 +52519,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L323-L392"
 module = "gpu"
 status = "todo"
-reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
+reason = "Partly ported; blocked on the final check. The purge and top-of-purgeable-queue checks pass on lavapipe, but the last check (testingInPurgeableQueue on the second proxy resource after its last ref is dropped) needs a ResourceBase handle that the port does not give once the resource has no refs. Needs that accessor (tests/graphite/ProxyCacheTest.cpp#L323-L392)."
 span_hash = "da5424dd8588cedb1c5630eaa9d49535aaf882853c1ca03e3e222eff4e85c801"
 
 [[test]]
