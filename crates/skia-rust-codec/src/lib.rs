@@ -31,6 +31,7 @@ pub mod ico_codec;
 pub mod image_generator_from_encoded;
 pub mod images;
 pub mod jpeg_codec;
+pub mod jpeg_xmp;
 mod mask_swizzler;
 mod masks;
 pub mod png_codec;
@@ -43,6 +44,7 @@ pub mod tiff_utility;
 pub mod wbmp;
 pub mod webp_codec;
 pub mod wuffs_codec;
+pub mod xmp;
 
 pub use codec::{
     Codec, NO_FRAME, Options, Result, ScanlineOrder, SelectionPolicy, ZeroInitialized,
