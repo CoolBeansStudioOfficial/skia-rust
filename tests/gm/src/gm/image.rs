@@ -20,27 +20,34 @@
 use crate::prelude::*;
 use skia_rust_codec::codecs::deferred_image;
 use skia_rust_codec::encode::png_encoder::{Options, encode_image};
+use skia_rust_codec::images::deferred_from_encoded_data;
 use skia_rust_codec::png_codec;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_priv::pack_argb32;
 use skia_rust_core::color_space::ColorSpace;
-use skia_rust_core::image::Image;
+use skia_rust_core::data::Data;
+use skia_rust_core::image::{Image, RequiredProperties};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::images;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::Point;
-use skia_rust_core::rect::Rect;
+use skia_rust_core::read_buffer::ReadBuffer;
+use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::sampling_options::{CubicResampler, FilterMode, MipmapMode, SamplingOptions};
+use skia_rust_core::serial_procs::{DeserialProcs, SerialProcs};
+use skia_rust_core::size::ISize;
 use skia_rust_core::stream::MemoryStream;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
 use skia_rust_raster::image_picture::{BitDepth, deferred_from_picture};
 use skia_rust_raster::pixmap_draw::{ImageMakeScaled, ImageScalePixels, scale_pixels};
 use skia_rust_raster::surfaces;
+use std::sync::Arc;
 
 // Port of: gm/image.cpp#L374-L385 (chrome/m156), new_texture_image (the GPU-only skip)
 crate::def_simple_gm_can_fail!(new_texture_image, canvas, error_msg, 280, 115, {
@@ -296,4 +303,71 @@ crate::def_simple_gm!(crbug_404394639, canvas, 500, 500, {
         .expect("scaled image");
     // Image shouldn't be different based on compiler.
     canvas.draw_image(&scaled_image, (0.0, 0.0), None);
+});
+
+// Port of: gm/image.cpp#L540-L555 (chrome/m156), make_lazy_image
+fn make_lazy_image() -> Option<Image> {
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(Rect::from_iwh(200, 200), false);
+    canvas.draw_circle((100.0, 100.0), 100.0, &Paint::default());
+    let picture = recorder.finish_recording_as_picture(None)?;
+    deferred_from_picture(
+        picture,
+        ISize::new(200, 200),
+        None,
+        None,
+        BitDepth::U8,
+        Some(ColorSpace::new_srgb()),
+        SurfaceProps::default(),
+    )
+}
+
+// Writes `img` with a PNG image procedure, then reads it back with a PNG decoder.
+// Port of: gm/image.cpp#L557-L583 (chrome/m156), serial_deserial
+fn serial_deserial(img: Option<&Image>) -> Option<Image> {
+    let img = img?;
+
+    let serial = SerialProcs {
+        image: Some(Arc::new(|img: &Image| {
+            encode_image(img, &Options::default())
+        })),
+        ..SerialProcs::default()
+    };
+    let mut writer = BinaryWriteBuffer::with_serial_procs(serial);
+    writer.write_image(img);
+    let data = writer.snapshot_as_data();
+
+    let deserial = DeserialProcs {
+        image_data: Some(Arc::new(|data: Data, alpha: Option<AlphaType>| {
+            deferred_from_encoded_data(Some(data), alpha)
+        })),
+        ..DeserialProcs::default()
+    };
+    let mut reader = ReadBuffer::with_deserial_procs(data.as_bytes(), deserial);
+    reader.read_image()
+}
+
+// Port of: gm/image.cpp#L596-L613 (chrome/m156), DEF_SIMPLE_GM_CAN_FAIL(image_subset)
+crate::def_simple_gm_can_fail!(image_subset, canvas, error_msg, 440, 220, {
+    let Some(img) = make_lazy_image() else {
+        error_msg.clear();
+        error_msg.push_str("Failed to make lazy image.");
+        return DrawResult::Fail;
+    };
+
+    // (`canvas->baseRecorder()` is null on a raster canvas.)
+    canvas.draw_image(&img, (10.0, 10.0), None);
+
+    let subset = img.make_subset(
+        IRect::from_xywh(100, 100, 100, 100),
+        RequiredProperties::default(),
+    );
+    if let Some(subset) = &subset {
+        canvas.draw_image(subset, (220.0, 10.0), None);
+    }
+    let subset = serial_deserial(subset.as_ref());
+    if let Some(subset) = &subset {
+        canvas.draw_image(subset, (220.0 + 110.0, 10.0), None);
+    }
+    DrawResult::Ok
 });
