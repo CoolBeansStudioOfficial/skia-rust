@@ -767,3 +767,13 @@ If a future caller needs exact expat parity beyond this surface (error positions
 | `SkImage::RescaleGamma`, `SkImage::RescaleMode` | `skia_rust_core::image::{RescaleGamma, RescaleMode}` | enum variants keep Skia names (`Src`, `Linear`, `Nearest`, `RepeatedLinear`, `RepeatedCubic`) |
 | `SkImages::GenerateMipmapsFromBase` | `image_factories::GenerateMipmapsFromBase` (`No`, `Yes`) | |
 | `SkImages::WrapTexture(..., genMipmaps, releaseP, releaseC)` | `image_factories::wrap_texture_for_alpha_type_with_mipmaps`, `wrap_texture_with_release` | the release callback is an `Option<CallbackProc>`; the existing six-argument functions delegate with `genMipmaps` = No |
+
+**SVG canvas (`skia_rust_svg::{canvas, device}`, milestone M16 of `docs/design/modules.md`)**
+
+| Skia / skia-safe | skia-rust | deviation |
+|---|---|---|
+| `SkSVGCanvas::Flags`, `SkSVGCanvas::Options`, `EncodePngCallback` | `canvas::{Flags (bitflags), Options, EncodePngCallback}` | `EncodePngCallback` is `fn(&mut dyn WStream, &Pixmap) -> bool`; `png_encoder: None` is the legacy default (`SkPngEncoder::Encode`) |
+| `SkSVGCanvas::Make(bounds, SkWStream*, Options)` | `canvas::make(&Rect, SharedStream, Options) -> Canvas` | the stream is an `Rc<RefCell<dyn WStream>>` because a Rust canvas owns its device and cannot borrow the stream. `Make(bounds, stream, uint32_t flags)` is `Options { flags, .. }` |
+| `skia_safe::svg::Canvas::new(bounds, flags)`, `end()` | `canvas::Canvas::new`, `end() -> Data` | same shape; collects the output in a `DynamicMemoryWStream` |
+| `SkSVGDevice::Make(size, unique_ptr<SkXMLWriter>, Options)` | `device::SvgDevice::make(ISize, Box<dyn XmlWriter>, Options) -> Box<dyn Device>` | `XmlStreamWriter::new_owned` and `XmlParserWriter::new_owned` make writers that own their sink, and `Dom::begin_parsing_shared` hands out a parser that a writer can own (`SkDOM::beginParsing` returns a pointer) |
+| `SkClipStackDevice` | `skia_rust_raster::clip_stack_device::ClipStackDevice` (re-exported by `skia_rust_pdf::clip_stack_device`) | moved from the PDF crate so that the SVG device shares it |

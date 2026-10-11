@@ -26,10 +26,16 @@ use skia_rust_effects::image_filters;
 use skia_rust_gpu::gpu::gpu_types::Mipmapped;
 use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::surface_graphite::Surface;
-use skia_rust_gpu::graphite::wgpu::{WgpuContext, adapter_backend_context, make_context};
+use skia_rust_gpu::graphite::wgpu::{
+    AdapterTestContext, WgpuContext, make_context, serialized_adapter_context,
+};
 
-fn real_context() -> Option<WgpuContext> {
-    let Some((backend_context, info)) = adapter_backend_context(wgpu::Backends::all()) else {
+/// A context on the binary's one shared device, with the adapter test lock held (see
+/// `skia_rust_gpu::graphite::wgpu::serialized_adapter_context`).
+fn real_context() -> Option<AdapterTestContext<WgpuContext>> {
+    let Some((context, info)) = serialized_adapter_context(|backend_context| {
+        make_context(backend_context, &ContextOptions::default()).expect("a context")
+    }) else {
         assert!(
             std::env::var_os("SKIA_RUST_REQUIRE_ADAPTER").is_none(),
             "SKIA_RUST_REQUIRE_ADAPTER is set but there is no adapter"
@@ -41,7 +47,7 @@ fn real_context() -> Option<WgpuContext> {
         "adapter: {} ({:?}, {:?})",
         info.name, info.backend, info.device_type
     );
-    Some(make_context(&backend_context, &ContextOptions::default()).expect("a context"))
+    Some(context)
 }
 
 fn rgba(w: i32, h: i32) -> ImageInfo {

@@ -3,8 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/ImageNewShaderTest.cpp (chrome/m156)
 //
-// Not ported: `ImageNewShader_GPU` (Ganesh) and `ImageRawShader` (decodes
-// `images/mandrill_32.png`; image decoding is not ported).
+// Not ported: `ImageNewShader_GPU` (Ganesh).
 
 #![cfg(test)]
 
@@ -19,7 +18,7 @@ use skia_rust_core::tile_mode::TileMode;
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
 
-use crate::{Reporter, def_tier_test, reporter_assert};
+use crate::{Reporter, def_test, def_tier_test, reporter_assert};
 
 // Port of: tests/ImageNewShaderTest.cpp#L38-L41 (chrome/m156)
 fn test_bitmap_equality(reporter: &mut Reporter, bm1: &Bitmap, bm2: &Bitmap) {
@@ -126,5 +125,37 @@ def_tier_test!(ImageNewShader, |reporter| {
         &mut source_surface,
         &mut destination_surface,
         &info,
+    );
+});
+
+// Port of: tests/ImageNewShaderTest.cpp#L160-L169 (chrome/m156)
+def_test!(ImageRawShader, |reporter| {
+    use crate::resources::get_resource_as_image;
+    use skia_rust_core::sampling_options::{CubicResampler, FilterMode, MipmapMode};
+
+    let image = get_resource_as_image("images/mandrill_32.png");
+    reporter_assert!(reporter, image.is_some());
+    let Some(image) = image else {
+        return;
+    };
+
+    // We should be able to turn this into a "raw" image shader:
+    reporter_assert!(
+        reporter,
+        image
+            .to_raw_shader(
+                None,
+                SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
+                None
+            )
+            .is_some()
+    );
+
+    // ... but not if we request cubic filtering
+    reporter_assert!(
+        reporter,
+        image
+            .to_raw_shader(None, CubicResampler::mitchell(), None)
+            .is_none()
     );
 });

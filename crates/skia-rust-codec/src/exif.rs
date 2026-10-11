@@ -65,7 +65,7 @@ pub struct Metadata {
 /// Port of `SkEncodedOrigin` from its Exif value (1 to 8). `None` for other values.
 // Port of: include/codec/SkEncodedOrigin.h (the enum's values), with the range check of
 // src/codec/SkExif.cpp#L112 (`0 < value && value <= kLast_SkEncodedOrigin`)
-fn origin_from_value(value: u16) -> Option<EncodedOrigin> {
+pub(crate) fn origin_from_value(value: u16) -> Option<EncodedOrigin> {
     Some(match value {
         1 => EncodedOrigin::TopLeft,
         2 => EncodedOrigin::TopRight,

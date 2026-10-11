@@ -64,6 +64,7 @@ pub mod color_test;
 pub mod convert_pixels_test;
 #[cfg(test)]
 pub mod core_blitters_test;
+pub mod cpu_backend_test;
 #[cfg(test)]
 pub mod cubic_map_test;
 #[cfg(test)]
@@ -139,6 +140,8 @@ pub mod gradient_test;
 #[cfg(test)]
 pub mod graphite;
 #[cfg(test)]
+pub mod hdr_metadata_test;
+#[cfg(test)]
 pub mod high_contrast_filter_test;
 #[cfg(test)]
 pub mod hsv_round_trip_test;
@@ -176,6 +179,7 @@ pub mod json_test;
 pub mod m44_test;
 #[cfg(test)]
 pub mod malloc_pixel_ref_test;
+pub mod mask_cache_test;
 #[cfg(test)]
 pub mod math_test;
 #[cfg(test)]
@@ -344,7 +348,9 @@ pub mod pdf_tagged_table_test;
 pub mod pdf_tagged_test;
 #[cfg(test)]
 pub mod picture_bbh_test;
+#[cfg(test)]
 pub mod picture_shader_test;
+#[cfg(test)]
 pub mod picture_test;
 #[cfg(test)]
 pub mod pixel_ref_test;
@@ -352,6 +358,7 @@ pub mod pixel_ref_test;
 pub mod pixels_rec_test;
 #[cfg(test)]
 pub mod png_gainmap_test;
+#[cfg(test)]
 #[cfg(test)]
 pub mod point3_test;
 #[cfg(test)]
@@ -399,6 +406,8 @@ pub mod round_rect_test;
 #[cfg(test)]
 pub mod runtime_blend_test;
 #[cfg(test)]
+pub mod rust_exif_test;
+#[cfg(test)]
 pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
@@ -407,6 +416,8 @@ pub mod scale_to_sides_test;
 #[cfg(test)]
 pub mod serialization_test;
 #[cfg(test)]
+pub mod shader_image_filter_test;
+pub mod shader_opacity_test;
 pub mod shader_test;
 #[cfg(test)]
 pub mod shadow_test;
@@ -431,9 +442,16 @@ pub mod sk_glyph_test;
 #[cfg(test)]
 pub mod sk_image_test;
 #[cfg(test)]
+pub mod sk_jpeg_rust_codec_test;
+#[cfg(test)]
 pub mod sk_jpeg_xmp_test;
 #[cfg(test)]
 pub mod sk_path_range_iter_test;
+#[cfg(test)]
+pub mod sk_png_rust_decoder_test;
+#[cfg(test)]
+pub mod sk_png_rust_encoder_test;
+#[cfg(test)]
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
@@ -483,6 +501,8 @@ pub mod stroke_test;
 pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
+#[cfg(test)]
+pub mod svg_device_test;
 #[cfg(test)]
 pub mod swizzler_test;
 #[cfg(test)]

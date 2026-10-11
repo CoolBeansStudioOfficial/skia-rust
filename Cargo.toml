@@ -30,9 +30,13 @@ members = [
     "tests",
     "tests/gm",
     "tests/tools",
+    "fuzz",
     "oracle/rp-diff",
     "xtask",
 ]
+# The cargo-fuzz package needs nightly and libfuzzer-sys, so it is its own workspace and stable
+# builds of this one never see it (docs/design/fuzz.md §4).
+exclude = ["fuzz/libfuzzer"]
 
 [workspace.package]
 version = "0.156.0"
@@ -67,6 +71,13 @@ skia-rust-skottie = { path = "crates/skia-rust-skottie", version = "0.156.0" }
 skia-rust-sksg = { path = "crates/skia-rust-sksg", version = "0.156.0" }
 skia-rust-resources = { path = "crates/skia-rust-resources", version = "0.156.0" }
 bitflags = "2"
+png = "=0.18.1"
+# Skia m156 MODULE.bazel pins for the Rust-backed JPEG codec and encoder (codecs.md C-R2): the
+# decoder is zune-jpeg, with zune-core for its byte streams and options; the encoder is
+# jpeg-encoder. Exact versions, bumped only with a Skia milestone bump.
+zune-jpeg = "=0.5.16-rc1"
+zune-core = { version = "=0.5.3", features = ["std"] }
+jpeg-encoder = "=0.6.0"
 # wgpu backend of Graphite (docs/design/gpu.md §4.1, R7): pinned exactly, bumps are their own PRs.
 # `default-features = false`: each target picks its backends in crates/skia-rust-gpu/Cargo.toml.
 wgpu = { version = "=30.0.1", default-features = false }

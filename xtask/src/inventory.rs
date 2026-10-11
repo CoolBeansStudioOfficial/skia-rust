@@ -12,7 +12,7 @@ use walkdir::WalkDir;
 
 use crate::cpp;
 use crate::skia::{self, Pin};
-use crate::{verify, verify_benches, verify_gms, verify_sksl};
+use crate::{verify, verify_benches, verify_fuzz, verify_gms, verify_sksl};
 
 const MANIFEST: &str = "inventory/manifest.toml";
 
@@ -174,18 +174,40 @@ pub fn module_path(root: &Path, id: &str) -> Result<()> {
         println!("{key}\n{name:?}");
         return Ok(());
     }
+    if entry.kind == Kind::Fuzz {
+        // The replay test `def_fuzz!` generates (docs/design/fuzz.md §1).
+        let key = verify_fuzz::fuzz_key(id).with_context(|| format!("can't map `{id}`"))?;
+        println!("{key}");
+        return Ok(());
+    }
     ensure!(
         entry.kind == Kind::Unit,
-        "`{id}` is not a unit test or bench"
+        "`{id}` is not a unit test, bench or fuzzer"
     );
     let path = verify::module_path(id).with_context(|| format!("can't map `{id}`"))?;
     println!("{path}");
     Ok(())
 }
 
-/// Runs the ported unit tests and checks them against the manifest. With `update`,
-/// marks newly passing entries `passing` and failing ported ones `failing`.
-pub fn verify(root: &Path, update: bool) -> Result<()> {
+/// The legs of `inventory verify`, for `--only`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub enum Leg {
+    /// Unit tests (`skia-rust-tests`).
+    Unit,
+    /// GMs (`gm-verify`).
+    Gm,
+    /// `SkSL` goldens.
+    SkslGolden,
+    /// Benches (`bench-verify`).
+    Bench,
+    /// Fuzzers (the corpus replay of `skia-rust-fuzz`).
+    Fuzz,
+}
+
+/// Runs the ported unit tests, GMs, `SkSL` goldens, benches and fuzzers (or only the leg
+/// `only`) and checks them against the manifest. With `update`, marks newly passing entries
+/// `passing` and failing ported ones `failing`.
+pub fn verify(root: &Path, update: bool, only: Option<Leg>) -> Result<()> {
     let mut m = read_manifest(root)?;
     let entries = |kind: Kind| -> Vec<(String, String)> {
         m.tests
@@ -194,32 +216,50 @@ pub fn verify(root: &Path, update: bool) -> Result<()> {
             .map(|e| (e.id.clone(), status_name(e.status).to_owned()))
             .collect()
     };
-    let unit_entries = entries(Kind::Unit);
-    let gm_entries = entries(Kind::Gm);
-    let golden_entries = entries(Kind::SkslGolden);
-    let bench_entries = entries(Kind::Bench);
-    let unit_results = verify::run_ported_tests(root)?;
-    let unit = verify::check(&unit_entries, &unit_results, verify::adapter_cfg_enabled());
-    let gms = verify_gms::check(&gm_entries, &verify_gms::run_gm_verify(root)?);
-    let goldens = match verify_sksl::run_sksl_golden_verify(root)? {
-        Some(results) => verify_sksl::check(&golden_entries, &results),
-        None => verify::Report::default(),
-    };
-    let benches = verify_benches::check(&bench_entries, &verify_benches::run_bench_verify(root)?);
+    let runs = |leg: Leg| only.is_none_or(|only| only == leg);
+    let mut reports: Vec<(verify::Report, &str)> = Vec::new();
+    if runs(Leg::Unit) {
+        let results = verify::run_ported_tests(root)?;
+        let report = verify::check(
+            &entries(Kind::Unit),
+            &results,
+            verify::adapter_cfg_enabled(),
+        );
+        reports.push((report, "unit test"));
+    }
+    if runs(Leg::Gm) {
+        let report = verify_gms::check(&entries(Kind::Gm), &verify_gms::run_gm_verify(root)?);
+        reports.push((report, "GM"));
+    }
+    if runs(Leg::SkslGolden) {
+        let report = match verify_sksl::run_sksl_golden_verify(root)? {
+            Some(results) => verify_sksl::check(&entries(Kind::SkslGolden), &results),
+            None => verify::Report::default(),
+        };
+        reports.push((report, "SkSL golden"));
+    }
+    if runs(Leg::Bench) {
+        let results = verify_benches::run_bench_verify(root)?;
+        reports.push((
+            verify_benches::check(&entries(Kind::Bench), &results),
+            "bench",
+        ));
+    }
+    if runs(Leg::Fuzz) {
+        let results = verify_fuzz::run_fuzz_replay(root)?;
+        reports.push((verify_fuzz::check(&entries(Kind::Fuzz), &results), "fuzzer"));
+    }
     if update {
-        for report in [&unit, &gms, &goldens, &benches] {
+        for (report, _) in &reports {
             apply_update(&mut m, report);
         }
         write_manifest(root, &m)?;
     }
-    let unit_result = verify::finish(&unit, update, "unit test");
-    let gm_result = verify::finish(&gms, update, "GM");
-    let golden_result = verify::finish(&goldens, update, "SkSL golden");
-    let bench_result = verify::finish(&benches, update, "bench");
-    unit_result
-        .and(gm_result)
-        .and(golden_result)
-        .and(bench_result)
+    let mut result = Ok(());
+    for (report, what) in &reports {
+        result = result.and(verify::finish(report, update, what));
+    }
+    result
 }
 
 /// Marks newly passing entries `passing` and failing ported ones `failing`.
@@ -238,6 +278,7 @@ fn apply_update(m: &mut Manifest, report: &verify::Report) {
                     Kind::Gm => "ported GM does not match the goldens",
                     Kind::SkslGolden => "compiled output does not match the golden",
                     Kind::Bench => "ported bench fails its smoke run",
+                    Kind::Fuzz => "ported fuzzer panics or hangs on its corpus",
                     _ => "ported test fails",
                 };
                 reason.clone_into(&mut e.reason);

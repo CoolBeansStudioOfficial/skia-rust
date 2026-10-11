@@ -10,7 +10,7 @@
 //   checks of the C++ iterators. The length check above them covers the same contract, and
 //   slices are never null.
 
-use crate::{Reporter, def_test, reporter_assert};
+use crate::{Reporter, def_serial_test, def_test, reporter_assert};
 use skia_rust_core::scalar::Scalar;
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::stream::{DynamicMemoryWStream, WStream};
@@ -426,8 +426,8 @@ def_test!(JSON_DOM_build, |reporter| {
     );
 });
 
-// Port of: tests/JSONTest.cpp#L438-L498 (chrome/m156)
-def_test!(JSON_ParseNumber, |reporter| {
+// Port of: tests/JSONTest.cpp#L438-L498 (chrome/m156), a DEF_SERIAL_TEST
+def_serial_test!(JSON_ParseNumber, |reporter| {
     // (string, value, tolerance)
     let g_tests: &[(&str, scalar, scalar)] = &[
         ("0", 0.0, 0.0),

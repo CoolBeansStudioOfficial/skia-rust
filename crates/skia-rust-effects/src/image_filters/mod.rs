@@ -26,6 +26,7 @@ pub mod matrix_transform_filter;
 pub mod merge_filter;
 pub mod morphology_filter;
 pub mod picture_filter;
+pub mod runtime_image_filter;
 pub mod shader_filter;
 
 pub use blend_filter::{arithmetic, blend, blend_with_blender};
@@ -46,4 +47,5 @@ pub use matrix_transform_filter::{matrix_transform, offset};
 pub use merge_filter::merge;
 pub use morphology_filter::{dilate, erode};
 pub use picture_filter::picture;
+pub use runtime_image_filter::{runtime_shader, runtime_shader_children};
 pub use shader_filter::{Dither, shader};

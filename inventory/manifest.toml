@@ -15743,7 +15743,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L88-L101"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "15f6918a93263665e207f33d47ceb1482da8731b1f5b7cb762c47bd4dc4dbad8"
 
 [[test]]
@@ -15752,7 +15752,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L180-L183"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); draws through a Ganesh mock GrDirectContext"
 span_hash = "a53709fcba7dda47263dc044d38d74d51ab2c3433b5cb5f077b9ccac2e50d00e"
 
 [[test]]
@@ -15761,7 +15762,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L201-L211"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); draws through a Ganesh GL GrDirectContext"
 span_hash = "7ef203989d2788427f3bcf9ff37506055015e9e941ee1596c56b2363cc6c99d6"
 
 [[test]]
@@ -15770,7 +15772,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L47-L49"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c61376d2f97a328c9dc1a444cdbbb3b13f44d5c1ef928f030e6288b1f36ead56"
 
 [[test]]
@@ -15779,8 +15781,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L214-L219"
 module = "pdf"
-status = "todo"
-reason = "the fuzz harness is not ported (M27); the PDF canvas itself exists (M25)"
+status = "passing"
 span_hash = "690b3cd731e6c353430dce3f46520e8a47b00797a75432a59d0ff6f6458f5be6"
 
 [[test]]
@@ -15789,7 +15790,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L53-L58"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8950aed9b32a880fc3d5c6e6df0b7971cb0b873dd02a74a0030d2193b0c5cee4"
 
 [[test]]
@@ -15799,6 +15800,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
 status = "todo"
+reason = "needs SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L228), the buffer reader of a serialized picture, which is not ported (Picture::from_data reads the stream form, another function); Skia may signalBug on every input here, since serialize writes a tag where MakeFromBuffer reads its marker; needs an oracle check"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
@@ -15808,6 +15810,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
 status = "todo"
+reason = "the fuzz crate (docs/design/fuzz.md) is not on main; SvgDevice and svg::canvas::make are ready for it"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -15817,6 +15820,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L107-L167"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilter::serialize and SkImageFilter::Deserialize, which are not ported; the bit flips read once per serialized byte, so the reads depend on the output"
 span_hash = "856b16a4f26126f72b3e99aff969d63f6cce7cd0b33b56825981db99d64ce6d2"
 
 [[test]]
@@ -15825,7 +15829,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L222-L235"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "debug helper, not a fuzzer: replays an input into a DebugCanvas and prints its JSON"
 span_hash = "2e75ae89aee52e68b7ef8b20fe42f574eb723492b01adba6091dceef7f2e4ff8"
 
 [[test]]
@@ -15834,7 +15839,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCreateDDL.cpp#L212-L241"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes Ganesh deferred display lists"
 span_hash = "a77443409be3185f2e2fa32e742d5beb17630cf5577756fb1ef48ef36f906ccb"
 
 [[test]]
@@ -15843,7 +15849,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCubicRoots.cpp#L76-L92"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5488fc44d0a915d8cd8c6902a9cb8027c98fd08a752f062013364035a1547519"
 
 [[test]]
@@ -15852,7 +15858,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzDDLThreading.cpp#L303-L305"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes Ganesh DDL threading on GL"
 span_hash = "48848edeee705b4479755070973f588c3ff15e67f5536fe14ace5c3cab68f611"
 
 [[test]]
@@ -15861,7 +15868,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzDrawFunctions.cpp#L293-L333"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "156d377dea4e91a85ff250cc2456d73844094cc96a11f168811fa47eb419eb1a"
 
 [[test]]
@@ -15870,7 +15877,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L79-L86"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e5a447afbe35d5f8901fa5ec04766e0faece8f38e1c83bba81514133d194f121"
 
 [[test]]
@@ -15879,7 +15886,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L46-L53"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e589fa49a1abdbc7f16be5e9be6dd1193716944d56dd9892fb7d55fa271a5a74"
 
 [[test]]
@@ -15889,6 +15896,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L57-L76"
 module = "codec"
 status = "todo"
+reason = "deferred: the fuzz crate (skia-rust-fuzz, docs/PORTING.md 14) is on origin/port/fuzz, not on this base; port after port/fuzz lands. The encoder itself is ported (SkPngRustEncoder, C-R1)"
 span_hash = "543b7e8452e854872c285d411fdb70b0a56eafb38de0e430abb3e04a00cf9a52"
 
 [[test]]
@@ -15897,7 +15905,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L88-L102"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e3a56ae9393a5600b2ad022de0530265e451d1a2fe3dff5fbc423cbd6ae465ca"
 
 [[test]]
@@ -15906,7 +15914,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L106-L146"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "corpus-writing helper, not a fuzzer; skia_rust_fuzz::seeds builds the encoder seeds in its format (docs/design/fuzz.md §2)"
 span_hash = "664aabf3fc9000257ba630bf6ead0494b9081dec9250fa1779ae11729f84649c"
 
 [[test]]
@@ -15915,7 +15924,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzGrStyledShape.cpp#L17-L89"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes GrStyledShape"
 span_hash = "aae1265149015410ed5d34cc566232e7c870eb96ce85fe1eb22f988504725ad2"
 
 [[test]]
@@ -15924,7 +15934,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzGradients.cpp#L254-L275"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ade74d0c93bc20242a7f2b30ee996aa15e75df89c2ba5be55eb7331c3bcb52b3"
 
 [[test]]
@@ -15933,7 +15943,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzParsePath.cpp#L121-L132"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1f9c0f4dca07251e62fe55f94284090bc23a8e617d35c6beb076ac8740c8a86e"
 
 [[test]]
@@ -15942,7 +15952,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathMeasure.cpp#L17-L40"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "72720a14776fd46f285af5c48400e07c2931a4cb9a6c0cc333b47fdb3c889c3c"
 
 [[test]]
@@ -15951,8 +15961,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L181-L197"
 module = "pathops"
-status = "todo"
-reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
+status = "passing"
 span_hash = "6b6fe5290d6ecba05b6fde31cf3a5e954c97a2531291143bec1053ceacfd42ab"
 
 [[test]]
@@ -15961,8 +15970,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L19-L106"
 module = "pathops"
-status = "todo"
-reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
+status = "passing"
 span_hash = "ccda0ca5379db92b0be4cf59eef4260bc3c6d69a1e295ff6586526b5ffca84c5"
 
 [[test]]
@@ -15971,7 +15979,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPolyUtils.cpp#L28-L63"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "857c9daf3a47fca885c5d71f6150a1d30e03210dfd49825d8e58ca0654ff3758"
 
 [[test]]
@@ -15980,7 +15988,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPolyUtils.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "the empty PolyUtils of SK_ENABLE_OPTIMIZE_SIZE builds; skia-rust ports the full one (PolyUtils)"
 span_hash = "bc424c8f7cc79cefd7e228f4f849d35d2c89ff1f30e033267ea3d191783bd044"
 
 [[test]]
@@ -15990,6 +15999,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzPrecompile.cpp#L433-L452"
 module = "core"
 status = "todo"
+reason = "Graphite precompile on a mock Context: a later fuzz slice (docs/design/fuzz.md §6)"
 span_hash = "27c728e42c9bd3d4345a1996cd92e32663a10a0554e4c0fb37a3e044ea8a900f"
 
 [[test]]
@@ -15998,7 +16008,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzQuadRoots.cpp#L36-L48"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0ceddd79c301ee3329bc352a0d60b0ec154691301aa240da3aaf24f402ba7eec"
 
 [[test]]
@@ -16007,7 +16017,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzRegionOp.cpp#L11-L19"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5a55285715b9ccf14f415aa01ca93b926e9b9c46612797d01cf962a2d926861e"
 
 [[test]]
@@ -16017,6 +16027,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzSkParagraph.cpp#L262-L288"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules.md M10)"
 span_hash = "a871566365cd66d25552b4f1380950664ab8ab49d06ef30da358ccb586cce942"
 
 [[test]]
@@ -16025,7 +16036,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzTriangulation.cpp#L16-L36"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes GrTriangulator with GrCpuVertexAllocator (src/gpu/ganesh/geometry), which only Ganesh's path renderers use"
 span_hash = "71b8224b5658715137e75c353265edfddb957ebda2434a1b8138ab650060e373"
 
 [[test]]
@@ -16380,8 +16392,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/annotated_text.cpp#L38-L53"
 module = "text"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawAnnotation) is stale because drawAnnotation has landed; SkAnnotateRectWithURL still needs checking"
+status = "passing"
 span_hash = "5e76b934fce5941e1feef6e78eca1638a662e0d0f457096816a44d522db27794"
 
 [[test]]
@@ -16455,8 +16466,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L771-L771"
 module = "raster"
-status = "todo"
-reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
+status = "passing"
 span_hash = "c92a3a6925413b25b011751846fdf85cf77b6adf7d82ecfcc5cdf8d9f6e965ab"
 
 [[test]]
@@ -16465,8 +16475,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L676-L676"
 module = "raster"
-status = "todo"
-reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
+status = "passing"
 span_hash = "465a4037c5bee5b7922a5a72155a57a6313aa493558380d0605741780a166d98"
 
 [[test]]
@@ -16484,8 +16493,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L507-L513"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "050520a4ae95bd2322529cd8884575c3ca7e4d89f960bcfed9a58f757e69d5f0"
 
 [[test]]
@@ -16494,8 +16502,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L515-L521"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "b077c0f1394e2ac07d5799531a45dec38b1ca7bfa1809f153992f9917130025e"
 
 [[test]]
@@ -16504,8 +16511,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L523-L529"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "a38529b2ccf21bffc37dcee2b6176743b6617f25f32f4a218369923241423ca1"
 
 [[test]]
@@ -16514,8 +16520,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L531-L537"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "69dea62989952f64a3a991dabfd8bfe440dd8150bd82537ba1d1479021ed1939"
 
 [[test]]
@@ -16524,8 +16529,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L539-L545"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "ea8d5b9cfa4a3cc414c744780d0e59ef1f4a0e48da4e66943a497e86a85d99ea"
 
 [[test]]
@@ -16535,7 +16539,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L483-L489"
 module = "codec"
 status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+reason = "YUV[A]420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
 span_hash = "c20c68c8ff2779eb0ecbd4fd15157002c23a2d63b9ae7a23fbf4e5fa5d58da04"
 
 [[test]]
@@ -16545,7 +16549,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L491-L497"
 module = "codec"
 status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+reason = "YUV420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
 span_hash = "59cb3f4b6de73888618938253e0b6da6b3d2d0679009c532000efeda1ced7ead"
 
 [[test]]
@@ -16554,8 +16558,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L499-L505"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "6aa09cbd3de950255007f8b179bee644c6e94255bfb9e345e8c703dbf64db457"
 
 [[test]]
@@ -16820,8 +16823,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmapfilters.cpp#L114-L114"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawString) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "4a54a347805cb06f730a513d432ca1b641b0529564ec49481cd55f1e95f63600"
 
 [[test]]
@@ -18482,8 +18484,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L217-L252"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "9a227536ce82bd3b777ba2211c8648dbeb55e65e89090865eefbcd968387f5a5"
 
 [[test]]
@@ -18510,8 +18511,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L270-L332"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "13109a333ef7c60d740d02a953da9f79c47a27e79d6c7f6d4929e71e1bd24ffe"
 
 [[test]]
@@ -18520,8 +18520,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L391-L484"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "7c8b35a69e977c06929283db1a7222bfed66adf5dbeaa6d75ce025d14f101209"
 
 [[test]]
@@ -18638,8 +18637,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L107-L148"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: SkShaders::MakeTurbulence and the image-filter Shader/ColorFilter/Compose factories are on main; re-check"
+status = "passing"
 span_hash = "6835bce8d9ed6bcd46b89b14f1646705578ee3334127219f47d876ce49c993fe"
 
 [[test]]
@@ -19718,8 +19716,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L264-L302"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (resource stream) is stale because get_resource_as_stream exists; re-check the blob path"
+status = "passing"
 span_hash = "3713bba18f7836b70cbec27269bbdb4751da8f35ad7313bac51371539eb38710"
 
 [[test]]
@@ -19890,8 +19887,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/dropshadowimagefilter.cpp#L85-L127"
 module = "effects"
-status = "todo"
-reason = "needs SkColorSpace::makeColorSpin (not ported) for the DropShadow overload that takes a colour space"
+status = "passing"
 span_hash = "14564fc8f4648e343f9278188f7471b3861a7851ec0c1d7f0ba97f1582c7b718"
 
 [[test]]
@@ -21706,8 +21702,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image.cpp#L369-L369"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::scalePixels for lazy codec images (SkCodecs::DeferredImage) and picture images (DeferredFromPicture); SkImage::scalePixels is not ported"
+status = "passing"
 span_hash = "aa20d177008cda2664b23d80ad5967dc81d8bce23e9f02371e8ca5ae6de7f87d"
 
 [[test]]
@@ -21716,8 +21711,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image.cpp#L370-L370"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::makeScaled (not ported)"
+status = "passing"
 span_hash = "15cc182d8f1a021d04c45e057f5dec612e3d62b51129409ab7b7ed9a9920e029"
 
 [[test]]
@@ -21726,8 +21720,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L615-L644"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::makeScaled (not ported)"
+status = "passing"
 span_hash = "fd4a8cec806633fb20aed93717c8687109ec1d104e8b2781e5af78be420ebc04"
 
 [[test]]
@@ -22185,8 +22178,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagemasksubset.cpp#L96-L114"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (DeferredFromGenerator) is stale because images::deferred_from_generator is on main; re-check the generator subclass"
+status = "passing"
 span_hash = "d0a004b20d2d57273739a62945bceb673d55a05def23780a3da3cf59b747387f"
 
 [[test]]
@@ -23582,8 +23574,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureimagefilter.cpp#L159-L159"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "93554f90877793b02dc492e2db40d726b3eb38ad1f2a9b7399ca81f6beee5183"
 
 [[test]]
@@ -23793,7 +23784,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/rasterhandleallocator.cpp#L276-L308"
 module = "raster"
 status = "todo"
-reason = "needs SkRasterHandleAllocator (the canvas raster-handle allocator; device.rs notes it is not ported)"
+reason = "needs SkRasterHandleAllocator (MakeCanvas, allocBitmap, accessTopRasterHandle, updateHandle; fAllocator and fRasterHandle on SkBitmapDevice). Skia's raster handle is a raw SkCanvas* owned by the allocator, with no safe Rust form here (no unsafe outside skia-rust-simd), so this is not a small port"
 span_hash = "5afd0e0a19db99156439684604da1ac4b568aa96452c74f7dc99a6219a0f5989"
 
 [[test]]
@@ -23913,8 +23904,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrect.cpp#L315-L315"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "8f8f0a49a7c24ea9b6edaaaf5195079ac982a5ca16ade39d37784ad94d85c972"
 
 [[test]]
@@ -24032,8 +24022,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
+status = "passing"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]
@@ -24042,8 +24031,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeimagefilter.cpp#L81-L111"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
+status = "passing"
 span_hash = "8415cadfee6eba60dd9f8c94b2e8f5512e54750ad54a3e7b0f59c1399b4083fe"
 
 [[test]]
@@ -24052,8 +24040,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L267-L318"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "dd098ded396b100e48be8e2f458eb32b103383ae81576ff9f9c91bfe800865c6"
 
 [[test]]
@@ -24072,8 +24059,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L238-L264"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "eab99248a8d97aabd7eaeab47f7d2d7f5219f70165478f55757e292a7472d5fa"
 
 [[test]]
@@ -24082,8 +24068,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L382-L415"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "b087a0d1ab68e8b8e4e25a8ee958680b73af987bc97a275d4e636ff03e39c8ec"
 
 [[test]]
@@ -24092,8 +24077,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L516-L561"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "6441ea4bd56b1873738d8f7febdb922a517acf54516f7e2d52bdfb8d28638b16"
 
 [[test]]
@@ -24102,8 +24086,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L603-L639"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "98b4f8d5e1c960bab8308c8bd893583ae43f848302c2e0a5bc507e0702738311"
 
 [[test]]
@@ -24112,8 +24095,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L165-L195"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "d358f02dcbd27389839c19338e2192d07d4c4cfafe8f82c7bdf6e8e07f965f95"
 
 [[test]]
@@ -24285,8 +24267,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/samplerstress.cpp#L147-L147"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (SkPngEncoder) is stale because the PNG encoder has landed; re-check make_codec_image"
+status = "passing"
 span_hash = "b4a3cbd751c646cb375131c9fb1a10777e1fc2d25ea27f28aeeb991303414621"
 
 [[test]]
@@ -25204,8 +25185,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/surface.cpp#L170-L170"
 module = "text"
-status = "todo"
-reason = "not attempted in this sweep: SurfacePropsGM is not written yet (text and gradients)"
+status = "passing"
 span_hash = "54b4394be45f96ff10a15149f8616c2e2715dbd99b95efad49070c163b7f3c71"
 
 [[test]]
@@ -25852,8 +25832,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/vertices.cpp#L207-L207"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: drawVertices/drawPatch are ported; the GM's gradient shader path needs checking"
+status = "passing"
 span_hash = "4d8869c55c1eb6620ad0f14f2460a0de7ea469ffde7a302af3f2bac26e920276"
 
 [[test]]
@@ -28974,7 +28953,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L97-L112"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "c84f94e6f49b3fd2a612096f1e23e5f22d4f7bd91462d0d2a4172728772c23dd"
 
 [[test]]
@@ -28983,7 +28962,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L114-L130"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "93e5366149c13907b8a44e6ce209a00a886b7e95c77b9cb8f978986cdd256c5c"
 
 [[test]]
@@ -29317,8 +29296,7 @@ kind = "unit"
 macro = "DEF_SERIAL_TEST"
 source = "tests/BadIcoTest.cpp#L115-L117"
 module = "codec"
-status = "todo"
-reason = "needs SkPngRustDecoder (codecs C-R, not ported)"
+status = "passing"
 span_hash = "ec94bc675078f73d9eb865b37a30e9add01b94fe45f4e99fe655937849183492"
 
 [[test]]
@@ -29662,8 +29640,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L451-L510"
 module = "effects"
-status = "todo"
-reason = "tests GrBlurUtils::ComputeBlurredRRectParams, a Ganesh helper (SK_GANESH only)"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e8113eb7274ae6167f2fe94e27779117074326184a02a789c4fbf9993e11afd0"
 
 [[test]]
@@ -29691,8 +29669,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L674-L710"
 module = "effects"
-status = "todo"
-reason = "needs the blur image filter (SkImageFilters::Blur/Offset), Phase 3"
+status = "passing"
 span_hash = "16168b90b74b85588f21cb1da754c3ee44d07163e06b650ae35c13637f5e3e17"
 
 [[test]]
@@ -29730,7 +29707,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CPUBackendTest.cpp#L21-L44"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "cc04b02c3d8c99acabf53b00d70fec932d119a157fcfd242fbe92ec5f4bf40f8"
 
 [[test]]
@@ -29871,8 +29848,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L656-L678"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::Blur (image filters, Phase 3)"
+status = "passing"
 span_hash = "6458ecd400f32c021dadecb44127867458044e250bc27f1fe0adaf9214813166"
 
 [[test]]
@@ -29891,8 +29867,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L627-L635"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::Empty (image filters, Phase 3)"
+status = "passing"
 span_hash = "fd424754688b2854e68eb312142b5201a8dbeaf97a965a03b2fbb627ca6db8de"
 
 [[test]]
@@ -30490,8 +30465,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2444-L2519"
 module = "codec"
-status = "failing"
-reason = "fails exactly: the JPEG cases compare a lossy decode (7 to 17 off per channel) with an unencoded render, which no exact comparison can pass; the PNG gradient_displayp3 cases are 1 off per channel (the C++ tolerance is 1). The project allows no tolerances, so the test stays ignored"
+status = "passing"
 span_hash = "b66aa6d5a51cbec17464984284de34ccdcdef602449490c105ae710b608d0fdf"
 
 [[test]]
@@ -30865,7 +30839,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2586-L2605"
 module = "codec"
 status = "todo"
-reason = "needs the Rust PNG encoder (codecs C-R) and HDR metadata (core, codecs C13)"
+reason = "needs HDR metadata: SkCodec::getHdrMetadata and SkPngEncoder::Options::fHdrMetadata are not ported (codecs C13/C16, core HDR metadata)"
 span_hash = "b78936cd55f7e4a2baf1307a9ad804fe99af7efc8fc2c33b00a21f3bab78d40f"
 
 [[test]]
@@ -32234,6 +32208,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2376-L2401"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "efaf4ca3e755ff1a82da3207667d5ff04d669159a1be5a4e977bc1ccbecebac6"
 
 [[test]]
@@ -32243,6 +32218,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2000-L2044"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "11785566e1bf37f5e6749ad01aa45b65863c7cc311ed6e6da6a9ceba8f353e14"
 
 [[test]]
@@ -32252,6 +32228,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2230-L2258"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "e11c90e59e6fd6bb16f60debc87d5b3301b16fa31c1913dc97705673e2716057"
 
 [[test]]
@@ -32261,6 +32238,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2113-L2130"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "06fb5b5a3820f283af1bcf25db07deedf4d2cd37be88eec67ea923c9927a8e67"
 
 [[test]]
@@ -32270,6 +32248,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1740-L1813"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "08a5685d9d895b9daecb94f37f564f889f762874063ab2b93cb898dff1019acb"
 
 [[test]]
@@ -32279,6 +32258,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1472-L1518"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "084f60a7bf0dca8b39f9f74ef9a1cf31005512e08803ebf8e6921fbb0313a722"
 
 [[test]]
@@ -32288,6 +32268,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2178-L2228"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "a41bd505d5c7083e2618e1e2c84574d75e5a9f1b072f62c056e1e45e61915bdd"
 
 [[test]]
@@ -32297,6 +32278,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1520-L1567"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "8b75bbe15977614f58bbf27c75b64df49ebe99cb495259c9283066c4a7f5aebc"
 
 [[test]]
@@ -32306,6 +32288,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2132-L2176"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "ba4b7ce19cfdb41bb537734a04853bf6c73a9e2c072f914b1e2e78524a25f44b"
 
 [[test]]
@@ -32315,6 +32298,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2260-L2305"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "d4e579ae35aa4dd5f3be637c9223c319782431bcb2fc446dc3173e64dcb051ba"
 
 [[test]]
@@ -32324,6 +32308,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2307-L2374"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "6b704a2fad79598d78e5484785233fd6a4e60947c7e6e3700f5eed70aca03199"
 
 [[test]]
@@ -32333,6 +32318,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1698-L1712"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "e1bb80ef8fa1f0488fde80aca5f9abe07afbfeaaa94e79807883f38883562f4e"
 
 [[test]]
@@ -32342,6 +32328,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1585-L1609"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "36dd50a5af3b9f2fd86ff8428a3a4d36db751e23ef33d1cd0df01c452c82bbfa"
 
 [[test]]
@@ -32351,6 +32338,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1569-L1583"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "a325944ed5b7e4f38cb87f2c0166a001c6a83b45826049f1bd31d6e951a302e1"
 
 [[test]]
@@ -32360,6 +32348,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1439-L1467"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "9296069d7f802f7fa2aafa607f6cd238d0bcb2606510b86036087a4db10ed2e5"
 
 [[test]]
@@ -32369,6 +32358,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1410-L1437"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "0b2deb1dceebec65bf319defc5d998af42f43c27bb03a4b009b295f5c1de7fb7"
 
 [[test]]
@@ -32378,6 +32368,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1815-L1866"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "55f75aa3e2d10854f34b7367e63b0493b50136f16b947a4b84e5bdfdcdd711be"
 
 [[test]]
@@ -32387,6 +32378,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1868-L1891"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "3556864a0d696beaaf002b5b76e757f2742c8e2e7792939782ef436085937dc3"
 
 [[test]]
@@ -32396,6 +32388,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1611-L1639"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "5c88f30d7748a407d6cb767a92a48762ecbd41353ea60ed5ec234b3d792fd184"
 
 [[test]]
@@ -32405,6 +32398,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2722-L2785"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "d71184fa50dbe3a0f11491381c9b50953714e1410f3374282d46441f05a324d2"
 
 [[test]]
@@ -32414,6 +32408,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1641-L1696"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "751c37c93f794f1c14ec47376f9a9e55e00727610e1a4f5675c9849d562fccf2"
 
 [[test]]
@@ -32423,6 +32418,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2676-L2720"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "b704a2c2231075169304b0c0a668d5ea4b360cb8f5dd3aec680fd660c7d7bd6f"
 
 [[test]]
@@ -32432,6 +32428,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2406-L2573"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "2bd77d23d26b2835f1fdf4ec3fd512892a047ebce311d0baf3716b13d45f92d9"
 
 [[test]]
@@ -32441,6 +32438,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2575-L2674"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "8853949d7b12248a8b222b5c8e10b6996b717b9ed523e97fd847018b8f3634e8"
 
 [[test]]
@@ -32450,6 +32448,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1717-L1738"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "fb69648b5fa293cb3290f247633d32bab75620d86f389b9cd306a56db05e8d8e"
 
 [[test]]
@@ -32459,6 +32458,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1918-L1961"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "6f03fd7d35d5c7a40ea2b8dd4ff91e1cf3009b423e6fdeff72150090c99340ea"
 
 [[test]]
@@ -32468,6 +32468,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1963-L1995"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "95cd13f7efcf6202dd851bbbd147e12961113f2b50f73c308c772e02c8e84caf"
 
 [[test]]
@@ -32477,6 +32478,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1896-L1916"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "aaea11e73ebd885d0c36a2e4e056ff71f4ad695d2300dc553aae4bfe69ce91f5"
 
 [[test]]
@@ -32486,6 +32488,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2079-L2111"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "efd38cdbbe9e542980ba5474a4e5e49c4f3fbb77145deffd9abf92cb891d14a6"
 
 [[test]]
@@ -32495,6 +32498,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2046-L2077"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "631e6d7b953af373f313735c2d1602073dc577fe3bfd3f5f792c9f5844ec8351"
 
 [[test]]
@@ -33956,7 +33960,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1904-L1953"
 module = "effects"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e24061eb55ab1719dff00f5586f40ee3ef3c8f7664f8dd82b7c9e794ef438ce1"
 
 [[test]]
@@ -35059,6 +35064,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L935-L1118"
 module = "effects"
 status = "todo"
+reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
 span_hash = "8919614c6ba66b3f18d088a537126666cf8fefaf4f4648555532f86ec9d2151c"
 
 [[test]]
@@ -35068,7 +35074,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L75-L110"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "0cee14bd055d60b8ba11bc1c26bf2eb616f3fa2bab023997847bb7539a71caa8"
 
 [[test]]
@@ -35078,7 +35084,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1205-L1329"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "7f040f5e8eb339611e89353569e8c9aafe5d3b74ce02e5c411b1eea98254f3ff"
 
 [[test]]
@@ -35088,7 +35094,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L228-L281"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "8a7ede3298e6d8b6e13ebe08c323c1637493a8201d43fa663bb2507694b3a83a"
 
 [[test]]
@@ -35098,7 +35104,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L112-L226"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "1f71392e2cca295a1921a919e0fa53674624f301bf856aaeab6f7e5e6ce14b4b"
 
 [[test]]
@@ -35108,7 +35114,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L283-L321"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "f3e9658e6c2e55952e3d07e2a00336d1b5eaf798d2b278ccd17c99709e2a3d2e"
 
 [[test]]
@@ -35118,7 +35124,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L485-L932"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "26c0d5e13841f0866e31ecdd45adac15608493bc3a745069f22454747bed98ed"
 
 [[test]]
@@ -35128,7 +35134,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L323-L415"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "bd83ad66c9f141eceafc771d8f64dc6ce3c329bcbe68540cc3996f64e18e8715"
 
 [[test]]
@@ -35137,8 +35143,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L20-L47"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+status = "passing"
 span_hash = "753d4f76097391c67c30432d642f81b96f1e182293cb48a7f1b10387a0ea64fb"
 
 [[test]]
@@ -35147,8 +35152,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L49-L73"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+status = "passing"
 span_hash = "3e580ffed2f451dc72b1544eed04a1fb6e9b930666a52c2e19a3291e6c55c248"
 
 [[test]]
@@ -35158,6 +35162,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1120-L1203"
 module = "effects"
 status = "todo"
+reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
 span_hash = "fb3bcbe96da112d41cacc3db4725ea649e707a39e44019bfc7056b6fcf2fc5ff"
 
 [[test]]
@@ -35252,6 +35257,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L244-L250"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
 span_hash = "fdb6f08a67e161ed6d736796a430aa84cf7ca4da9365f283fbce651da59139d3"
 
 [[test]]
@@ -35261,6 +35267,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L191-L207"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
 span_hash = "9930b94dc2f04f1ba131b4f82cc0ad05ca28c528e20d93a923a15cea74597a7e"
 
 [[test]]
@@ -35270,6 +35277,7 @@ macro = "DEF_SERIAL_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L345-L364"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
 span_hash = "cff36d33fc5db8aa50f2e1ade26f7438ad8c6e2ab069e18b6616a7231b429be6"
 
 [[test]]
@@ -35287,7 +35295,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1661-L1663"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d5ca1f352270c98f1e72bd2ec351ea8e89faf4732b7fb18191b3405fd9629858"
 
 [[test]]
@@ -35306,7 +35314,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1614-L1616"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "6db6d15d011401d09cf636c976e41d05b5af5056f11631608294d97481db0756"
 
 [[test]]
@@ -35353,7 +35361,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1448-L1453"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c33d8eb5b4c1dc77ed74209fdaeacead1e71bc8074d0d97f5cf69afab9678b40"
 
 [[test]]
@@ -35362,8 +35370,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L440-L542"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::SpotLitSpecular (the lighting filters are not ported)"
+status = "passing"
 span_hash = "01ec23a8d21ca70b514522e1a47040cff2804bc1d9770b7ea255d796512f3c1c"
 
 [[test]]
@@ -35372,7 +35379,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1834-L1837"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "344df332cd333a4011f21a371b409cccf877fa93e449f23e930dd773206be28d"
 
 [[test]]
@@ -35391,7 +35398,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L956-L978"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8dc0405dc8479d63ad006e848161916ffd28429135479cb6ac1b9ec6d2a5b4b8"
 
 [[test]]
@@ -35400,8 +35407,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1674-L1733"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::PointLitDiffuse (the lighting filters are not ported)"
+status = "passing"
 span_hash = "05a58bf7805ec3677358dcfc7976e1ab2426f08cb6fcf20118d828bb933addfd"
 
 [[test]]
@@ -35429,7 +35435,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2192-L2219"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b288c10b2442a9d0ef19208f88a2bade24ef8710ae9378868cc074534ff7e08a"
 
 [[test]]
@@ -35438,7 +35444,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1077-L1088"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "40e5a02bce11045578445fc19dda041173f551cc0a8b9750efed70f5e864e12e"
 
 [[test]]
@@ -35447,7 +35453,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1306-L1308"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2b5cc0f5d0a1f7fa8532eb66646e2e14ca04d68e519f8afc8174d48aa8affc6c"
 
 [[test]]
@@ -35475,7 +35481,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L926-L946"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "94c048999a5041846f057bd76f3cbbe74e5c422bc4a19c9583644beb66a73b62"
 
 [[test]]
@@ -35484,7 +35490,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L818-L893"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "7d8dbbf91d1ea298177343063cc202a6feda95971d2f8bfd837455d215628459"
 
 [[test]]
@@ -35493,7 +35499,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1162-L1206"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d98250eefad2c7aef6ce3b3c0336b9ad4597be0374bd22ceb5b00150625aedad"
 
 [[test]]
@@ -35502,7 +35508,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1386-L1435"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "56879dfa0e6401be2c6ff68e3b004a8f02b754d44d5686278c9237c47d785bfa"
 
 [[test]]
@@ -35511,7 +35517,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L805-L807"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "0cc445be3a324590154b97af7ff9fb8dea251cdbc0fb88ebe55a8b713a2268cc"
 
 [[test]]
@@ -35541,6 +35547,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1736-L1778"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilter serialization (SkImageFilter::Serialize with SkSerialProcs image encoding, and Deserialize), which is not ported"
 span_hash = "48b2658d5af7ae7a39d11ec33c7c44a682576595b64d82c5dafbdc5cbd8f38db"
 
 [[test]]
@@ -35550,6 +35557,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1780-L1789"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilter::Deserialize (not ported) to read the crbug769134.fil resource"
 span_hash = "90ec8bb7a718bb9bdb49596fb5c945a5c71990f1c70580613d563fc39771c434"
 
 [[test]]
@@ -35595,7 +35603,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1319-L1343"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2acdbacd4a7b604c8f587dd41db850a9c10c050a4b9f73645a8c29a28304718d"
 
 [[test]]
@@ -35670,7 +35678,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L640-L642"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b4add939901eebf3a1b85a16c77cf7fd2c46867ccaff889c0722c43d94b41d58"
 
 [[test]]
@@ -35689,7 +35697,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1540-L1588"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "72800aeb695ac29a798e06088165d97064338404d444bde7e2298a77f0559aab"
 
 [[test]]
@@ -35698,7 +35706,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1024-L1075"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b76fa073f0942989da493d72cd3c04456536c47240c7b7dfd122e161217284ff"
 
 [[test]]
@@ -35707,7 +35715,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L980-L1000"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "72f8decd28f08fefe8c064a02edd3225d4e78cafda857885dd90285d1f5ec47d"
 
 [[test]]
@@ -35725,7 +35733,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L769-L771"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "9d4db0357def2c50e3341fba4d806bee3b88fd52657cbf24fc7e8f41f190f1ad"
 
 [[test]]
@@ -35762,7 +35770,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2436-L2486"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e0e1d74ff3f454581a6ca3f80effd8921d7801d9f729d8d15c706b76a9c991c6"
 
 [[test]]
@@ -35817,7 +35825,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2222-L2269"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "836e6d9be11e63fb173fadd21eed52ff98c0d87046f7be9a11095dfbca9bbfa8"
 
 [[test]]
@@ -35826,7 +35834,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1590-L1593"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d310e99e9ad971f472237c0f2ad4b4f651a2e0399fb76c03977e0c7c16e37265"
 
 [[test]]
@@ -35931,7 +35939,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageNewShaderTest.cpp#L160-L169"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2c0892a6e016d8a827ef5b14be3ef22319d8bae1e3a8adf5d8bc62367235413a"
 
 [[test]]
@@ -36397,8 +36405,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L615-L702"
 module = "codec"
-status = "todo"
-reason = "needs SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C17), not ported"
+status = "passing"
 span_hash = "9610696b5052569c4a02724b75dacad398c9ed7b3c6e487eb4991c65b4d5c592"
 
 [[test]]
@@ -36416,8 +36423,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L463-L572"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the JPEG gainmap decode hooks (SkJpegCodec::onGetGainmapInfo/onGetGainmapCodec, docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "f4ac08342731d0ae364e73260a268a50336d694418ba515498da0b17acbcc9d7"
 
 [[test]]
@@ -36426,8 +36432,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L765-L839"
 module = "codec"
-status = "todo"
-reason = "needs SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C17) and the JPEG gainmap decode hooks (SkAndroidCodec::getGainmapAndroidCodec), not ported"
+status = "passing"
 span_hash = "9deef51eb6338e7eb612f64331e734c5ee80b872b4fe5e3d39893b224c42ad95"
 
 [[test]]
@@ -36436,8 +36441,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L574-L611"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG gainmap hooks (SkJpegCodec::onGetGainmapInfo, MPF and XMP gainmap lookup; docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "a040d2b8df3d908a1b8b02a153d23bae535b2884014ba6039c317a3c01084a9f"
 
 [[test]]
@@ -36446,8 +36450,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L893-L989"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the JPEG gainmap codec (SkJpegCodec gainmap hooks), plus SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C13, C17), not ported"
+status = "passing"
 span_hash = "978f54400feeaf3d98e34ed56b2e3f9ebb648c2b96b7679f1d172d475a1363e3"
 
 [[test]]
@@ -36644,8 +36647,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L39-L74"
 module = "effects"
-status = "todo"
-reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
+status = "passing"
 span_hash = "0d42bcac0c6de3beda7b36e163ef9673800f86c8beff43a84e8026be74f19f30"
 
 [[test]]
@@ -36654,8 +36656,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L76-L110"
 module = "effects"
-status = "todo"
-reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
+status = "passing"
 span_hash = "62af44fbf4e58e5c1e1594cd42cf0792eed48ea451d8a6f56c72964c66b4066d"
 
 [[test]]
@@ -40187,8 +40188,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L140-L201"
 module = "codec"
-status = "todo"
-reason = "needs the PNG gainmap chunks in the encoder (docs/design/codecs.md C16), not ported"
+status = "passing"
 span_hash = "625d8cfd9d3c2e242c7bfb239309808e613b882fc1cad899a5adaa2a3076f747"
 
 [[test]]
@@ -41300,8 +41300,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L204-L227"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::Blur (image filters are not ported; Phase 3)"
+status = "passing"
 span_hash = "c2a68486b19a4895c9b6c3f346de159bbb86dc1dd66ae69185ecddae7f6d8fad"
 
 [[test]]
@@ -42084,8 +42083,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L145-L149"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "955690a65087c0e6beb10a171846bd6c64614f09d4e9529575383c1383326ffa"
 
 [[test]]
@@ -42094,8 +42092,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L407-L413"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "d3a977d68468a86581d1e09cc2edca9836ffe75cfcee9b3a7e8581b5a80e4eed"
 
 [[test]]
@@ -42104,8 +42101,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L151-L157"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "d00980c771a07b02c1ad834e04d28f0be52d935882b0447d10066a6d2ccb8131"
 
 [[test]]
@@ -42114,8 +42110,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L190-L202"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1ce27d7ec96c9954a08170109d1021a3192ce180cfdbffef4775dd332c42d476"
 
 [[test]]
@@ -42124,8 +42119,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L177-L188"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cac45a9b9c8589264040b409ec081e0888baedbb22cda2fb7c18053244a8e125"
 
 [[test]]
@@ -42134,8 +42128,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L159-L175"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "29096af7f1e2b42d7f0d6c8b0daf1b54cf8ba2cb0167004769e59ce88541457e"
 
 [[test]]
@@ -42144,8 +42137,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L254-L271"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "146998a879826d63af3f8acdb012283be1094ea3135ecf3ff7612dfae205c62e"
 
 [[test]]
@@ -42154,8 +42146,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L204-L227"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "6f739e69273ff3acf209b125ddbf774506d0955bc38a3294f2741ada820f7479"
 
 [[test]]
@@ -42381,7 +42372,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L380-L459"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "2f53ed1a123c44f6556136bf8336e92f660d594007f62b894c4f970f5a6cc1e9"
 
 [[test]]
@@ -42390,7 +42381,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L765-L783"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "5336eb3f17ae743492fb57434303a4729b79bde499f88ae9c0c2b1da3afb6988"
 
 [[test]]
@@ -42399,7 +42390,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L532-L566"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0d83d6ee9266e846d6a1900d22793d8af28635fad6f01eb4d1fc04837907f935"
 
 [[test]]
@@ -42408,7 +42399,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L585-L615"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "e89d2874d32e8011ebcffcf74c4172b39274e135571ac00080ba9cb2f6e90405"
 
 [[test]]
@@ -42417,7 +42408,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L568-L583"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "6f7238f8ebcee8f3f3519b5be100485432386e34fac6a921c1ca56a317a333b6"
 
 [[test]]
@@ -42426,7 +42417,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L492-L530"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0c5305294abb5c588e7b2111b02c39d87a4422a308bc3e122e2857b9245ce6dc"
 
 [[test]]
@@ -42435,7 +42426,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L617-L642"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "3ed24832ae5cfea8b2c8ccf16081c6fe3918ac06b95cef916783a736dbda9db1"
 
 [[test]]
@@ -42444,7 +42435,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L267-L290"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "5f2b7b5df068e4189912b4b422f02f2e23b2d812bee5e6bc976b92f282218859"
 
 [[test]]
@@ -42453,7 +42444,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L352-L378"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "2d3340b14cbc336987b883e398c65453fa795593474064d642ec14a39fd931f8"
 
 [[test]]
@@ -42462,7 +42453,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L292-L320"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "7811933f13ce6c2ed528b4480e6b157c927f12a9c8eeea758e0a2f581eec747b"
 
 [[test]]
@@ -42471,7 +42462,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L322-L350"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "4f53a4a471bf82280db43bf584ecbd6b74fa8c818572754ad79dccbbdbfca482"
 
 [[test]]
@@ -42480,7 +42471,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L684-L702"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "9bd8d8b71e9e6cab91ce9ca7fd00339420718438e3f6b992188bc0cc89caafe1"
 
 [[test]]
@@ -42489,7 +42480,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L785-L800"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "b1980fbeed03ea1532440cea58a9a1f3490bf7f30665d8358d903d5a0601b76a"
 
 [[test]]
@@ -42498,7 +42489,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L705-L741"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "719e387da81e1539bb486f7fd0b79e9d365b7a85ff451b31f101510dd6fb340e"
 
 [[test]]
@@ -42507,7 +42498,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L644-L662"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "95e6e0a8852b8915c1eda2602084a06ca270f1ad8d9818089f1398ab18f5f0e0"
 
 [[test]]
@@ -42516,7 +42507,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L743-L763"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "37ebb58389ed221bb44f131dcea0e41e36ea23b7aa7503cccb52d13f323189f9"
 
 [[test]]
@@ -42525,7 +42516,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L664-L682"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0d2dbea3d2575fc0eddebc6e5606508cadb339512fcfae6a0e755f9eda068127"
 
 [[test]]
@@ -42534,7 +42525,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L461-L490"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "7d1fa6e60ce7e756ac29681a5943cc42cbe7549037f8474c0082e795340da3c9"
 
 [[test]]
@@ -42543,7 +42534,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L185-L206"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "ddd79d6dbbe2999acf8b52ad9da99aa8ada6026251462686ac5a16bf99c57970"
 
 [[test]]
@@ -42748,8 +42739,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderImageFilterTest.cpp#L149-L152"
 module = "effects"
-status = "todo"
-reason = "needs SkShaders::RadialGradient, which is not ported (the shader filter itself is ported)"
+status = "passing"
 span_hash = "7a104f9158f33fd41d9a0857e59d5e57e455f50afea991518cf2446ffc4c6cf9"
 
 [[test]]
@@ -42759,7 +42749,7 @@ macro = "DEF_TEST"
 source = "tests/ShaderImageFilterTest.cpp#L213-L217"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::RuntimeShader (include/effects/SkImageFilters.h), which is not in the port"
 span_hash = "e0f4fe37e83622e4f04f5b9a1bcec2124116d93cc5f6a9b157242608d59b857f"
 
 [[test]]
@@ -42778,8 +42768,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderOpacityTest.cpp#L120-L125"
 module = "effects"
-status = "todo"
-reason = "test_gradient needs SkShaders::LinearGradient (gradients not ported)"
+status = "passing"
 span_hash = "05464f0bdeb2a9cc18814bf38d380a89c8deabd88c4787200fb39e0d1b2cc32f"
 
 [[test]]
@@ -43580,8 +43569,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L77-L91"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "fea550954a6a7d3b9114497668434a4ca7291d29b5b41a4103a1dd0258c588de"
 
 [[test]]
@@ -43590,8 +43578,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L95-L137"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "ece8d2cdefd70a5c5678a5640ffc5c9f3ae9f259955bccfef2a8facfcb5defe1"
 
 [[test]]
@@ -43600,8 +43587,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L586-L610"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "bac004addcb2369ad9fefb24f604160e83be5e4b4d1f824758ae3f58535987ca"
 
 [[test]]
@@ -43610,8 +43596,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L546-L569"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "bda2008b5c02695fa5ed7ece77b0f346a18cdf9500c1c40b36bc2c9eba15bd1a"
 
 [[test]]
@@ -43620,8 +43605,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L571-L582"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "78ef0e4b4e00f37c1578f409779e5c27d84d97a72ee3b65bede4740325cc283c"
 
 [[test]]
@@ -43630,8 +43614,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L529-L544"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1b1bcfc5daee5b3f1ff8d998f1ba135b4c4c87fa56dccf9c4085d0ed2cbdaf6d"
 
 [[test]]
@@ -43640,8 +43623,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L707-L752"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "b3043911a354d4a4dd4e78fdf1fae7fdb1b3c3f86f16e85ecb350b76931ead13"
 
 [[test]]
@@ -43650,8 +43632,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L679-L702"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "0eec45e2d9c21dc11c3ed531074c799f220de8ffb1da47768b552ef0f9314d00"
 
 [[test]]
@@ -43660,8 +43641,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L618-L677"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "7f21be6a544923726e85dc7bd7f68ec7d44dcd4c2026faa78dfc54564a79fbb1"
 
 [[test]]
@@ -43670,8 +43650,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L401-L437"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "75a38d74203bda93c94ee8525d1571e6cf789ac412a27415c41b76627500b16a"
 
 [[test]]
@@ -43680,8 +43659,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L439-L527"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cccc8ea7d5de4f8b19f05539878b5314df034fe11baa4fa1c9b78d059cdee26f"
 
 [[test]]
@@ -43690,8 +43668,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L142-L363"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1b6e06afcd944576ff136d7a284bcfbf2fce5b0e54c2593b86a19e7bb35b9ee9"
 
 [[test]]
@@ -43700,8 +43677,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L385-L399"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "f1ba473ed4d9a6d96a4f23e44ae28a138b9542099847f14771baffda5a97012d"
 
 [[test]]
@@ -43710,8 +43686,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L365-L383"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cf9a33f033cee1b69123663449174eac166f7586c75df6c003d6f38bbae8a8e0"
 
 [[test]]
@@ -43721,7 +43696,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L763-L811"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "deferred: needs the XMP and ISO 21496-1 gainmap decoder (SkJpegMetadataDecoder) and the SkAndroidCodec gainmap accessors, which are not ported (codecs.md 12, Q1; C-R2 gainmap follow-up)"
 span_hash = "45af6f73cb654ec52bfa9a862e263ad35130121d4077b3e63a3b0380b653b6c0"
 
 [[test]]
@@ -43730,8 +43705,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L900-L933"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "471fbafe3a9de2084e462b789053ce5aac435865cff51a8f0d32cc36471f8da7"
 
 [[test]]
@@ -43740,8 +43714,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L982-L1047"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "060a0c5afe2acc84397d0d861f06223452e20139435c4f00990c1f830aa8cb88"
 
 [[test]]
@@ -43750,8 +43723,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L938-L978"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "e8f1e0fb849c3d6b9344caf28cb9f92e7d3a78aff7f68977d9de86297daf89ff"
 
 [[test]]
@@ -43836,8 +43808,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L703-L710"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "ed31aaf2ce5ae608b03d774f84bc8f04f24665e213d80bba681547d443c1f391"
 
 [[test]]
@@ -43846,8 +43817,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L677-L679"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "388dafc7b4398462c5d2fbd0401e231f6ab78266881704b5b7c370fe49597002"
 
 [[test]]
@@ -43856,8 +43826,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L683-L690"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "30dac0d8b34d1729dc83850c39d79da9f3f36831d66c6fbbcaef269a483db3e5"
 
 [[test]]
@@ -43866,8 +43835,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1052-L1066"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "273a41e32c20a1b818c79c4c10574dd71d4ab7545414e1488bbd8dbb7762e4b0"
 
 [[test]]
@@ -43876,8 +43844,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1070-L1084"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "77ed4e8a4cda0bda2fce4a9e27c2133b8704f645309f7c0293fbb0a9872c9a27"
 
 [[test]]
@@ -43886,8 +43853,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1029-L1048"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1d339c464f9f79aa5bfa90939e464f139aa8a751d880ce63cb98222e895e8f5f"
 
 [[test]]
@@ -43896,8 +43862,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1002-L1025"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "130f29ab1c40a38fba9c7fce906eeaf4596ee8431629bad652dc7e729084b00f"
 
 [[test]]
@@ -43906,8 +43871,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L791-L852"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "3c387a9e14fdebbddcd9f45276f5b1ee21159db60d43986180bcad7d443da9a5"
 
 [[test]]
@@ -43916,8 +43880,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L862-L911"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "15bb6ab2efd2b8ddc824510004fd19a28ad7ccf264a2aa5913e252699585b639"
 
 [[test]]
@@ -43926,8 +43889,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L919-L998"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "9fc727d4e76adbb67948939c416af3a033f0d659065b4bfc1d23fcaa2737a19d"
 
 [[test]]
@@ -43936,8 +43898,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L719-L774"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "5bb6682982c8e4f2840127c774cd8e0ee4b25e20210c8da8a16db0b61849a0f2"
 
 [[test]]
@@ -43946,8 +43907,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1154-L1167"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "4b6aa20f0fe551f68f6bb23c199dc77d5b9543656d0bc2e314c575de3243c2a7"
 
 [[test]]
@@ -43956,8 +43916,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1115-L1122"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cbd9886aa84cd9604fe2187d7f26ea49cc0ece31accb734fc5b8d6028c4bf445"
 
 [[test]]
@@ -43966,8 +43925,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1126-L1133"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "6591c705ba001cfbb7b00146e7c2d84254c55e10586d9825dd14bb149e036d5b"
 
 [[test]]
@@ -43976,8 +43934,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1137-L1144"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "0b85694793f45ffa618e73956bd2a7b95598f2f47ce45def9478ab36b894d620"
 
 [[test]]
@@ -43986,8 +43943,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1811-L1850"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "2278a7851d4fb6c16a8310b1910f1c2dee01ce73ef3107ae86812fdce7e36255"
 
 [[test]]
@@ -43996,8 +43952,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1888-L1921"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1cbfe7da25dd5c9fc1445d1f67b0b92ca3481cc34d13e16af6e6317ad2bbf2cf"
 
 [[test]]
@@ -44006,8 +43961,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1857-L1882"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "b0d07412d52b796c6c7b5de6600129254755b274b9f25dc94846ec27daf2203d"
 
 [[test]]
@@ -44016,8 +43970,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1088-L1111"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "5b151eb0dd2f11cba52a9cf9745c9bf2a5efa7dd00ccbd4babf6cdd353b98bda"
 
 [[test]]
@@ -44026,8 +43979,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1271-L1286"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "42560d1dc2768a0094e17598de9b24a069391584b1f787b03390f1d2a5d56a57"
 
 [[test]]
@@ -44036,8 +43988,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1622-L1677"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "c412d62dd09b7379183f689a15dfe58964774111e5e0e5af727e60b0ad86e757"
 
 [[test]]
@@ -44046,8 +43998,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1700-L1743"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "f47631c8b7f08b9bf2de31a0912526d1e9db1e06e729affcbfe4bfd86b79685f"
 
 [[test]]
@@ -44056,8 +44007,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1247-L1254"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "e4669c16c2750c43c4cfd71c4f1f42149f78380c37f0ae71fbf6d868e2d09952"
 
 [[test]]
@@ -44066,8 +44016,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1256-L1269"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "72bc9e434fe85f406ddffd15de9631d7ac70e3e213db30a1f21af141de455361"
 
 [[test]]
@@ -44076,8 +44025,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1523-L1560"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "e2561413364607da7ca47d08d38b4a756371f78e976773b29a86003adbbe7f16"
 
 [[test]]
@@ -44087,7 +44036,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1679-L1698"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the gainmap info (codecs C13), not ported"
 span_hash = "49e3fd2e342302daa676f621557cd59168682dfd6cfdc56aab64c74cd35c63b4"
 
 [[test]]
@@ -44096,8 +44045,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1562-L1587"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "4c915b6b44d5e2bdab94dae28efab228e708028ab0db4b061fd4a62450f855bd"
 
 [[test]]
@@ -44106,8 +44055,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1227-L1245"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "10f5e02383dbd829359c369e2ecd67fb7ed15ba2a08afe5fa3f9bcb775421c32"
 
 [[test]]
@@ -44117,7 +44065,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2087-L2089"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "needs the decode memory budget (SkCodec fDecodeBudget, SkAndroidCodec fMaxDecodeMemory), which is not ported"
 span_hash = "95bb55af38fa2c89f5a14c2d70fbe5bd25def1ee06c6eddce6e04e434dbd9bc4"
 
 [[test]]
@@ -44127,7 +44075,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2091-L2095"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "needs the decode memory budget (SkCodec fDecodeBudget, SkAndroidCodec fMaxDecodeMemory), which is not ported"
 span_hash = "5bb7ef78eb29d6b077d95f0bef70c8c5fc0f0a4b6a88e9c3a1fba6571719b3cb"
 
 [[test]]
@@ -44136,8 +44084,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1472-L1495"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "94a78d37efbf949c44ed4c7463d2fa72d25d68c4f723f124550e54c9dc805def"
 
 [[test]]
@@ -44146,8 +44093,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1405-L1470"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "9d67e087928ffd7a14e64bfc2e45dbff0414b78c9997de31f0866faa08e7da48"
 
 [[test]]
@@ -44156,8 +44102,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1288-L1302"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "e3c35d589222557f263f8be5b3543574354ca27d807371713cdf7121031317af"
 
 [[test]]
@@ -44166,8 +44111,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2032-L2034"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "82e3a406e3b3e6674704aee0463d489c9c45fdc8b67fb9ebd356e36e9eed9a0a"
 
 [[test]]
@@ -44176,8 +44120,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2036-L2038"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "09be3e29b60793bacfcd3da6de809252bfae61f3bda477139a12e1edaab65e94"
 
 [[test]]
@@ -44186,8 +44129,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2042-L2044"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "2b30e9e932a3dae46a48397981111770796f930e0e723b8cdac17488d921c060"
 
 [[test]]
@@ -44196,8 +44138,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2046-L2048"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "2578774399a478d7b667417b84ae2bfee049b5c4df02e121c6cde3347856a5ba"
 
 [[test]]
@@ -44206,8 +44147,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1589-L1620"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "271d3bbc34fa979dccfc14ff290c90dbb0475003a484b0c2aa105bfd863748db"
 
 [[test]]
@@ -44216,8 +44157,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1208-L1225"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "3feeaebf035cca6c21ae6dd5792756b075853d4a0a78d1558c96837b9978d60b"
 
 [[test]]
@@ -44226,8 +44166,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1169-L1187"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "79826268f4d9828e442682ecbe06292a9c4d539dde17345cdd8a1107f16588dc"
 
 [[test]]
@@ -44236,8 +44175,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1189-L1206"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "ad717220553332265916d002109b234b463a9316987a82b01f214141b69f1121"
 
 [[test]]
@@ -44246,8 +44184,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1497-L1510"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "d5c8badff9373f5e840fa6a410acfbc7a8c6d5f80b317a5d063e73df25f70b2e"
 
 [[test]]
@@ -44256,8 +44193,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1769-L1773"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "07dcb458058edbcb7e98e03d232c4aa0b54b10273073bfc478d0d774b7a0087b"
 
 [[test]]
@@ -44266,8 +44202,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1988-L1991"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "d9d7b8b75428f95c6db84a40fa777e6964d41cdc0cbbe6f92846e1f71faf585c"
 
 [[test]]
@@ -44276,8 +44212,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1993-L1996"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "edcfeb597e53d4bd69b44ef912f88aeacbd51a5d50509963d969000031f1d78b"
 
 [[test]]
@@ -44286,8 +44222,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1775-L1779"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "bb2b00b67596852e357270bb7d3ee4856ace4dca42daf12ac6afede601ff2bdf"
 
 [[test]]
@@ -44296,8 +44231,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1781-L1787"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "b346944fdaf1cba2e21b905da1cee9c7c42c9a734f32c3476ba69f4ff58e81b3"
 
 [[test]]
@@ -44306,8 +44240,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1789-L1796"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "4b339759f9997481181ea61638438c87d7034feed128bfd854a49dc5120b30fa"
 
 [[test]]
@@ -44316,8 +44249,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1391-L1397"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "c0eed3349e35465b2cef03ffa221fa1956ad565465a5bc7db8dc94eea9acbb70"
 
 [[test]]
@@ -44326,8 +44258,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1970-L1977"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "401873de6c7d773d5fe8348bedeed8d75c3085b1cb97a5f70470d10261b0c489"
 
 [[test]]
@@ -44336,8 +44268,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1979-L1986"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "6a4a579a861e6a9f25b608b71828076734e450136b4e0ab17ee7a45269b8e636"
 
 [[test]]
@@ -44346,8 +44278,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2000-L2026"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "8c3fd0c4135d7432834e2b9ce21a8c763a08d44ba015d43d1ee2f260ecbdcae8"
 
 [[test]]
@@ -44356,8 +44287,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1746-L1767"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "446e4982c9cc5c28a5c2150ee90e2bbf4cd105d7bc4e89a0c9fcb638309853de"
 
 [[test]]
@@ -44366,8 +44296,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L57-L144"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "d7ac1e8bcd7855af9591cb7cb9f377759ca51d64b2f82ea18d8237e635ba5d82"
 
 [[test]]
@@ -44376,8 +44306,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L146-L182"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "6d4094f48b47c0d2992b07daf43fa1123bf77f781aed2e4fec60512589fe41f6"
 
 [[test]]
@@ -44386,8 +44316,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L23-L54"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "f24d11a12f72dc85496485aa3bd2f9ca41723a6eb00a2ee32e63d0ca599e8452"
 
 [[test]]
@@ -53607,7 +53536,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L518-L553"
 module = "gpu"
-status = "passing"
+status = "failing"
+reason = "timing-dependent: on Windows CI the dawn-d3d12 / dawn-vk-wgpucaps contexts report 1 / 7 graphics cache hits where 0 are expected (executor compile tasks race the draws); under investigation (port/gpu-unit-sweep-4)"
 span_hash = "66f7e8418e610d93371bff0b345d4ee7ef09bec132fb380f63a45a5aff935cf1"
 
 [[test]]

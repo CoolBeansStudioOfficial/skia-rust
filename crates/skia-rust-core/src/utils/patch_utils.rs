@@ -182,7 +182,6 @@ fn bilerp4(tx: scalar, ty: scalar, c00: Float4, c10: Float4, c01: Float4, c11: F
 // Port of: src/utils/SkPatchUtils.cpp#L182-L210 (chrome/m156)
 #[doc(alias = "GetLevelOfDetail")]
 #[must_use]
-#[allow(clippy::cast_possible_truncation)] // mirrors static_cast<int>(float): UB out of range
 pub fn get_level_of_detail(cubics: &[Point; NUM_CTRL_PTS], matrix: &Matrix) -> ISize {
     // Approximate length of each cubic.
     let mut pts = get_top_cubic(cubics);
@@ -219,10 +218,23 @@ pub fn get_level_of_detail(cubics: &[Point; NUM_CTRL_PTS], matrix: &Matrix) -> I
     };
     #[allow(clippy::cast_precision_loss)] // 10 is exact in f32
     let partition_size = PARTITION_SIZE as scalar;
-    let lod_x = (max_tb / partition_size) as i32;
-    let lod_y = (max_lr / partition_size) as i32;
+    let lod_x = float_to_int_x86(max_tb / partition_size);
+    let lod_y = float_to_int_x86(max_lr / partition_size);
 
     ISize::new(lod_x.max(8), lod_y.max(8))
+}
+
+/// `static_cast<int>(float)` as the oracle computes it (x86-64, `cvttss2si`): NaN and values
+/// outside `i32`'s range become `i32::MIN`. The C++ conversion is undefined there, and Rust's `as`
+/// would saturate to `i32::MAX`, a huge grid for a huge patch (`fuzz/FuzzCanvas.cpp`'s
+/// `drawPatch` input ran past the replay's time limit). The same mapping is in `fdot6.rs`.
+#[allow(clippy::cast_possible_truncation)] // the range is checked; the cast is exact there
+fn float_to_int_x86(v: f32) -> i32 {
+    if v.is_nan() || !(-2_147_483_648.0..2_147_483_648.0).contains(&v) {
+        i32::MIN
+    } else {
+        v as i32
+    }
 }
 
 /// The points of the top cubic of `cubics` (`GetTopCubic`).
@@ -631,6 +643,16 @@ mod tests {
         assert_eq!(
             get_level_of_detail(&bad, &Matrix::new_identity()),
             ISize::new(0, 0)
+        );
+    }
+
+    #[test]
+    fn level_of_detail_out_of_int_range_is_the_minimum() {
+        // The sides are about 30 * 1e30 pixels, so the level of detail is beyond `int`. The
+        // oracle's conversion gives `INT_MIN` there (`cvttss2si`), and the minimum of 8 applies.
+        assert_eq!(
+            get_level_of_detail(&square(), &Matrix::scale((1.0e30, 1.0e30))),
+            ISize::new(8, 8)
         );
     }
 

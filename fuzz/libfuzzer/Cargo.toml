@@ -1,0 +1,137 @@
+[package]
+name = "skia-rust-fuzz-targets"
+description = "cargo-fuzz (libFuzzer) targets for the ported Skia fuzzers in skia-rust-fuzz (docs/design/fuzz.md)"
+version = "0.0.0"
+edition = "2024"
+license = "BSD-3-Clause"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+# Its own workspace: it needs nightly (sanitizers) and libfuzzer-sys, which the stable workspace
+# must never build. The root Cargo.toml excludes this directory.
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+skia-rust-fuzz = { path = ".." }
+
+[[bin]]
+name = "CubicRoots"
+path = "fuzz_targets/CubicRoots.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ImageFilter"
+path = "fuzz_targets/ImageFilter.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "NullCanvas"
+path = "fuzz_targets/NullCanvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "PDFCanvas"
+path = "fuzz_targets/PDFCanvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "RasterN32Canvas"
+path = "fuzz_targets/RasterN32Canvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "DrawFunctions"
+path = "fuzz_targets/DrawFunctions.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "Gradients"
+path = "fuzz_targets/Gradients.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "JPEGEncoder"
+path = "fuzz_targets/JPEGEncoder.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "LegacyChromiumPathop"
+path = "fuzz_targets/LegacyChromiumPathop.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "PNGEncoder"
+path = "fuzz_targets/PNGEncoder.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ParsePath"
+path = "fuzz_targets/ParsePath.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "PathMeasure"
+path = "fuzz_targets/PathMeasure.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "Pathop"
+path = "fuzz_targets/Pathop.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "PolyUtils"
+path = "fuzz_targets/PolyUtils.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "QuadRoots"
+path = "fuzz_targets/QuadRoots.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "RegionOp"
+path = "fuzz_targets/RegionOp.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "WEBPEncoder"
+path = "fuzz_targets/WEBPEncoder.rs"
+test = false
+doc = false
+bench = false

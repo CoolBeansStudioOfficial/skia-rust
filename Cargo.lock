@@ -578,6 +578,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "jpeg-encoder"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fefe5a4fb12fa836172dc53cc36c37af693f6197ae702f931faad8774caf926"
+
+[[package]]
 name = "js-sys"
 version = "0.3.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1125,6 +1131,7 @@ dependencies = [
  "skia-rust-core",
  "skia-rust-pathops",
  "skia-rust-pdf",
+ "skia-rust-svg",
 ]
 
 [[package]]
@@ -1147,6 +1154,8 @@ name = "skia-rust-codec"
 version = "0.156.0"
 dependencies = [
  "bitflags",
+ "jpeg-encoder",
+ "png",
  "skia-rust-core",
  "skia-rust-libjpeg",
  "skia-rust-libpng",
@@ -1154,6 +1163,8 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-skcms",
  "skia-rust-wuffs",
+ "zune-core",
+ "zune-jpeg",
 ]
 
 [[package]]
@@ -1173,6 +1184,19 @@ dependencies = [
  "bitflags",
  "skia-rust-core",
  "skia-rust-raster",
+]
+
+[[package]]
+name = "skia-rust-fuzz"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-codec",
+ "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-pathops",
+ "skia-rust-pdf",
+ "skia-rust-raster",
+ "skia-rust-tools",
 ]
 
 [[package]]
@@ -1325,6 +1349,8 @@ dependencies = [
 name = "skia-rust-svg"
 version = "0.156.0"
 dependencies = [
+ "bitflags",
+ "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
  "skia-rust-pathops",
@@ -1350,6 +1376,7 @@ dependencies = [
  "skia-rust-skottie",
  "skia-rust-sksg",
  "skia-rust-sksl",
+ "skia-rust-svg",
  "skia-rust-text",
  "skia-rust-tools",
  "skia-rust-unicode",
@@ -2052,4 +2079,19 @@ checksum = "0ef0a8027ec3ee71300ab3bcbcd0393f434aa72b91ca6d635a39941deae8eea0"
 dependencies = [
  "cc",
  "pkg-config",
+]
+
+[[package]]
+name = "zune-core"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d56377fd46368984a170bc5aac5567e52ca5da874caa60bea39fcbca78fb658b"
+
+[[package]]
+name = "zune-jpeg"
+version = "0.5.16-rc1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36215ac03c367bb6cb28d5aab3b6cd48e41a0ae8bd903c282d8bb392ab9abfbb"
+dependencies = [
+ "zune-core",
 ]

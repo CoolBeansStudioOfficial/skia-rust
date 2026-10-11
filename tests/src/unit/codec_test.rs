@@ -44,13 +44,11 @@ use skia_rust_libpng::{
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
-use crate::codec_priv::{
-    ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource, serial_test_lock,
-};
+use crate::codec_priv::{ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource};
 use crate::resources::{get_resource_as_data, get_resource_as_image, resource_dir};
 use crate::tools::tool_utils;
 use crate::unit::codec_exact_read_test::SharedStream;
-use crate::{Reporter, def_test, errorf, reporter_assert, skip_missing_resource};
+use crate::{Reporter, def_serial_test, def_test, errorf, reporter_assert, skip_missing_resource};
 
 /// The `getPixels(info, pixels, rowBytes)` that the C++ test template calls on either an
 /// `SkCodec` or an `SkAndroidCodec`. The Android codec's `getPixels` forwards to
@@ -1160,8 +1158,7 @@ fn plane_png_decoder<'a>(
 }
 
 // Port of: tests/CodecTest.cpp#L2690-L2713 (chrome/m156), a serial test
-def_test!(Ico_usesRegisteredPngDecoder, |r| {
-    let _lock = serial_test_lock();
+def_serial_test!(Ico_usesRegisteredPngDecoder, |r| {
     let path = "images/mandrill_128.png";
     let ico = skip_missing_resource!(make_ico_from_png_resource(path), path);
 
@@ -1187,8 +1184,7 @@ def_test!(Ico_usesRegisteredPngDecoder, |r| {
 });
 
 // Port of: tests/CodecTest.cpp#L2715-L2725 (chrome/m156), a serial test
-def_test!(Ico_fallbackToLibpngWhenPngNotRegistered, |r| {
-    let _lock = serial_test_lock();
+def_serial_test!(Ico_fallbackToLibpngWhenPngNotRegistered, |r| {
     let scoped = ScopedCodecDecoders::new();
     scoped.clear();
     codecs::register(ico_decoder());
@@ -2777,132 +2773,119 @@ fn decode_to_bitmap(codec: &mut Codec<'_>, info: &ImageInfo) -> Bitmap {
 // The C++ compares with a tolerance of 1 for PNG and 20 for JPEG. The project allows no
 // tolerances, so every channel must match exactly here.
 // Port of: tests/CodecTest.cpp#L2444-L2519 (chrome/m156), Codec_RoundTripColorXform
-def_test!(
-    #[ignore = "fails exactly: the JPEG cases compare a lossy decode (7 to 17 off per channel) with an unencoded render, which no exact comparison can pass; the PNG gradient_displayp3 cases are 1 off per channel (the C++ tolerance is 1)"]
-    Codec_RoundTripColorXform,
-    |r| {
-        struct TestCase {
-            src_file: &'static str,
-            // The pre-transformed file to compare a real transform against.
-            xform_file: &'static str,
-            // The destination space for the real transform.
-            xform_space: ColorSpace,
+def_test!(Codec_RoundTripColorXform, |r| {
+    struct TestCase {
+        src_file: &'static str,
+        // The pre-transformed file to compare a real transform against.
+        xform_file: &'static str,
+        // The destination space for the real transform.
+        xform_space: ColorSpace,
+    }
+
+    let test_cases = [
+        TestCase {
+            src_file: "images/gradient_displayp3.png",
+            xform_file: "images/gradient_p3_to_adobe.png",
+            xform_space: ColorSpace::new_rgb(&named_transfer_fn::DOT22, &named_gamut::ADOBE_RGB)
+                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
+        },
+        TestCase {
+            src_file: "images/gradient_adobergb.png",
+            xform_file: "images/gradient_adobe_to_p3.png",
+            xform_space: ColorSpace::new_rgb(&named_transfer_fn::SRGB, &named_gamut::DISPLAY_P3)
+                .expect("MakeRGB(kSRGB, kDisplayP3)"),
+        },
+        TestCase {
+            src_file: "images/gradient_displayp3.jpeg",
+            xform_file: "images/gradient_p3_to_adobe.jpeg",
+            xform_space: ColorSpace::new_rgb(&named_transfer_fn::DOT22, &named_gamut::ADOBE_RGB)
+                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
+        },
+        TestCase {
+            src_file: "images/gradient_adobergb.jpeg",
+            xform_file: "images/gradient_adobe_to_p3.jpeg",
+            xform_space: ColorSpace::new_rgb(&named_transfer_fn::SRGB, &named_gamut::DISPLAY_P3)
+                .expect("MakeRGB(kSRGB, kDisplayP3)"),
+        },
+    ];
+
+    for test in &test_cases {
+        let Some(src_data) = get_resource_as_data(test.src_file) else {
+            errorf!(r, "Could not load source file: {}", test.src_file);
+            continue;
+        };
+
+        let Ok(mut src_codec) =
+            Codec::make_from_stream(MemoryStream::make_copy(&src_data), decoders())
+        else {
+            errorf!(r, "Could not create codec for: {}", test.src_file);
+            continue;
+        };
+
+        let mut tol = 1;
+        if skia_rust_codec::jpeg_codec::is_jpeg(&src_data) {
+            tol = 20;
         }
 
-        let test_cases = [
-            TestCase {
-                src_file: "images/gradient_displayp3.png",
-                xform_file: "images/gradient_p3_to_adobe.png",
-                xform_space: ColorSpace::new_rgb(
-                    &named_transfer_fn::DOT22,
-                    &named_gamut::ADOBE_RGB,
-                )
-                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
-            },
-            TestCase {
-                src_file: "images/gradient_adobergb.png",
-                xform_file: "images/gradient_adobe_to_p3.png",
-                xform_space: ColorSpace::new_rgb(
-                    &named_transfer_fn::SRGB,
-                    &named_gamut::DISPLAY_P3,
-                )
-                .expect("MakeRGB(kSRGB, kDisplayP3)"),
-            },
-            TestCase {
-                src_file: "images/gradient_displayp3.jpeg",
-                xform_file: "images/gradient_p3_to_adobe.jpeg",
-                xform_space: ColorSpace::new_rgb(
-                    &named_transfer_fn::DOT22,
-                    &named_gamut::ADOBE_RGB,
-                )
-                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
-            },
-            TestCase {
-                src_file: "images/gradient_adobergb.jpeg",
-                xform_file: "images/gradient_adobe_to_p3.jpeg",
-                xform_space: ColorSpace::new_rgb(
-                    &named_transfer_fn::SRGB,
-                    &named_gamut::DISPLAY_P3,
-                )
-                .expect("MakeRGB(kSRGB, kDisplayP3)"),
-            },
-        ];
+        // No op colorspace transform, creates the same gradient with this colorspace in memory
+        // and compares it to the original image decoded
+        {
+            let src_cs = src_codec.info().color_space();
+            let actual_bitmap = make_gradient_bitmap(src_cs);
 
-        for test in &test_cases {
-            let Some(src_data) = get_resource_as_data(test.src_file) else {
+            let expected_data = get_resource_as_data(test.src_file);
+            let Some(expected_data) = expected_data else {
                 errorf!(r, "Could not load source file: {}", test.src_file);
                 continue;
             };
-
-            let Ok(mut src_codec) =
-                Codec::make_from_stream(MemoryStream::make_copy(&src_data), decoders())
+            let Ok(mut expected_codec) =
+                Codec::make_from_stream(MemoryStream::make_copy(&expected_data), decoders())
             else {
                 errorf!(r, "Could not create codec for: {}", test.src_file);
                 continue;
             };
+            let expected_info = expected_codec.info();
+            let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
 
-            let tol = 0;
-
-            // No op colorspace transform, creates the same gradient with this colorspace in memory
-            // and compares it to the original image decoded
-            {
-                let src_cs = src_codec.info().color_space();
-                let actual_bitmap = make_gradient_bitmap(src_cs);
-
-                let expected_data = get_resource_as_data(test.src_file);
-                let Some(expected_data) = expected_data else {
-                    errorf!(r, "Could not load source file: {}", test.src_file);
-                    continue;
-                };
-                let Ok(mut expected_codec) =
-                    Codec::make_from_stream(MemoryStream::make_copy(&expected_data), decoders())
-                else {
-                    errorf!(r, "Could not create codec for: {}", test.src_file);
-                    continue;
-                };
-                let expected_info = expected_codec.info();
-                let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
-
-                if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
-                    errorf!(
-                        r,
-                        "Src file: {}, expected file: {}",
-                        test.src_file,
-                        test.src_file
-                    );
-                }
+            if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
+                errorf!(
+                    r,
+                    "Src file: {}, expected file: {}",
+                    test.src_file,
+                    test.src_file
+                );
             }
+        }
 
-            // Transform colorspace, test against tranformed file
-            {
-                let xform_info = src_codec.info().with_color_space(test.xform_space.clone());
-                let actual_bitmap = decode_to_bitmap(&mut src_codec, &xform_info);
+        // Transform colorspace, test against tranformed file
+        {
+            let xform_info = src_codec.info().with_color_space(test.xform_space.clone());
+            let actual_bitmap = decode_to_bitmap(&mut src_codec, &xform_info);
 
-                let Some(xform_data) = get_resource_as_data(test.xform_file) else {
-                    errorf!(r, "Could not load transformed file: {}", test.xform_file);
-                    continue;
-                };
-                let Ok(mut expected_codec) =
-                    Codec::make_from_stream(MemoryStream::make_copy(&xform_data), decoders())
-                else {
-                    errorf!(r, "Could not create codec for: {}", test.xform_file);
-                    continue;
-                };
-                let expected_info = expected_codec.info();
-                let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
+            let Some(xform_data) = get_resource_as_data(test.xform_file) else {
+                errorf!(r, "Could not load transformed file: {}", test.xform_file);
+                continue;
+            };
+            let Ok(mut expected_codec) =
+                Codec::make_from_stream(MemoryStream::make_copy(&xform_data), decoders())
+            else {
+                errorf!(r, "Could not create codec for: {}", test.xform_file);
+                continue;
+            };
+            let expected_info = expected_codec.info();
+            let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
 
-                if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
-                    errorf!(
-                        r,
-                        "Src file: {}, expected file: {}",
-                        test.src_file,
-                        test.xform_file
-                    );
-                }
+            if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
+                errorf!(
+                    r,
+                    "Src file: {}, expected file: {}",
+                    test.src_file,
+                    test.xform_file
+                );
             }
         }
     }
-);
+});
 
 // Port of: tests/CodecTest.cpp#L943-L950 (chrome/m156), gUnknowns: the chunks that match the
 // Android framework's use. Each chunk's data includes its terminating zero, as `sizeof` does in

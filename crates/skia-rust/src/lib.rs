@@ -11,6 +11,10 @@ pub use skia_rust_pathops::PathOpsExt;
 #[cfg(feature = "codec")]
 pub use skia_rust_codec as codec;
 
+/// The SVG module: the DOM and the SVG canvas (`skia_safe::svg`).
+#[cfg(feature = "svg")]
+pub use skia_rust_svg as svg;
+
 /// The PDF backend (`skia_safe::pdf`).
 #[cfg(feature = "pdf")]
 pub mod pdf;

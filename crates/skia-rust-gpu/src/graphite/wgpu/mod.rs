@@ -67,7 +67,10 @@ mod adapter;
 #[cfg(not(target_arch = "wasm32"))]
 mod noop;
 #[cfg(not(target_arch = "wasm32"))]
-pub use adapter::{adapter_backend_context, any_adapter_backend_context};
+pub use adapter::{
+    AdapterTestContext, adapter_backend_context, any_adapter_backend_context,
+    serialized_adapter_context, shared_adapter_backend_context,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use noop::{
     noop_backend_context, noop_backend_context_for_profile, noop_backend_context_with_features,
