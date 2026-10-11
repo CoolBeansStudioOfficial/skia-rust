@@ -351,6 +351,8 @@ pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
 #[cfg(test)]
+pub mod png_rust_decoder_test;
+#[cfg(test)]
 pub mod poly_utils_test;
 #[cfg(test)]
 pub mod pre_chop_path_curves_test;
