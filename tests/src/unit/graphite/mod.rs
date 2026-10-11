@@ -24,6 +24,7 @@ pub mod pipeline_callback_test;
 pub mod pipeline_data_cache_test;
 pub mod precompile;
 pub mod proxy_cache_test;
+pub mod read_write_pixels_graphite_test;
 pub mod recorder_test;
 pub mod recording_order_test;
 pub mod recording_surfaces_test;
