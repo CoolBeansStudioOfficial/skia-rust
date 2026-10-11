@@ -52634,8 +52634,8 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L559-L646"
 module = "gpu"
-status = "todo"
-reason = "needs Context::asyncRescaleAndReadPixels with RescaleImage on Image and Surface (not ported; see wgpu/context.rs) and a real adapter (lavapipe job)"
+status = "failing"
+reason = "aborts the test binary: the copy-as-draw conversion texture of the R16Unorm, Rg16Unorm and Rgba16Unorm read-backs is rejected by wgpu 30.0.1 (RENDER_ATTACHMENT is not allowed), an uncaptured validation error that panics, then a buffer destructor panics and aborts. wgpu/graphite_utils.rs lists these formats as renderable under the TIER1 and UNORM16 features, so the caps need a decision for the 16-bit norm formats. Ignored (cfg skia_rust_adapter_tests) until then"
 span_hash = "26e9b48f9bfc7306afb4a9e0703cded74a6fd3382ffd71a690224ce2a4370a1c"
 
 [[test]]
@@ -52644,8 +52644,8 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L648-L712"
 module = "gpu"
-status = "todo"
-reason = "needs Context::asyncRescaleAndReadPixels with RescaleImage on Image and Surface (not ported; see wgpu/context.rs) and a real adapter (lavapipe job)"
+status = "failing"
+reason = "912 read-backs fail, all at the copy-as-draw conversion texture (AsyncReadPixelsConversionTexture) for the R16Unorm, Rg16Unorm and Rgba16Unorm read types, which wgpu 30.0.1 rejects as render attachments while wgpu/graphite_utils.rs lists them as renderable; no pixel mismatches are reported. Ignored (cfg skia_rust_adapter_tests) until the 16-bit norm caps are decided"
 span_hash = "e0d9bfd0cb3e1a96a52445d291210c63dd40a0934fadee247cdd9447090d8fb8"
 
 [[test]]

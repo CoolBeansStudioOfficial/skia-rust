@@ -182,6 +182,33 @@ pub fn wrap_texture(
     color_space: Option<ColorSpace>,
     origin: Origin,
 ) -> Option<CoreImage> {
+    wrap_texture_with_release(
+        recorder,
+        backend_texture,
+        color_type,
+        alpha_type,
+        color_space,
+        origin,
+        None,
+    )
+}
+
+/// `WrapTexture(recorder, backendTex, colorType, alphaType, colorSpace, origin, releaseP,
+/// releaseC)`: [`wrap_texture`] with the texture's release callback `release`.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L72-L127 (chrome/m156), with `genMipmaps` = kNo
+#[doc(alias = "WrapTexture")]
+#[must_use]
+pub fn wrap_texture_with_release(
+    recorder: &Recorder,
+    backend_texture: &BackendTexture,
+    color_type: ColorType,
+    alpha_type: AlphaType,
+    color_space: Option<ColorSpace>,
+    origin: Origin,
+    release: Option<CallbackProc>,
+) -> Option<CoreImage> {
+    let release_helper = release.map(RefCntedCallback::make);
+
     let info = ColorInfo::new(color_type, alpha_type, color_space);
     let priv_ = recorder.priv_();
     let caps = Arc::clone(priv_.caps());
@@ -196,6 +223,7 @@ pub fn wrap_texture(
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         provider.create_wrapped_texture(backend_texture, "WrappedImage")?
     };
+    texture.set_release_callback(release_helper.map(|helper| helper as ReleaseCallback));
     let proxy = TextureProxy::wrap(texture);
     let swizzle = read_swizzle_for_color_type(color_type, proxy.format());
     let view = TextureProxyView::new_with_origin(Some(proxy), swizzle, origin);
