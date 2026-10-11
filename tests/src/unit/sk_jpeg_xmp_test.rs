@@ -113,8 +113,11 @@ fn extended_xmp_with_header(
 }
 
 // Port of: tests/SkJpegXmpTest.cpp#L102-L161 (chrome/m156)
-def_test!(SkJpegXmp_readExtendedXmp, |r| {
-    let standard_xmp_data = r#"
+def_test!(
+    #[allow(clippy::cast_possible_truncation)]
+    SkJpegXmp_readExtendedXmp,
+    |r| {
+        let standard_xmp_data = r#"
             <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 6.0.0">
                <rdf:RDF xmlns:xmpNote="http://ns.adobe.com/xmp/note/">
                   <rdf:Description rdf:about="">
@@ -123,7 +126,7 @@ def_test!(SkJpegXmp_readExtendedXmp, |r| {
                </rdf:RDF>
             </x:xmpmeta>"#;
 
-    let extended_xmp_data1 = r#"
+        let extended_xmp_data1 = r#"
         <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 6.0.0">
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                     xmlns:hdrgm="http://ns.adobe.com/hdr-gain-map/1.0/">
@@ -131,47 +134,48 @@ def_test!(SkJpegXmp_readExtendedXmp, |r| {
                      <hdrgm:Version>1.0</hdrgm:Version>
                      <hdrgm:GainMapMax>3</hdrgm:GainMapMax>
                     <hdrgm:HDRCapacityMax>4</hdrgm:HDRCapacityMax>"#;
-    let extended_xmp_data2 = r#"
+        let extended_xmp_data2 = r"
                 </rdf:Description>
             </rdf:RDF>
-        </x:xmpmeta>"#;
+        </x:xmpmeta>";
 
-    let total_extended_xmp_size = (extended_xmp_data1.len() + extended_xmp_data2.len()) as u32;
-    let mut md5 = Md5::new();
-    md5.write_bytes(extended_xmp_data1.as_bytes());
-    md5.write_bytes(extended_xmp_data2.as_bytes());
-    let digest = md5.finish();
+        let total_extended_xmp_size = (extended_xmp_data1.len() + extended_xmp_data2.len()) as u32;
+        let mut md5 = Md5::new();
+        md5.write_bytes(extended_xmp_data1.as_bytes());
+        md5.write_bytes(extended_xmp_data2.as_bytes());
+        let digest = md5.finish();
 
-    let standard_xmp_data_with_header = standard_xmp_with_header(&digest, standard_xmp_data);
+        let standard_xmp_data_with_header = standard_xmp_with_header(&digest, standard_xmp_data);
 
-    let offset1 = 0;
-    let extended_xmp_data1_with_header = extended_xmp_with_header(
-        &digest,
-        total_extended_xmp_size,
-        offset1,
-        extended_xmp_data1,
-    );
+        let offset1 = 0;
+        let extended_xmp_data1_with_header = extended_xmp_with_header(
+            &digest,
+            total_extended_xmp_size,
+            offset1,
+            extended_xmp_data1,
+        );
 
-    let offset2 = extended_xmp_data1.len() as u32;
-    let extended_xmp_data2_with_header = extended_xmp_with_header(
-        &digest,
-        total_extended_xmp_size,
-        offset2,
-        extended_xmp_data2,
-    );
+        let offset2 = extended_xmp_data1.len() as u32;
+        let extended_xmp_data2_with_header = extended_xmp_with_header(
+            &digest,
+            total_extended_xmp_size,
+            offset2,
+            extended_xmp_data2,
+        );
 
-    let app1_params = vec![
-        Data::new_copy(&standard_xmp_data_with_header),
-        Data::new_copy(&extended_xmp_data1_with_header),
-        Data::new_copy(&extended_xmp_data2_with_header),
-    ];
+        let app1_params = vec![
+            Data::new_copy(&standard_xmp_data_with_header),
+            Data::new_copy(&extended_xmp_data1_with_header),
+            Data::new_copy(&extended_xmp_data2_with_header),
+        ];
 
-    let Some(xmp) = make_xmp(&app1_params) else {
-        reporter_assert!(r, false);
-        return;
-    };
-    let mut info = GainmapInfo::default();
-    reporter_assert!(r, xmp.get_gainmap_info_adobe(Some(&mut info)));
-    reporter_assert!(r, info.gainmap_ratio_max.r == 8.0);
-    reporter_assert!(r, info.display_ratio_hdr == 16.0);
-});
+        let Some(xmp) = make_xmp(&app1_params) else {
+            reporter_assert!(r, false);
+            return;
+        };
+        let mut info = GainmapInfo::default();
+        reporter_assert!(r, xmp.get_gainmap_info_adobe(Some(&mut info)));
+        reporter_assert!(r, info.gainmap_ratio_max.r == 8.0);
+        reporter_assert!(r, info.display_ratio_hdr == 16.0);
+    }
+);

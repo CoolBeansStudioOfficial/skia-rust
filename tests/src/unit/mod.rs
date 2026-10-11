@@ -129,6 +129,8 @@ pub mod fontations_test;
 #[cfg(test)]
 pub mod front_buffered_stream_test;
 #[cfg(test)]
+pub mod gainmap_shader_test;
+#[cfg(test)]
 pub mod geometry_test;
 #[cfg(test)]
 pub mod gif_test;
