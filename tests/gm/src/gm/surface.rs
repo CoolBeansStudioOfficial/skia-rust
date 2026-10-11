@@ -240,13 +240,28 @@ const SP_RECS: [SurfacePropsRec; 9] = [
 ];
 
 // Port of: gm/surface.cpp#L95-L154 (chrome/m156), class SurfacePropsGM
-#[derive(Debug, Default)]
-pub struct SurfacePropsGm;
+#[derive(Debug)]
+pub struct SurfacePropsGm {
+    /// `fFlags`: the surface props flags of every surface (0 or `kUseDeviceIndependentFonts`).
+    flags: SurfacePropsFlags,
+}
+
+impl SurfacePropsGm {
+    // Port of: gm/surface.cpp#L97 (chrome/m156), SurfacePropsGM(uint32_t flags)
+    #[must_use]
+    pub fn new(flags: SurfacePropsFlags) -> Self {
+        Self { flags }
+    }
+}
 
 impl GM for SurfacePropsGm {
-    // Port of: gm/surface.cpp#L127-L130 (chrome/m156), getName (fFlags == 0)
+    // Port of: gm/surface.cpp#L127-L130 (chrome/m156), getName
     fn name(&self) -> String {
-        "surfaceprops".to_owned()
+        if self.flags.is_empty() {
+            "surfaceprops".to_owned()
+        } else {
+            "surfaceprops_df".to_owned()
+        }
     }
 
     fn size(&mut self) -> ISize {
@@ -262,7 +277,7 @@ impl GM for SurfacePropsGm {
         let mut y: f32 = 0.0;
         for rec in &SP_RECS {
             let props = SurfaceProps::new_with_text_properties(
-                SurfacePropsFlags::empty(),
+                self.flags,
                 rec.geo,
                 rec.contrast,
                 rec.gamma,
@@ -279,4 +294,13 @@ impl GM for SurfacePropsGm {
 }
 
 // Port of: gm/surface.cpp#L213-L213 (chrome/m156), DEF_GM( return new SurfacePropsGM(0); )
-crate::def_gm!(SurfacePropsGM_0 = "SurfacePropsGM(0)", SurfacePropsGm);
+crate::def_gm!(
+    SurfacePropsGM_0 = "SurfacePropsGM(0)",
+    SurfacePropsGm::new(SurfacePropsFlags::empty())
+);
+// Port of: gm/surface.cpp#L214 (chrome/m156),
+// DEF_GM( return new SurfacePropsGM(SkSurfaceProps::kUseDeviceIndependentFonts_Flag); )
+crate::def_gm!(
+    SurfacePropsGM_df = "SurfacePropsGM(SkSurfaceProps::kUseDeviceIndependentFonts_Flag)",
+    SurfacePropsGm::new(SurfacePropsFlags::USE_DEVICE_INDEPENDENT_FONTS)
+);

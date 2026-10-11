@@ -6,6 +6,7 @@
 //! [`RasterClip`]: a clip that is either a BW [`Region`] or an antialiased [`AAClip`], and
 //! [`AAClipBlitterWrapper`], which hands the scan converters the region and blitter to draw with.
 
+use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::Path;
@@ -14,6 +15,7 @@ use skia_rust_core::region::{Region, region_priv};
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::scalar::{scalar, scalar_floor_to_scalar};
 use skia_rust_core::shader::Shader;
+use skia_rust_core::shaders;
 
 use crate::aa_clip::{AAClip, AAClipBlitter};
 use crate::blitter::Blitter;
@@ -22,7 +24,6 @@ use crate::region_path::RegionExt;
 /// Wraps a [`Region`] and an [`AAClip`], so there is a single object that can represent either
 /// BW or antialiased clips (`SkRasterClip`).
 ///
-/// skia-rust: [`Self::op_shader`] can only hold one clip shader for now; see its documentation.
 // Port of: src/core/SkRasterClip.h#L28-L127 (chrome/m156)
 #[doc(alias = "SkRasterClip")]
 #[derive(Clone, Debug)]
@@ -330,23 +331,17 @@ impl RasterClip {
     /// Adds `shader` to the clip: it augments the clip rather than replacing it. Returns true if
     /// the clip is not empty (`op(sk_sp<SkShader>)`).
     ///
-    /// skia-rust: when the clip already has a shader, Skia combines the two with
-    /// `SkShaders::Blend(SkBlendMode::kSrcIn, sh, fShader)`. `SkBlendShader` is not ported (it
-    /// needs raster pipeline scratch contexts, which no shader in skia-rust uses yet), so that
-    /// second call panics.
-    ///
-    /// # Panics
-    /// If the clip already has a shader.
-    // Port of: src/core/SkRasterClip.cpp#L224-L233 (chrome/m156)
+    /// When the clip already has a shader, the two are combined with
+    /// `SkShaders::Blend(SkBlendMode::kSrcIn, sh, fShader)` (a [`BlendShader`]).
+    // Port of: src/core/SkRasterClip.cpp#L210-L220 (chrome/m156)
     #[doc(alias = "op")]
     pub fn op_shader(&mut self, sh: Shader) -> bool {
         self.validate();
 
-        assert!(
-            self.shader.is_none(),
-            "combining clip shaders needs SkShaders::Blend, which is not ported yet"
-        );
-        self.shader = Some(sh);
+        self.shader = Some(match self.shader.take() {
+            None => sh,
+            Some(existing) => shaders::blend(BlendMode::SrcIn, sh, existing),
+        });
         !self.is_empty()
     }
 

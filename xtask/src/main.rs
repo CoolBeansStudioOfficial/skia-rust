@@ -12,6 +12,7 @@ mod sksl;
 mod sksl_lexer;
 mod verify;
 mod verify_benches;
+mod verify_fuzz;
 mod verify_gms;
 mod verify_sksl;
 
@@ -199,11 +200,15 @@ enum InventoryCommand {
         /// Manifest id, e.g. `tests/PointTest.cpp::Point`.
         id: String,
     },
-    /// Run the ported unit tests and GMs and check them against the manifest.
+    /// Run the ported unit tests, GMs, `SkSL` goldens, benches and fuzzers and check them against
+    /// the manifest.
     Verify {
         /// Mark newly passing entries `passing` (and failing ported ones `failing`).
         #[arg(long)]
         update: bool,
+        /// Run only this leg (and update only its entries).
+        #[arg(long, value_enum)]
+        only: Option<inventory::Leg>,
     },
 }
 
@@ -223,7 +228,7 @@ fn main() -> Result<()> {
             }
             InventoryCommand::Stats => inventory::stats(&root),
             InventoryCommand::ModulePath { id } => inventory::module_path(&root, &id),
-            InventoryCommand::Verify { update } => inventory::verify(&root, update),
+            InventoryCommand::Verify { update, only } => inventory::verify(&root, update, only),
         },
         Command::Oracle { command } => match command {
             OracleCommand::Deps => oracle::deps(&root),

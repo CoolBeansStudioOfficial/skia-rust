@@ -15744,6 +15744,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L88-L101"
 module = "effects"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "15f6918a93263665e207f33d47ceb1482da8731b1f5b7cb762c47bd4dc4dbad8"
 
 [[test]]
@@ -15752,7 +15753,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L180-L183"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); draws through a Ganesh mock GrDirectContext"
 span_hash = "a53709fcba7dda47263dc044d38d74d51ab2c3433b5cb5f077b9ccac2e50d00e"
 
 [[test]]
@@ -15761,7 +15763,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L201-L211"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); draws through a Ganesh GL GrDirectContext"
 span_hash = "7ef203989d2788427f3bcf9ff37506055015e9e941ee1596c56b2363cc6c99d6"
 
 [[test]]
@@ -15771,6 +15774,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L47-L49"
 module = "core"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "c61376d2f97a328c9dc1a444cdbbb3b13f44d5c1ef928f030e6288b1f36ead56"
 
 [[test]]
@@ -15780,7 +15784,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L214-L219"
 module = "pdf"
 status = "todo"
-reason = "the fuzz harness is not ported (M27); the PDF canvas itself exists (M25)"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "690b3cd731e6c353430dce3f46520e8a47b00797a75432a59d0ff6f6458f5be6"
 
 [[test]]
@@ -15790,6 +15794,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L53-L58"
 module = "core"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "8950aed9b32a880fc3d5c6e6df0b7971cb0b873dd02a74a0030d2193b0c5cee4"
 
 [[test]]
@@ -15799,6 +15804,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
@@ -15808,6 +15814,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -15817,6 +15824,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L107-L167"
 module = "effects"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "856b16a4f26126f72b3e99aff969d63f6cce7cd0b33b56825981db99d64ce6d2"
 
 [[test]]
@@ -15825,7 +15833,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L222-L235"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "debug helper, not a fuzzer: replays an input into a DebugCanvas and prints its JSON"
 span_hash = "2e75ae89aee52e68b7ef8b20fe42f574eb723492b01adba6091dceef7f2e4ff8"
 
 [[test]]
@@ -15834,7 +15843,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCreateDDL.cpp#L212-L241"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes Ganesh deferred display lists"
 span_hash = "a77443409be3185f2e2fa32e742d5beb17630cf5577756fb1ef48ef36f906ccb"
 
 [[test]]
@@ -15843,7 +15853,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCubicRoots.cpp#L76-L92"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5488fc44d0a915d8cd8c6902a9cb8027c98fd08a752f062013364035a1547519"
 
 [[test]]
@@ -15852,7 +15862,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzDDLThreading.cpp#L303-L305"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes Ganesh DDL threading on GL"
 span_hash = "48848edeee705b4479755070973f588c3ff15e67f5536fe14ace5c3cab68f611"
 
 [[test]]
@@ -15861,7 +15872,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzDrawFunctions.cpp#L293-L333"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "156d377dea4e91a85ff250cc2456d73844094cc96a11f168811fa47eb419eb1a"
 
 [[test]]
@@ -15870,7 +15881,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L79-L86"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e5a447afbe35d5f8901fa5ec04766e0faece8f38e1c83bba81514133d194f121"
 
 [[test]]
@@ -15879,7 +15890,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L46-L53"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e589fa49a1abdbc7f16be5e9be6dd1193716944d56dd9892fb7d55fa271a5a74"
 
 [[test]]
@@ -15889,6 +15900,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L57-L76"
 module = "codec"
 status = "todo"
+reason = "needs codec wave C-R (SkPngRustEncoder; registered only with SK_CODEC_ENCODES_PNG_WITH_RUST)"
 span_hash = "543b7e8452e854872c285d411fdb70b0a56eafb38de0e430abb3e04a00cf9a52"
 
 [[test]]
@@ -15897,7 +15909,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L88-L102"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e3a56ae9393a5600b2ad022de0530265e451d1a2fe3dff5fbc423cbd6ae465ca"
 
 [[test]]
@@ -15906,7 +15918,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L106-L146"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "corpus-writing helper, not a fuzzer; skia_rust_fuzz::seeds builds the encoder seeds in its format (docs/design/fuzz.md §2)"
 span_hash = "664aabf3fc9000257ba630bf6ead0494b9081dec9250fa1779ae11729f84649c"
 
 [[test]]
@@ -15915,7 +15928,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzGrStyledShape.cpp#L17-L89"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes GrStyledShape"
 span_hash = "aae1265149015410ed5d34cc566232e7c870eb96ce85fe1eb22f988504725ad2"
 
 [[test]]
@@ -15924,7 +15938,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzGradients.cpp#L254-L275"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ade74d0c93bc20242a7f2b30ee996aa15e75df89c2ba5be55eb7331c3bcb52b3"
 
 [[test]]
@@ -15933,7 +15947,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzParsePath.cpp#L121-L132"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1f9c0f4dca07251e62fe55f94284090bc23a8e617d35c6beb076ac8740c8a86e"
 
 [[test]]
@@ -15942,7 +15956,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathMeasure.cpp#L17-L40"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "72720a14776fd46f285af5c48400e07c2931a4cb9a6c0cc333b47fdb3c889c3c"
 
 [[test]]
@@ -15951,8 +15965,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L181-L197"
 module = "pathops"
-status = "todo"
-reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
+status = "passing"
 span_hash = "6b6fe5290d6ecba05b6fde31cf3a5e954c97a2531291143bec1053ceacfd42ab"
 
 [[test]]
@@ -15961,8 +15974,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L19-L106"
 module = "pathops"
-status = "todo"
-reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
+status = "passing"
 span_hash = "ccda0ca5379db92b0be4cf59eef4260bc3c6d69a1e295ff6586526b5ffca84c5"
 
 [[test]]
@@ -15971,7 +15983,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPolyUtils.cpp#L28-L63"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "857c9daf3a47fca885c5d71f6150a1d30e03210dfd49825d8e58ca0654ff3758"
 
 [[test]]
@@ -15980,7 +15992,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPolyUtils.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "the empty PolyUtils of SK_ENABLE_OPTIMIZE_SIZE builds; skia-rust ports the full one (PolyUtils)"
 span_hash = "bc424c8f7cc79cefd7e228f4f849d35d2c89ff1f30e033267ea3d191783bd044"
 
 [[test]]
@@ -15990,6 +16003,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzPrecompile.cpp#L433-L452"
 module = "core"
 status = "todo"
+reason = "Graphite precompile on a mock Context: a later fuzz slice (docs/design/fuzz.md §6)"
 span_hash = "27c728e42c9bd3d4345a1996cd92e32663a10a0554e4c0fb37a3e044ea8a900f"
 
 [[test]]
@@ -15998,7 +16012,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzQuadRoots.cpp#L36-L48"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0ceddd79c301ee3329bc352a0d60b0ec154691301aa240da3aaf24f402ba7eec"
 
 [[test]]
@@ -16007,7 +16021,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzRegionOp.cpp#L11-L19"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5a55285715b9ccf14f415aa01ca93b926e9b9c46612797d01cf962a2d926861e"
 
 [[test]]
@@ -16017,6 +16031,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzSkParagraph.cpp#L262-L288"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules.md M10)"
 span_hash = "a871566365cd66d25552b4f1380950664ab8ab49d06ef30da358ccb586cce942"
 
 [[test]]
@@ -16025,7 +16040,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzTriangulation.cpp#L16-L36"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes GrTriangulator with GrCpuVertexAllocator (src/gpu/ganesh/geometry), which only Ganesh's path renderers use"
 span_hash = "71b8224b5658715137e75c353265edfddb957ebda2434a1b8138ab650060e373"
 
 [[test]]
@@ -16380,8 +16396,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/annotated_text.cpp#L38-L53"
 module = "text"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawAnnotation) is stale because drawAnnotation has landed; SkAnnotateRectWithURL still needs checking"
+status = "passing"
 span_hash = "5e76b934fce5941e1feef6e78eca1638a662e0d0f457096816a44d522db27794"
 
 [[test]]
@@ -16455,8 +16470,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L771-L771"
 module = "raster"
-status = "todo"
-reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
+status = "passing"
 span_hash = "c92a3a6925413b25b011751846fdf85cf77b6adf7d82ecfcc5cdf8d9f6e965ab"
 
 [[test]]
@@ -16465,8 +16479,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L676-L676"
 module = "raster"
-status = "todo"
-reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
+status = "passing"
 span_hash = "465a4037c5bee5b7922a5a72155a57a6313aa493558380d0605741780a166d98"
 
 [[test]]
@@ -16484,8 +16497,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L507-L513"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "050520a4ae95bd2322529cd8884575c3ca7e4d89f960bcfed9a58f757e69d5f0"
 
 [[test]]
@@ -16494,8 +16506,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L515-L521"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "b077c0f1394e2ac07d5799531a45dec38b1ca7bfa1809f153992f9917130025e"
 
 [[test]]
@@ -16504,8 +16515,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L523-L529"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "a38529b2ccf21bffc37dcee2b6176743b6617f25f32f4a218369923241423ca1"
 
 [[test]]
@@ -16514,8 +16524,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L531-L537"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "69dea62989952f64a3a991dabfd8bfe440dd8150bd82537ba1d1479021ed1939"
 
 [[test]]
@@ -16524,8 +16533,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L539-L545"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "ea8d5b9cfa4a3cc414c744780d0e59ef1f4a0e48da4e66943a497e86a85d99ea"
 
 [[test]]
@@ -16535,7 +16543,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L483-L489"
 module = "codec"
 status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+reason = "YUV[A]420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
 span_hash = "c20c68c8ff2779eb0ecbd4fd15157002c23a2d63b9ae7a23fbf4e5fa5d58da04"
 
 [[test]]
@@ -16545,7 +16553,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L491-L497"
 module = "codec"
 status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+reason = "YUV420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
 span_hash = "59cb3f4b6de73888618938253e0b6da6b3d2d0679009c532000efeda1ced7ead"
 
 [[test]]
@@ -16554,8 +16562,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L499-L505"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "6aa09cbd3de950255007f8b179bee644c6e94255bfb9e345e8c703dbf64db457"
 
 [[test]]
@@ -16820,8 +16827,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmapfilters.cpp#L114-L114"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawString) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "4a54a347805cb06f730a513d432ca1b641b0529564ec49481cd55f1e95f63600"
 
 [[test]]
@@ -18482,8 +18488,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L217-L252"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "9a227536ce82bd3b777ba2211c8648dbeb55e65e89090865eefbcd968387f5a5"
 
 [[test]]
@@ -18510,8 +18515,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L270-L332"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "13109a333ef7c60d740d02a953da9f79c47a27e79d6c7f6d4929e71e1bd24ffe"
 
 [[test]]
@@ -18520,8 +18524,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L391-L484"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "7c8b35a69e977c06929283db1a7222bfed66adf5dbeaa6d75ce025d14f101209"
 
 [[test]]
@@ -18638,8 +18641,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L107-L148"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: SkShaders::MakeTurbulence and the image-filter Shader/ColorFilter/Compose factories are on main; re-check"
+status = "passing"
 span_hash = "6835bce8d9ed6bcd46b89b14f1646705578ee3334127219f47d876ce49c993fe"
 
 [[test]]
@@ -19718,8 +19720,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L264-L302"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (resource stream) is stale because get_resource_as_stream exists; re-check the blob path"
+status = "passing"
 span_hash = "3713bba18f7836b70cbec27269bbdb4751da8f35ad7313bac51371539eb38710"
 
 [[test]]
@@ -19890,8 +19891,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/dropshadowimagefilter.cpp#L85-L127"
 module = "effects"
-status = "todo"
-reason = "needs SkColorSpace::makeColorSpin (not ported) for the DropShadow overload that takes a colour space"
+status = "passing"
 span_hash = "14564fc8f4648e343f9278188f7471b3861a7851ec0c1d7f0ba97f1582c7b718"
 
 [[test]]
@@ -21706,8 +21706,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image.cpp#L369-L369"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::scalePixels for lazy codec images (SkCodecs::DeferredImage) and picture images (DeferredFromPicture); SkImage::scalePixels is not ported"
+status = "passing"
 span_hash = "aa20d177008cda2664b23d80ad5967dc81d8bce23e9f02371e8ca5ae6de7f87d"
 
 [[test]]
@@ -21716,8 +21715,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image.cpp#L370-L370"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::makeScaled (not ported)"
+status = "passing"
 span_hash = "15cc182d8f1a021d04c45e057f5dec612e3d62b51129409ab7b7ed9a9920e029"
 
 [[test]]
@@ -21726,8 +21724,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L615-L644"
 module = "raster"
-status = "todo"
-reason = "needs SkImage::makeScaled (not ported)"
+status = "passing"
 span_hash = "fd4a8cec806633fb20aed93717c8687109ec1d104e8b2781e5af78be420ebc04"
 
 [[test]]
@@ -22185,8 +22182,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagemasksubset.cpp#L96-L114"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (DeferredFromGenerator) is stale because images::deferred_from_generator is on main; re-check the generator subclass"
+status = "passing"
 span_hash = "d0a004b20d2d57273739a62945bceb673d55a05def23780a3da3cf59b747387f"
 
 [[test]]
@@ -23582,8 +23578,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureimagefilter.cpp#L159-L159"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "93554f90877793b02dc492e2db40d726b3eb38ad1f2a9b7399ca81f6beee5183"
 
 [[test]]
@@ -23793,7 +23788,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/rasterhandleallocator.cpp#L276-L308"
 module = "raster"
 status = "todo"
-reason = "needs SkRasterHandleAllocator (the canvas raster-handle allocator; device.rs notes it is not ported)"
+reason = "needs SkRasterHandleAllocator (MakeCanvas, allocBitmap, accessTopRasterHandle, updateHandle; fAllocator and fRasterHandle on SkBitmapDevice). Skia's raster handle is a raw SkCanvas* owned by the allocator, with no safe Rust form here (no unsafe outside skia-rust-simd), so this is not a small port"
 span_hash = "5afd0e0a19db99156439684604da1ac4b568aa96452c74f7dc99a6219a0f5989"
 
 [[test]]
@@ -23913,8 +23908,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrect.cpp#L315-L315"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "8f8f0a49a7c24ea9b6edaaaf5195079ac982a5ca16ade39d37784ad94d85c972"
 
 [[test]]
@@ -24032,8 +24026,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
+status = "failing"
+reason = "runtime-shader image filter: diagnostic pass with diffs: 1580 of 375000 px differ (565), all in the skew and perspective cells (max channel delta 66/255); the translate, scale and rotate cells match. See notes/gm_runtimeimagefilter_cpp_rtif_distort.md"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]
@@ -24042,8 +24036,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeimagefilter.cpp#L81-L111"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
+status = "passing"
 span_hash = "8415cadfee6eba60dd9f8c94b2e8f5512e54750ad54a3e7b0f59c1399b4083fe"
 
 [[test]]
@@ -24052,8 +24045,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L267-L318"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "dd098ded396b100e48be8e2f458eb32b103383ae81576ff9f9c91bfe800865c6"
 
 [[test]]
@@ -24072,8 +24064,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L238-L264"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "eab99248a8d97aabd7eaeab47f7d2d7f5219f70165478f55757e292a7472d5fa"
 
 [[test]]
@@ -24082,8 +24073,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L382-L415"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "b087a0d1ab68e8b8e4e25a8ee958680b73af987bc97a275d4e636ff03e39c8ec"
 
 [[test]]
@@ -24092,8 +24082,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L516-L561"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "6441ea4bd56b1873738d8f7febdb922a517acf54516f7e2d52bdfb8d28638b16"
 
 [[test]]
@@ -24102,8 +24091,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L603-L639"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "98b4f8d5e1c960bab8308c8bd893583ae43f848302c2e0a5bc507e0702738311"
 
 [[test]]
@@ -24112,8 +24100,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L165-L195"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "d358f02dcbd27389839c19338e2192d07d4c4cfafe8f82c7bdf6e8e07f965f95"
 
 [[test]]
@@ -24285,8 +24272,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/samplerstress.cpp#L147-L147"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (SkPngEncoder) is stale because the PNG encoder has landed; re-check make_codec_image"
+status = "passing"
 span_hash = "b4a3cbd751c646cb375131c9fb1a10777e1fc2d25ea27f28aeeb991303414621"
 
 [[test]]
@@ -25204,8 +25190,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/surface.cpp#L170-L170"
 module = "text"
-status = "todo"
-reason = "not attempted in this sweep: SurfacePropsGM is not written yet (text and gradients)"
+status = "passing"
 span_hash = "54b4394be45f96ff10a15149f8616c2e2715dbd99b95efad49070c163b7f3c71"
 
 [[test]]
@@ -25852,8 +25837,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/vertices.cpp#L207-L207"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: drawVertices/drawPatch are ported; the GM's gradient shader path needs checking"
+status = "passing"
 span_hash = "4d8869c55c1eb6620ad0f14f2460a0de7ea469ffde7a302af3f2bac26e920276"
 
 [[test]]
@@ -35068,7 +35052,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L75-L110"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "0cee14bd055d60b8ba11bc1c26bf2eb616f3fa2bab023997847bb7539a71caa8"
 
 [[test]]
@@ -35078,7 +35062,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1205-L1329"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "7f040f5e8eb339611e89353569e8c9aafe5d3b74ce02e5c411b1eea98254f3ff"
 
 [[test]]
@@ -35088,7 +35072,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L228-L281"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "8a7ede3298e6d8b6e13ebe08c323c1637493a8201d43fa663bb2507694b3a83a"
 
 [[test]]
@@ -35098,7 +35082,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L112-L226"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "1f71392e2cca295a1921a919e0fa53674624f301bf856aaeab6f7e5e6ce14b4b"
 
 [[test]]
@@ -35108,7 +35092,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L283-L321"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "f3e9658e6c2e55952e3d07e2a00336d1b5eaf798d2b278ccd17c99709e2a3d2e"
 
 [[test]]
@@ -35118,7 +35102,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L485-L932"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "26c0d5e13841f0866e31ecdd45adac15608493bc3a745069f22454747bed98ed"
 
 [[test]]
@@ -35128,7 +35112,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L323-L415"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "bd83ad66c9f141eceafc771d8f64dc6ce3c329bcbe68540cc3996f64e18e8715"
 
 [[test]]
@@ -35137,8 +35121,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L20-L47"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+status = "passing"
 span_hash = "753d4f76097391c67c30432d642f81b96f1e182293cb48a7f1b10387a0ea64fb"
 
 [[test]]
@@ -35147,8 +35130,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L49-L73"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+status = "passing"
 span_hash = "3e580ffed2f451dc72b1544eed04a1fb6e9b930666a52c2e19a3291e6c55c248"
 
 [[test]]
@@ -36397,8 +36379,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L615-L702"
 module = "codec"
-status = "todo"
-reason = "needs SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C17), not ported"
+status = "passing"
 span_hash = "9610696b5052569c4a02724b75dacad398c9ed7b3c6e487eb4991c65b4d5c592"
 
 [[test]]
@@ -36416,8 +36397,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L463-L572"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the JPEG gainmap decode hooks (SkJpegCodec::onGetGainmapInfo/onGetGainmapCodec, docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "f4ac08342731d0ae364e73260a268a50336d694418ba515498da0b17acbcc9d7"
 
 [[test]]
@@ -36426,8 +36406,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L765-L839"
 module = "codec"
-status = "todo"
-reason = "needs SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C17) and the JPEG gainmap decode hooks (SkAndroidCodec::getGainmapAndroidCodec), not ported"
+status = "passing"
 span_hash = "9deef51eb6338e7eb612f64331e734c5ee80b872b4fe5e3d39893b224c42ad95"
 
 [[test]]
@@ -36436,8 +36415,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L574-L611"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG gainmap hooks (SkJpegCodec::onGetGainmapInfo, MPF and XMP gainmap lookup; docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "a040d2b8df3d908a1b8b02a153d23bae535b2884014ba6039c317a3c01084a9f"
 
 [[test]]
@@ -36446,8 +36424,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L893-L989"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the JPEG gainmap codec (SkJpegCodec gainmap hooks), plus SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C13, C17), not ported"
+status = "passing"
 span_hash = "978f54400feeaf3d98e34ed56b2e3f9ebb648c2b96b7679f1d172d475a1363e3"
 
 [[test]]
@@ -40187,8 +40164,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L140-L201"
 module = "codec"
-status = "todo"
-reason = "needs the PNG gainmap chunks in the encoder (docs/design/codecs.md C16), not ported"
+status = "passing"
 span_hash = "625d8cfd9d3c2e242c7bfb239309808e613b882fc1cad899a5adaa2a3076f747"
 
 [[test]]

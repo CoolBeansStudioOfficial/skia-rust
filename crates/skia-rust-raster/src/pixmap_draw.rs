@@ -15,6 +15,8 @@
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::image::Image;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::image_info_priv::image_info_is_valid;
 use skia_rust_core::images;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
@@ -127,5 +129,42 @@ impl ImageScalePixels for Image {
             return scale_pixels(&pmap, dst, sampling);
         }
         false
+    }
+}
+
+/// `SkImage::makeScaled(info, sampling)` on the CPU: a copy of the image at `info`'s size.
+///
+/// skia-rust: Skia's `makeScaled` takes an optional `SkRecorder`; the CPU path (`recorder` is
+/// `nullptr`) is the only one here, so the recorder parameter is left out.
+pub trait ImageMakeScaled {
+    /// Returns a copy of this image at `new_info`'s size, or `None` if `new_info` is invalid or
+    /// the surface cannot be made (`SkImage::makeScaled`).
+    #[doc(alias = "makeScaled")]
+    fn make_scaled(&self, new_info: &ImageInfo, sampling: &SamplingOptions) -> Option<Image>;
+}
+
+impl ImageMakeScaled for Image {
+    // Port of: src/image/SkImage.cpp#L52-L55 and #L63-L84 (chrome/m156)
+    fn make_scaled(&self, new_info: &ImageInfo, sampling: &SamplingOptions) -> Option<Image> {
+        if !image_info_is_valid(new_info) {
+            return None;
+        }
+        if new_info == self.image_info() {
+            return Some(self.clone());
+        }
+
+        // as_IB(this)->onMakeSurface(recorder, newInfo): a CPU bitmap surface with rowBytes 0.
+        let mut surf = surfaces::raster(new_info, None, None)?;
+
+        let mut paint = Paint::default();
+        paint.set_blend_mode(BlendMode::Src);
+        surf.canvas().draw_image_rect_with_sampling_options(
+            self,
+            None,
+            Rect::from_iwh(new_info.width(), new_info.height()),
+            *sampling,
+            &paint,
+        );
+        surf.image_snapshot()
     }
 }

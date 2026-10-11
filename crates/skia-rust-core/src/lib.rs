@@ -99,6 +99,7 @@ mod glyph_intercepts;
 pub mod glyph_run;
 pub mod graphics;
 pub mod half;
+pub mod hdr_metadata;
 pub mod id_change_listener;
 pub mod image;
 pub mod image_base;

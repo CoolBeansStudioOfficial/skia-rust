@@ -26,8 +26,11 @@ use skia_rust_core::image_info::ImageInfo;
 
 use skia_rust_core::color::{Color, Color4f, colors};
 use skia_rust_core::font::Font;
+use skia_rust_core::font_arguments::FontArguments;
+use skia_rust_core::font_arguments::VariationPosition;
+use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_priv::get_font_bounds;
-use skia_rust_core::font_types::{GlyphId, TextEncoding};
+use skia_rust_core::font_types::{GlyphId, TextEncoding, set_four_byte_tag};
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_measure::PathMeasure;
@@ -43,7 +46,10 @@ use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
-use skia_rust_tools::font_tool_utils::default_portable_font;
+use skia_rust_tools::font_tool_utils::{
+    default_portable_font, default_portable_typeface, test_font_mgr,
+};
+use skia_rust_tools::resources::get_resource_as_stream;
 
 // Port of: gm/drawatlas.cpp#L20-L38 (chrome/m156)
 fn make_atlas(caller: &Canvas, target: Rect) -> Option<Image> {
@@ -384,4 +390,49 @@ crate::def_simple_gm!(compare_atlas_vertices, canvas, 560, 585, {
             canvas.translate((0.0, 145.0));
         }
     }
+});
+
+// Exercise xform blob and its tight bounds
+// Port of: gm/drawatlas.cpp#L263-L293 (chrome/m156), blob_rsxform_distortable
+crate::def_simple_gm!(blob_rsxform_distortable, canvas, 500, 100, {
+    let mut typeface = None;
+    if let Some(distortable) = get_resource_as_stream("fonts/Distortable.ttf") {
+        let fm = test_font_mgr();
+        // The C++ literal 1.618033988749895f, kept verbatim (it is not the golden-ratio constant).
+        #[allow(clippy::approx_constant, clippy::excessive_precision)]
+        let position = [Coordinate {
+            axis: set_four_byte_tag(b'w', b'g', b'h', b't'),
+            value: 1.618_033_988_749_895,
+        }];
+        let mut params = FontArguments::default();
+        params.set_variation_design_position(VariationPosition {
+            coordinates: &position,
+        });
+        typeface = fm.make_from_stream_args(Some(distortable), &params);
+    }
+    let typeface = typeface.unwrap_or_else(default_portable_typeface);
+
+    let font = Font::from_size(typeface, 50.0);
+
+    let text = b"abcabcabc";
+    let len = text.len();
+
+    let mut xforms = [RSXform::default(); 9];
+    let mut x: f32 = 0.0;
+    let y: f32 = 0.0;
+    for (i, xform) in xforms.iter_mut().enumerate() {
+        let scale = scalar_sin(i as f32 * SCALAR_PI / (len - 1) as f32) * 0.75 + 0.5;
+        *xform = RSXform::new(scale, 0.0, (x, y));
+        x += 50.0 * scale;
+    }
+
+    let blob =
+        TextBlob::from_rsxform(text, TextEncoding::UTF8, &xforms, &font).expect("a text blob");
+
+    let offset = Point::new(20.0, 70.0);
+    let mut paint = Paint::default();
+    paint.set_color(Color::new(0xFFCC_CCCC));
+    canvas.draw_rect(blob.bounds().with_offset(offset), &paint);
+    paint.set_color(Color::BLACK);
+    canvas.draw_text_blob(&blob, offset, &paint);
 });

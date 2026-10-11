@@ -20,7 +20,10 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::runtime_effect::{ChildPtr, RuntimeEffect};
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_effects::image_filters::shader_filter::{self, Dither};
+use skia_rust_effects::image_filters::{color_filter, compose};
 use skia_rust_effects::luma_color_filter;
+use skia_rust_effects::perlin_noise_shader::shaders;
 
 // Port of: gm/composecolorfilter.cpp#L37-L79 (chrome/m156)
 fn make_tint_color_filter(lo: Color, hi: Color, use_sk_sl: bool) -> Option<ColorFilter> {
@@ -116,5 +119,53 @@ crate::def_simple_gm!(composeCF, canvas, 200, 200, {
         canvas.draw_rect(Rect::new(0.0, 0.0, 100.0, 100.0), &paint);
         canvas.restore();
         canvas.translate((0.0, 100.0));
+    }
+});
+
+// Port of: gm/composecolorfilter.cpp#L107-L149 (chrome/m156), composeCFIF
+crate::def_simple_gm!(composeCFIF, canvas, 604, 200, {
+    // This GM draws a ::Shader image filter composed with a ::ColorFilter image filter in two
+    // ways (direct and via ::Compose). This ensures the use (or non-use in this case) of the source
+    // image is the same across both means of composition.
+    let cf = make_tint_color_filter(Color::new(0xff30_0000), Color::new(0xffa0_0000), false);
+    let shader = shaders::turbulence((0.01, 0.01), 2, 0.0, None).expect("turbulence shader");
+
+    let shader_if = shader_filter::shader(Some(shader.clone()), Dither::No, None);
+    let direct_compose = color_filter(cf.clone(), shader_if.clone(), None);
+    let indirect_compose = compose(
+        // outer = ColorFilter(cf, nullptr), inner = shaderIF
+        color_filter(cf.clone(), None, None),
+        shader_if,
+    );
+
+    {
+        // Directly draw the shader composed with the color filter
+        canvas.save();
+        canvas.clip_rect(Rect::new(0.0, 0.0, 200.0, 200.0), None, None);
+        let mut p = Paint::default();
+        p.set_shader(shader);
+        p.set_color_filter(cf);
+        canvas.draw_paint(&p);
+        canvas.restore();
+    }
+    canvas.translate((202.0, 0.0));
+    {
+        // Draw with the directly composed image filter
+        canvas.save();
+        canvas.clip_rect(Rect::new(0.0, 0.0, 200.0, 200.0), None, None);
+        let mut p = Paint::default();
+        p.set_image_filter(direct_compose);
+        canvas.draw_paint(&p);
+        canvas.restore();
+    }
+    canvas.translate((202.0, 0.0));
+    {
+        // Draw with the indirectly composed image filter
+        canvas.save();
+        canvas.clip_rect(Rect::new(0.0, 0.0, 200.0, 200.0), None, None);
+        let mut p = Paint::default();
+        p.set_image_filter(indirect_compose);
+        canvas.draw_paint(&p);
+        canvas.restore();
     }
 });

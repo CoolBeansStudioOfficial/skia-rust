@@ -591,6 +591,17 @@ pub trait CodecImpl: Send {
     ) -> (bool, Option<Codec<'static>>) {
         (false, None)
     }
+
+    /// Port of the virtual `onGetGainmapInfo(SkGainmapInfo*, std::unique_ptr<SkStream>*)`, which
+    /// only JPEG implements: the gainmap parameters, and the stream of the encoded gainmap image.
+    /// Other formats answer `None`.
+    // Port of: include/codec/SkCodec.h#L852 (chrome/m156)
+    fn on_get_gainmap_info_stream(
+        &self,
+        _info: Option<&mut GainmapInfo>,
+    ) -> Option<Box<skia_rust_core::stream::MemoryStream>> {
+        None
+    }
 }
 
 /// Port of `SkCodec::FrameInfo`: what a client needs to know about one frame of an animation.
@@ -831,6 +842,16 @@ impl<'a> Codec<'a> {
         want_codec: bool,
     ) -> (bool, Option<Codec<'static>>) {
         self.imp.on_get_gainmap_codec(info, want_codec)
+    }
+
+    /// The gainmap parameters and the stream of the gainmap image, when the image has a gainmap
+    /// (`onGetGainmapInfo` with a stream, reached through `SkAndroidCodec::getAndroidGainmap`).
+    // Port of: include/codec/SkCodec.h#L852 (chrome/m156), the caller of the virtual hook
+    pub(crate) fn get_gainmap_info_stream(
+        &self,
+        info: Option<&mut GainmapInfo>,
+    ) -> Option<Box<skia_rust_core::stream::MemoryStream>> {
+        self.imp.on_get_gainmap_info_stream(info)
     }
 
     /// Port of `SkCodec::getScanlineOrder`.

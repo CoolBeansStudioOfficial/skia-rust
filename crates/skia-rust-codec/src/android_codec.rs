@@ -162,6 +162,23 @@ impl<'a> AndroidCodec<'a> {
         }
     }
 
+    /// The gainmap parameters and, when `out` is given, the stream of the encoded gainmap image.
+    /// Returns false when the image has no gainmap (`SkAndroidCodec::getAndroidGainmap`).
+    // Port of: src/codec/SkAndroidCodec.cpp#L365-L368 (chrome/m156)
+    #[must_use]
+    pub fn get_android_gainmap(
+        &self,
+        info: Option<&mut GainmapInfo>,
+        out: Option<&mut Option<Box<skia_rust_core::stream::MemoryStream>>>,
+    ) -> bool {
+        let stream = self.codec.get_gainmap_info_stream(info);
+        let found = stream.is_some();
+        if let Some(out) = out {
+            *out = stream;
+        }
+        found
+    }
+
     /// The codec this wraps. Port of `SkAndroidCodec::codec`.
     #[must_use]
     pub fn codec(&self) -> &Codec<'a> {
