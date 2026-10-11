@@ -1,18 +1,21 @@
 // Copyright 2011 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/AnnotationTest.cpp (chrome/m156), the PDF and SVG tests. `Annotation_NoDraw` is
-// not ported yet.
+// Port of: tests/AnnotationTest.cpp (chrome/m156), the PDF, SVG and no-draw tests.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
 use skia_rust_core::data::Data;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::stream::DynamicMemoryWStream;
 use skia_rust_pdf::jpeg;
 use skia_rust_pdf::new_document;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_svg::canvas as svg_canvas;
 use skia_rust_svg::canvas::Options;
 
@@ -30,6 +33,23 @@ fn contains_string(data: &[u8], needle: &str) -> bool {
     }
     false
 }
+
+// Port of: tests/AnnotationTest.cpp#L31-L44 (chrome/m156)
+def_test!(Annotation_NoDraw, |reporter| {
+    let mut bm = Bitmap::new();
+    bm.alloc_n32_pixels((10, 10), false);
+    bm.erase_color(Color::TRANSPARENT);
+    let r = Rect::from_wh(10.0, 10.0);
+    let data = Data::new_with_cstring(Some(c"http://www.gooogle.com"));
+    reporter_assert!(reporter, 0 == bm.get_addr32(0, 0));
+    {
+        // The C++ canvas only borrows `bm`; here the bitmap is moved into the canvas for the
+        // annotation, and it is back in `bm` after the scope.
+        let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+        canvas.draw_url_annotation(r, &data);
+    }
+    reporter_assert!(reporter, 0 == bm.get_addr32(0, 0));
+});
 
 // Port of: tests/AnnotationTest.cpp#L50-L69 (chrome/m156)
 def_test!(Annotation_PdfLink, |reporter| {

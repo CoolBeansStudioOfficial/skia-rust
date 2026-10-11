@@ -28925,8 +28925,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L39-L52"
 module = "core"
-status = "todo"
-reason = "needs SkAnnotateRectWithURL (SkAnnotation), which is not ported"
+status = "passing"
 span_hash = "46a11585f2c3ce6f2dd89608a3c935532e31d950b8b3a56e4aafc32ea625900b"
 
 [[test]]
