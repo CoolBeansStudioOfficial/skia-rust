@@ -3,6 +3,7 @@
 
 //! The ported fuzzers, one module per `fuzz/<File>.cpp`.
 
+pub mod fuzz_canvas;
 pub mod fuzz_cubic_roots;
 pub mod fuzz_draw_functions;
 pub mod fuzz_encoders;
@@ -32,12 +33,24 @@ pub const FUZZERS: &[Fuzzable] = &[
         f: fuzz_gradients::fuzz_Gradients,
     },
     Fuzzable {
+        name: "ImageFilter",
+        f: fuzz_canvas::fuzz_ImageFilter,
+    },
+    Fuzzable {
         name: "JPEGEncoder",
         f: fuzz_encoders::fuzz_JPEGEncoder,
     },
     Fuzzable {
         name: "LegacyChromiumPathop",
         f: fuzz_pathop::fuzz_LegacyChromiumPathop,
+    },
+    Fuzzable {
+        name: "NullCanvas",
+        f: fuzz_canvas::fuzz_NullCanvas,
+    },
+    Fuzzable {
+        name: "PDFCanvas",
+        f: fuzz_canvas::fuzz_PDFCanvas,
     },
     Fuzzable {
         name: "PNGEncoder",
@@ -62,6 +75,10 @@ pub const FUZZERS: &[Fuzzable] = &[
     Fuzzable {
         name: "QuadRoots",
         f: fuzz_quad_roots::fuzz_QuadRoots,
+    },
+    Fuzzable {
+        name: "RasterN32Canvas",
+        f: fuzz_canvas::fuzz_RasterN32Canvas,
     },
     Fuzzable {
         name: "RegionOp",

@@ -15743,8 +15743,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L88-L101"
 module = "effects"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "15f6918a93263665e207f33d47ceb1482da8731b1f5b7cb762c47bd4dc4dbad8"
 
 [[test]]
@@ -15773,8 +15772,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L47-L49"
 module = "core"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "c61376d2f97a328c9dc1a444cdbbb3b13f44d5c1ef928f030e6288b1f36ead56"
 
 [[test]]
@@ -15783,8 +15781,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L214-L219"
 module = "pdf"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "690b3cd731e6c353430dce3f46520e8a47b00797a75432a59d0ff6f6458f5be6"
 
 [[test]]
@@ -15793,8 +15790,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L53-L58"
 module = "core"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "8950aed9b32a880fc3d5c6e6df0b7971cb0b873dd02a74a0030d2193b0c5cee4"
 
 [[test]]
@@ -15804,7 +15800,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
 status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+reason = "needs SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L228), the buffer reader of a serialized picture, which is not ported (Picture::from_data reads the stream form, another function); Skia may signalBug on every input here, since serialize writes a tag where MakeFromBuffer reads its marker; needs an oracle check"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
@@ -15814,7 +15810,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
 status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+reason = "the fuzz crate (docs/design/fuzz.md) is not on main; SvgDevice and svg::canvas::make are ready for it"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -15824,7 +15820,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L107-L167"
 module = "effects"
 status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+reason = "needs SkImageFilter::serialize and SkImageFilter::Deserialize, which are not ported; the bit flips read once per serialized byte, so the reads depend on the output"
 span_hash = "856b16a4f26126f72b3e99aff969d63f6cce7cd0b33b56825981db99d64ce6d2"
 
 [[test]]
@@ -15900,7 +15896,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L57-L76"
 module = "codec"
 status = "todo"
-reason = "needs codec wave C-R (SkPngRustEncoder; registered only with SK_CODEC_ENCODES_PNG_WITH_RUST)"
+reason = "deferred: the fuzz crate (skia-rust-fuzz, docs/PORTING.md 14) is on origin/port/fuzz, not on this base; port after port/fuzz lands. The encoder itself is ported (SkPngRustEncoder, C-R1)"
 span_hash = "543b7e8452e854872c285d411fdb70b0a56eafb38de0e430abb3e04a00cf9a52"
 
 [[test]]
@@ -24026,8 +24022,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
-status = "failing"
-reason = "runtime-shader image filter: diagnostic pass with diffs: 1580 of 375000 px differ (565), all in the skew and perspective cells (max channel delta 66/255); the translate, scale and rotate cells match. See notes/gm_runtimeimagefilter_cpp_rtif_distort.md"
+status = "passing"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]
@@ -28958,7 +28953,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L97-L112"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "c84f94e6f49b3fd2a612096f1e23e5f22d4f7bd91462d0d2a4172728772c23dd"
 
 [[test]]
@@ -28967,7 +28962,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L114-L130"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "93e5366149c13907b8a44e6ce209a00a886b7e95c77b9cb8f978986cdd256c5c"
 
 [[test]]
@@ -29301,8 +29296,7 @@ kind = "unit"
 macro = "DEF_SERIAL_TEST"
 source = "tests/BadIcoTest.cpp#L115-L117"
 module = "codec"
-status = "todo"
-reason = "needs SkPngRustDecoder (codecs C-R, not ported)"
+status = "passing"
 span_hash = "ec94bc675078f73d9eb865b37a30e9add01b94fe45f4e99fe655937849183492"
 
 [[test]]
@@ -30849,7 +30843,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2586-L2605"
 module = "codec"
 status = "todo"
-reason = "needs the Rust PNG encoder (codecs C-R) and HDR metadata (core, codecs C13)"
+reason = "needs HDR metadata: SkCodec::getHdrMetadata and SkPngEncoder::Options::fHdrMetadata are not ported (codecs C13/C16, core HDR metadata)"
 span_hash = "b78936cd55f7e4a2baf1307a9ad804fe99af7efc8fc2c33b00a21f3bab78d40f"
 
 [[test]]
@@ -42060,8 +42054,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L145-L149"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "955690a65087c0e6beb10a171846bd6c64614f09d4e9529575383c1383326ffa"
 
 [[test]]
@@ -42070,8 +42063,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L407-L413"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "d3a977d68468a86581d1e09cc2edca9836ffe75cfcee9b3a7e8581b5a80e4eed"
 
 [[test]]
@@ -42080,8 +42072,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L151-L157"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "d00980c771a07b02c1ad834e04d28f0be52d935882b0447d10066a6d2ccb8131"
 
 [[test]]
@@ -42090,8 +42081,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L190-L202"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1ce27d7ec96c9954a08170109d1021a3192ce180cfdbffef4775dd332c42d476"
 
 [[test]]
@@ -42100,8 +42090,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L177-L188"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cac45a9b9c8589264040b409ec081e0888baedbb22cda2fb7c18053244a8e125"
 
 [[test]]
@@ -42110,8 +42099,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L159-L175"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "29096af7f1e2b42d7f0d6c8b0daf1b54cf8ba2cb0167004769e59ce88541457e"
 
 [[test]]
@@ -42120,8 +42108,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L254-L271"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "146998a879826d63af3f8acdb012283be1094ea3135ecf3ff7612dfae205c62e"
 
 [[test]]
@@ -42130,8 +42117,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L204-L227"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "6f739e69273ff3acf209b125ddbf774506d0955bc38a3294f2741ada820f7479"
 
 [[test]]
@@ -42357,7 +42343,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L380-L459"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "2f53ed1a123c44f6556136bf8336e92f660d594007f62b894c4f970f5a6cc1e9"
 
 [[test]]
@@ -42366,7 +42352,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L765-L783"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "5336eb3f17ae743492fb57434303a4729b79bde499f88ae9c0c2b1da3afb6988"
 
 [[test]]
@@ -42375,7 +42361,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L532-L566"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0d83d6ee9266e846d6a1900d22793d8af28635fad6f01eb4d1fc04837907f935"
 
 [[test]]
@@ -42384,7 +42370,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L585-L615"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "e89d2874d32e8011ebcffcf74c4172b39274e135571ac00080ba9cb2f6e90405"
 
 [[test]]
@@ -42393,7 +42379,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L568-L583"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "6f7238f8ebcee8f3f3519b5be100485432386e34fac6a921c1ca56a317a333b6"
 
 [[test]]
@@ -42402,7 +42388,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L492-L530"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0c5305294abb5c588e7b2111b02c39d87a4422a308bc3e122e2857b9245ce6dc"
 
 [[test]]
@@ -42411,7 +42397,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L617-L642"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "3ed24832ae5cfea8b2c8ccf16081c6fe3918ac06b95cef916783a736dbda9db1"
 
 [[test]]
@@ -42420,7 +42406,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L267-L290"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "5f2b7b5df068e4189912b4b422f02f2e23b2d812bee5e6bc976b92f282218859"
 
 [[test]]
@@ -42429,7 +42415,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L352-L378"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "2d3340b14cbc336987b883e398c65453fa795593474064d642ec14a39fd931f8"
 
 [[test]]
@@ -42438,7 +42424,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L292-L320"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "7811933f13ce6c2ed528b4480e6b157c927f12a9c8eeea758e0a2f581eec747b"
 
 [[test]]
@@ -42447,7 +42433,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L322-L350"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "4f53a4a471bf82280db43bf584ecbd6b74fa8c818572754ad79dccbbdbfca482"
 
 [[test]]
@@ -42456,7 +42442,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L684-L702"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "9bd8d8b71e9e6cab91ce9ca7fd00339420718438e3f6b992188bc0cc89caafe1"
 
 [[test]]
@@ -42465,7 +42451,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L785-L800"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "b1980fbeed03ea1532440cea58a9a1f3490bf7f30665d8358d903d5a0601b76a"
 
 [[test]]
@@ -42474,7 +42460,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L705-L741"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "719e387da81e1539bb486f7fd0b79e9d365b7a85ff451b31f101510dd6fb340e"
 
 [[test]]
@@ -42483,7 +42469,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L644-L662"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "95e6e0a8852b8915c1eda2602084a06ca270f1ad8d9818089f1398ab18f5f0e0"
 
 [[test]]
@@ -42492,7 +42478,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L743-L763"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "37ebb58389ed221bb44f131dcea0e41e36ea23b7aa7503cccb52d13f323189f9"
 
 [[test]]
@@ -42501,7 +42487,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L664-L682"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0d2dbea3d2575fc0eddebc6e5606508cadb339512fcfae6a0e755f9eda068127"
 
 [[test]]
@@ -42510,7 +42496,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L461-L490"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "7d1fa6e60ce7e756ac29681a5943cc42cbe7549037f8474c0082e795340da3c9"
 
 [[test]]
@@ -42519,7 +42505,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L185-L206"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "ddd79d6dbbe2999acf8b52ad9da99aa8ada6026251462686ac5a16bf99c57970"
 
 [[test]]
@@ -43556,8 +43542,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L77-L91"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "fea550954a6a7d3b9114497668434a4ca7291d29b5b41a4103a1dd0258c588de"
 
 [[test]]
@@ -43566,8 +43551,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L95-L137"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "ece8d2cdefd70a5c5678a5640ffc5c9f3ae9f259955bccfef2a8facfcb5defe1"
 
 [[test]]
@@ -43576,8 +43560,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L586-L610"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "bac004addcb2369ad9fefb24f604160e83be5e4b4d1f824758ae3f58535987ca"
 
 [[test]]
@@ -43586,8 +43569,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L546-L569"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "bda2008b5c02695fa5ed7ece77b0f346a18cdf9500c1c40b36bc2c9eba15bd1a"
 
 [[test]]
@@ -43596,8 +43578,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L571-L582"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "78ef0e4b4e00f37c1578f409779e5c27d84d97a72ee3b65bede4740325cc283c"
 
 [[test]]
@@ -43606,8 +43587,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L529-L544"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1b1bcfc5daee5b3f1ff8d998f1ba135b4c4c87fa56dccf9c4085d0ed2cbdaf6d"
 
 [[test]]
@@ -43616,8 +43596,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L707-L752"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "b3043911a354d4a4dd4e78fdf1fae7fdb1b3c3f86f16e85ecb350b76931ead13"
 
 [[test]]
@@ -43626,8 +43605,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L679-L702"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "0eec45e2d9c21dc11c3ed531074c799f220de8ffb1da47768b552ef0f9314d00"
 
 [[test]]
@@ -43636,8 +43614,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L618-L677"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "7f21be6a544923726e85dc7bd7f68ec7d44dcd4c2026faa78dfc54564a79fbb1"
 
 [[test]]
@@ -43646,8 +43623,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L401-L437"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "75a38d74203bda93c94ee8525d1571e6cf789ac412a27415c41b76627500b16a"
 
 [[test]]
@@ -43656,8 +43632,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L439-L527"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cccc8ea7d5de4f8b19f05539878b5314df034fe11baa4fa1c9b78d059cdee26f"
 
 [[test]]
@@ -43666,8 +43641,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L142-L363"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1b6e06afcd944576ff136d7a284bcfbf2fce5b0e54c2593b86a19e7bb35b9ee9"
 
 [[test]]
@@ -43676,8 +43650,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L385-L399"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "f1ba473ed4d9a6d96a4f23e44ae28a138b9542099847f14771baffda5a97012d"
 
 [[test]]
@@ -43686,8 +43659,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L365-L383"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cf9a33f033cee1b69123663449174eac166f7586c75df6c003d6f38bbae8a8e0"
 
 [[test]]
@@ -43697,7 +43669,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L763-L811"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "deferred: needs the XMP and ISO 21496-1 gainmap decoder (SkJpegMetadataDecoder) and the SkAndroidCodec gainmap accessors, which are not ported (codecs.md 12, Q1; C-R2 gainmap follow-up)"
 span_hash = "45af6f73cb654ec52bfa9a862e263ad35130121d4077b3e63a3b0380b653b6c0"
 
 [[test]]
@@ -43707,7 +43679,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L900-L933"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
 span_hash = "471fbafe3a9de2084e462b789053ce5aac435865cff51a8f0d32cc36471f8da7"
 
 [[test]]
@@ -43717,7 +43689,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L982-L1047"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
 span_hash = "060a0c5afe2acc84397d0d861f06223452e20139435c4f00990c1f830aa8cb88"
 
 [[test]]
@@ -43727,7 +43699,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L938-L978"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
 span_hash = "e8f1e0fb849c3d6b9344caf28cb9f92e7d3a78aff7f68977d9de86297daf89ff"
 
 [[test]]
@@ -43812,8 +43784,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L703-L710"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "ed31aaf2ce5ae608b03d774f84bc8f04f24665e213d80bba681547d443c1f391"
 
 [[test]]
@@ -43822,8 +43793,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L677-L679"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "388dafc7b4398462c5d2fbd0401e231f6ab78266881704b5b7c370fe49597002"
 
 [[test]]
@@ -43832,8 +43802,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L683-L690"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "30dac0d8b34d1729dc83850c39d79da9f3f36831d66c6fbbcaef269a483db3e5"
 
 [[test]]
@@ -43842,8 +43811,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1052-L1066"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "273a41e32c20a1b818c79c4c10574dd71d4ab7545414e1488bbd8dbb7762e4b0"
 
 [[test]]
@@ -43852,8 +43820,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1070-L1084"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "77ed4e8a4cda0bda2fce4a9e27c2133b8704f645309f7c0293fbb0a9872c9a27"
 
 [[test]]
@@ -43862,8 +43829,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1029-L1048"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1d339c464f9f79aa5bfa90939e464f139aa8a751d880ce63cb98222e895e8f5f"
 
 [[test]]
@@ -43872,8 +43838,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1002-L1025"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "130f29ab1c40a38fba9c7fce906eeaf4596ee8431629bad652dc7e729084b00f"
 
 [[test]]
@@ -43882,8 +43847,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L791-L852"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "3c387a9e14fdebbddcd9f45276f5b1ee21159db60d43986180bcad7d443da9a5"
 
 [[test]]
@@ -43892,8 +43856,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L862-L911"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "15bb6ab2efd2b8ddc824510004fd19a28ad7ccf264a2aa5913e252699585b639"
 
 [[test]]
@@ -43902,8 +43865,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L919-L998"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "9fc727d4e76adbb67948939c416af3a033f0d659065b4bfc1d23fcaa2737a19d"
 
 [[test]]
@@ -43912,8 +43874,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L719-L774"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "5bb6682982c8e4f2840127c774cd8e0ee4b25e20210c8da8a16db0b61849a0f2"
 
 [[test]]
@@ -43922,8 +43883,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1154-L1167"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "4b6aa20f0fe551f68f6bb23c199dc77d5b9543656d0bc2e314c575de3243c2a7"
 
 [[test]]
@@ -43932,8 +43892,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1115-L1122"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "cbd9886aa84cd9604fe2187d7f26ea49cc0ece31accb734fc5b8d6028c4bf445"
 
 [[test]]
@@ -43942,8 +43901,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1126-L1133"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "6591c705ba001cfbb7b00146e7c2d84254c55e10586d9825dd14bb149e036d5b"
 
 [[test]]
@@ -43952,8 +43910,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1137-L1144"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "0b85694793f45ffa618e73956bd2a7b95598f2f47ce45def9478ab36b894d620"
 
 [[test]]
@@ -43962,8 +43919,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1811-L1850"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "2278a7851d4fb6c16a8310b1910f1c2dee01ce73ef3107ae86812fdce7e36255"
 
 [[test]]
@@ -43972,8 +43928,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1888-L1921"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "1cbfe7da25dd5c9fc1445d1f67b0b92ca3481cc34d13e16af6e6317ad2bbf2cf"
 
 [[test]]
@@ -43982,8 +43937,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1857-L1882"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "b0d07412d52b796c6c7b5de6600129254755b274b9f25dc94846ec27daf2203d"
 
 [[test]]
@@ -43992,8 +43946,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1088-L1111"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "5b151eb0dd2f11cba52a9cf9745c9bf2a5efa7dd00ccbd4babf6cdd353b98bda"
 
 [[test]]
@@ -44002,8 +43955,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1271-L1286"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "42560d1dc2768a0094e17598de9b24a069391584b1f787b03390f1d2a5d56a57"
 
 [[test]]
@@ -44012,8 +43964,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1622-L1677"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "c412d62dd09b7379183f689a15dfe58964774111e5e0e5af727e60b0ad86e757"
 
 [[test]]
@@ -44022,8 +43974,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1700-L1743"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "f47631c8b7f08b9bf2de31a0912526d1e9db1e06e729affcbfe4bfd86b79685f"
 
 [[test]]
@@ -44032,8 +43983,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1247-L1254"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "e4669c16c2750c43c4cfd71c4f1f42149f78380c37f0ae71fbf6d868e2d09952"
 
 [[test]]
@@ -44042,8 +43992,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1256-L1269"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "72bc9e434fe85f406ddffd15de9631d7ac70e3e213db30a1f21af141de455361"
 
 [[test]]
@@ -44052,8 +44001,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1523-L1560"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "e2561413364607da7ca47d08d38b4a756371f78e976773b29a86003adbbe7f16"
 
 [[test]]
@@ -44063,7 +44012,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1679-L1698"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the gainmap info (codecs C13), not ported"
 span_hash = "49e3fd2e342302daa676f621557cd59168682dfd6cfdc56aab64c74cd35c63b4"
 
 [[test]]
@@ -44072,8 +44021,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1562-L1587"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "4c915b6b44d5e2bdab94dae28efab228e708028ab0db4b061fd4a62450f855bd"
 
 [[test]]
@@ -44082,8 +44031,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1227-L1245"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "10f5e02383dbd829359c369e2ecd67fb7ed15ba2a08afe5fa3f9bcb775421c32"
 
 [[test]]
@@ -44093,7 +44041,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2087-L2089"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "needs the decode memory budget (SkCodec fDecodeBudget, SkAndroidCodec fMaxDecodeMemory), which is not ported"
 span_hash = "95bb55af38fa2c89f5a14c2d70fbe5bd25def1ee06c6eddce6e04e434dbd9bc4"
 
 [[test]]
@@ -44103,7 +44051,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2091-L2095"
 module = "codec"
 status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+reason = "needs the decode memory budget (SkCodec fDecodeBudget, SkAndroidCodec fMaxDecodeMemory), which is not ported"
 span_hash = "5bb7ef78eb29d6b077d95f0bef70c8c5fc0f0a4b6a88e9c3a1fba6571719b3cb"
 
 [[test]]
@@ -44112,8 +44060,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1472-L1495"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "94a78d37efbf949c44ed4c7463d2fa72d25d68c4f723f124550e54c9dc805def"
 
 [[test]]
@@ -44122,8 +44069,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1405-L1470"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "9d67e087928ffd7a14e64bfc2e45dbff0414b78c9997de31f0866faa08e7da48"
 
 [[test]]
@@ -44132,8 +44078,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1288-L1302"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "e3c35d589222557f263f8be5b3543574354ca27d807371713cdf7121031317af"
 
 [[test]]
@@ -44142,8 +44087,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2032-L2034"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "82e3a406e3b3e6674704aee0463d489c9c45fdc8b67fb9ebd356e36e9eed9a0a"
 
 [[test]]
@@ -44152,8 +44096,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2036-L2038"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "09be3e29b60793bacfcd3da6de809252bfae61f3bda477139a12e1edaab65e94"
 
 [[test]]
@@ -44162,8 +44105,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2042-L2044"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "2b30e9e932a3dae46a48397981111770796f930e0e723b8cdac17488d921c060"
 
 [[test]]
@@ -44172,8 +44114,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2046-L2048"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "2578774399a478d7b667417b84ae2bfee049b5c4df02e121c6cde3347856a5ba"
 
 [[test]]
@@ -44182,8 +44123,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1589-L1620"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "271d3bbc34fa979dccfc14ff290c90dbb0475003a484b0c2aa105bfd863748db"
 
 [[test]]
@@ -44192,8 +44133,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1208-L1225"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "3feeaebf035cca6c21ae6dd5792756b075853d4a0a78d1558c96837b9978d60b"
 
 [[test]]
@@ -44202,8 +44142,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1169-L1187"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "79826268f4d9828e442682ecbe06292a9c4d539dde17345cdd8a1107f16588dc"
 
 [[test]]
@@ -44212,8 +44151,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1189-L1206"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "ad717220553332265916d002109b234b463a9316987a82b01f214141b69f1121"
 
 [[test]]
@@ -44222,8 +44160,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1497-L1510"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "d5c8badff9373f5e840fa6a410acfbc7a8c6d5f80b317a5d063e73df25f70b2e"
 
 [[test]]
@@ -44232,8 +44169,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1769-L1773"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "07dcb458058edbcb7e98e03d232c4aa0b54b10273073bfc478d0d774b7a0087b"
 
 [[test]]
@@ -44242,8 +44178,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1988-L1991"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "d9d7b8b75428f95c6db84a40fa777e6964d41cdc0cbbe6f92846e1f71faf585c"
 
 [[test]]
@@ -44252,8 +44188,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1993-L1996"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "edcfeb597e53d4bd69b44ef912f88aeacbd51a5d50509963d969000031f1d78b"
 
 [[test]]
@@ -44262,8 +44198,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1775-L1779"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "bb2b00b67596852e357270bb7d3ee4856ace4dca42daf12ac6afede601ff2bdf"
 
 [[test]]
@@ -44272,8 +44207,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1781-L1787"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "b346944fdaf1cba2e21b905da1cee9c7c42c9a734f32c3476ba69f4ff58e81b3"
 
 [[test]]
@@ -44282,8 +44216,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1789-L1796"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "4b339759f9997481181ea61638438c87d7034feed128bfd854a49dc5120b30fa"
 
 [[test]]
@@ -44292,8 +44225,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1391-L1397"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "c0eed3349e35465b2cef03ffa221fa1956ad565465a5bc7db8dc94eea9acbb70"
 
 [[test]]
@@ -44302,8 +44234,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1970-L1977"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "401873de6c7d773d5fe8348bedeed8d75c3085b1cb97a5f70470d10261b0c489"
 
 [[test]]
@@ -44312,8 +44244,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1979-L1986"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "6a4a579a861e6a9f25b608b71828076734e450136b4e0ab17ee7a45269b8e636"
 
 [[test]]
@@ -44322,8 +44254,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2000-L2026"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "8c3fd0c4135d7432834e2b9ce21a8c763a08d44ba015d43d1ee2f260ecbdcae8"
 
 [[test]]
@@ -44332,8 +44263,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1746-L1767"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "446e4982c9cc5c28a5c2150ee90e2bbf4cd105d7bc4e89a0c9fcb638309853de"
 
 [[test]]
@@ -44342,8 +44272,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L57-L144"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "d7ac1e8bcd7855af9591cb7cb9f377759ca51d64b2f82ea18d8237e635ba5d82"
 
 [[test]]
@@ -44352,8 +44282,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L146-L182"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "excluded"
+reason = "compiled only under SK_CODEC_USES_PNG_WITH_RUST_FOR_ANDROID (skia_use_rust_png_for_android, off in the default GN build): the captured chunks (gmAP, gdAT, npTc) need the for_android png build (docs/design/codecs.md Q5)"
 span_hash = "6d4094f48b47c0d2992b07daf43fa1123bf77f781aed2e4fec60512589fe41f6"
 
 [[test]]
@@ -44362,8 +44292,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L23-L54"
 module = "codec"
-status = "todo"
-reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
+status = "passing"
 span_hash = "f24d11a12f72dc85496485aa3bd2f9ca41723a6eb00a2ee32e63d0ca599e8452"
 
 [[test]]

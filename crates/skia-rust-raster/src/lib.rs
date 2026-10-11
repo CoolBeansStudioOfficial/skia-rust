@@ -11,6 +11,7 @@ pub mod blitter_a8;
 pub mod blitter_choose;
 pub mod blitter_dump;
 pub mod blur_engine;
+pub mod clip_stack_device;
 pub mod core_blitters;
 pub mod draw;
 pub mod draw_atlas;

@@ -21,6 +21,7 @@
 //! give it seeds in [`seeds`]. `cargo xtask inventory verify` maps the test
 //! `fuzz::<file_snake>::Name` back to the manifest entry `fuzz/<File>.cpp::Name`.
 
+pub mod canvas_helpers;
 pub mod common;
 pub mod fuzz;
 mod reader;

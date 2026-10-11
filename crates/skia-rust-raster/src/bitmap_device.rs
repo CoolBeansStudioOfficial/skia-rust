@@ -25,9 +25,7 @@ use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
-use skia_rust_core::device::{
-    CreateInfo, Device, DeviceState, GlyphRunDrawCursor, PendingGlyphDrawable,
-};
+use skia_rust_core::device::{CreateInfo, Device, DeviceState, GlyphRunDrawCursor, PendingGlyph};
 use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
@@ -837,14 +835,14 @@ impl Device for BitmapDevice {
     // Port of: src/core/SkBitmapDevice.cpp#L351-L360 (chrome/m156)
     // Port of: src/core/SkBitmapDevice.cpp#L540-L545 (chrome/m156)
     //
-    // skia-rust: a glyph drawable needs the canvas, so this draw skips the drawables; canvases
-    // draw through `on_draw_glyph_run_list_step`, which returns them in order.
+    // skia-rust: a glyph drawable needs the canvas, so this draw skips the drawables, and draws a
+    // glyph path with the device transform changed; canvases draw through
+    // `on_draw_glyph_run_list_step`, which returns them in order.
     fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
         let mut cursor = GlyphRunDrawCursor::default();
-        while self
-            .on_draw_glyph_run_list_step(list, paint, &mut cursor)
-            .is_some()
-        {}
+        while let Some(pending) = self.on_draw_glyph_run_list_step(list, paint, &mut cursor) {
+            pending.draw_path_on_device(self);
+        }
     }
 
     // Port of: src/core/SkBitmapDevice.cpp#L540-L545 (chrome/m156)
@@ -856,7 +854,7 @@ impl Device for BitmapDevice {
         list: &GlyphRunList<'_>,
         paint: &Paint,
         cursor: &mut GlyphRunDrawCursor,
-    ) -> Option<PendingGlyphDrawable> {
+    ) -> Option<PendingGlyph> {
         debug_assert!(!list.has_rsxform());
         let image_info = self.state.image_info();
         let color_space = image_info.color_space();

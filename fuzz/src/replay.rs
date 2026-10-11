@@ -161,7 +161,9 @@ mod tests {
 
     #[test]
     fn run_one_reports_panics_and_hangs() {
-        let short = Duration::from_millis(200);
+        // Long enough that the threads of the other replay tests cannot make a panic look like a
+        // hang on a loaded machine; the `spins` case still sleeps well past it.
+        let short = Duration::from_millis(1000);
         assert_eq!(run_one("a", vec![7], fine, short), Ok(()));
         assert_eq!(run_one("b", vec![1], crashes, short), Ok(()));
         assert_eq!(

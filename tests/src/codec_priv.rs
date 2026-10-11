@@ -4,21 +4,10 @@
 // Port of: tests/CodecPriv.h (chrome/m156): the registry guard for the serial codec tests, and the
 // helpers that build ICO files around a PNG. Shared by the codec and ICO tests.
 
-use std::sync::{Mutex, MutexGuard, PoisonError};
-
 use skia_rust_codec::codecs::{self, Decoder};
-use skia_rust_codec::{ico_codec, png_codec};
+use skia_rust_codec::{ico_codec, png_codec, png_rust_codec};
 
 use crate::resources::get_resource_as_data;
-
-// The registry is process-wide, so the tests that change it run one at a time. Port of the
-// `DEF_SERIAL_TEST` ordering that the C++ harness gives these cases.
-static SERIAL_TESTS: Mutex<()> = Mutex::new(());
-
-/// Takes the lock for a serial test that changes the decoder registry (`DEF_SERIAL_TEST`).
-pub fn serial_test_lock() -> MutexGuard<'static, ()> {
-    SERIAL_TESTS.lock().unwrap_or_else(PoisonError::into_inner)
-}
 
 /// Port of `ScopedCodecDecoders`: saves the registry on construction and restores it on drop, so
 /// a test's registrations do not outlive it.
@@ -62,6 +51,16 @@ pub fn png_decoder() -> Decoder {
         id: "png",
         is_format: png_codec::is_png_format,
         make_from_stream: png_codec::make_from_stream,
+    }
+}
+
+/// The Rust PNG decoder entry as Skia's `SkPngRustDecoder::Decoder()` gives it.
+#[must_use]
+pub fn png_rust_decoder() -> Decoder {
+    Decoder {
+        id: "png",
+        is_format: png_rust_codec::is_png_format,
+        make_from_stream: png_rust_codec::make_from_stream,
     }
 }
 

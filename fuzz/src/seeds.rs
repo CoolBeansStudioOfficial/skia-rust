@@ -140,6 +140,8 @@ pub fn generate(name: &str) -> Option<Vec<Seed>> {
         "Gradients" => gradients(),
         "DrawFunctions" => draw_functions(),
         "PNGEncoder" | "JPEGEncoder" | "WEBPEncoder" => encoder(name),
+        "NullCanvas" | "RasterN32Canvas" | "PDFCanvas" => canvas_commands(),
+        "ImageFilter" => image_filter_types(),
         _ => return None,
     };
     seeds.sort_by(|a, b| a.0.cmp(&b.0));
@@ -780,6 +782,46 @@ pub fn resource_seed_names(name: &str) -> Vec<String> {
 fn resource_stem(path: &str) -> &str {
     let file = path.rsplit('/').next().unwrap_or(path);
     file.split('.').next().unwrap_or(file)
+}
+
+// ---------------------------------------------------------------------------------------------
+// FuzzCanvas
+
+/// The `drawCommand` values of `FuzzCanvas` that draw something (`0`, `28`, `46` to `50`, and the
+/// values Skia has no case for read nothing, so they are left out).
+const DRAW_COMMANDS: [u32; 48] = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+    27, 29, 30, 31, 32, 33, 35, 37, 44, 45, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
+];
+
+/// Seeds for the `FuzzCanvas` fuzzers (`NullCanvas`, `RasterN32Canvas`, `PDFCanvas`): one per draw
+/// command. Each seed is 40 commands (`N`), the first of them the seed's command, and the bytes
+/// after it are random, so the arguments of every later command are random too.
+fn canvas_commands() -> Vec<Seed> {
+    let mut seeds: Vec<Seed> = DRAW_COMMANDS
+        .iter()
+        .map(|&cmd| {
+            let mut w = SeedWriter::new();
+            w.u32(40).u32(cmd).bytes(&random_bytes(1000 + cmd, 700));
+            seed(&format!("command-{cmd:02}"), &w)
+        })
+        .collect();
+    seeds.extend(random_seeds(7, 6, &[64, 512, 4096]));
+    seeds
+}
+
+/// Seeds for `ImageFilter`: one per `MakeFuzzImageFilter` type (`1` to `22`), so the first filter
+/// is that type, with random bytes for its arguments and its inputs.
+fn image_filter_types() -> Vec<Seed> {
+    let mut seeds: Vec<Seed> = (1u8..=22)
+        .map(|t| {
+            let mut w = SeedWriter::new();
+            w.u8(t).bytes(&random_bytes(2000 + u32::from(t), 700));
+            seed(&format!("type-{t:02}"), &w)
+        })
+        .collect();
+    seeds.extend(random_seeds(8, 6, &[64, 512, 4096]));
+    seeds
 }
 
 fn encoder(name: &str) -> Vec<Seed> {

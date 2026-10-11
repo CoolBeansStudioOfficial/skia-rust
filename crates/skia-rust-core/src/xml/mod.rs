@@ -15,6 +15,6 @@ pub mod parser;
 mod tokenizer;
 pub mod writer;
 
-pub use dom::{Attr, AttrIter, Dom, DomParser, Node, NodeType};
+pub use dom::{Attr, AttrIter, Dom, DomParser, Node, NodeType, SharedDomParser};
 pub use parser::{XmlParser, XmlParserError, XmlParserErrorCode};
 pub use writer::{K_NO_PRETTY_FLAG, XmlParserWriter, XmlStreamWriter, XmlWriter, XmlWriterBase};
