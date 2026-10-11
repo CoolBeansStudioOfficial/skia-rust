@@ -25887,8 +25887,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L167-L168"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "616eda1fdcb5a30e150eec589f08e172dc1176aa947a22d260ce7d305a5d8fe1"
 
 [[test]]
@@ -25897,8 +25896,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L169-L170"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "39371c0e14bd3675f1f81cad92e168a7005b366bfdd01a57c52150c479f97d7e"
 
 [[test]]
@@ -25907,8 +25905,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L163-L164"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "413261afa1c9df7dc8d93c4f920014999b441cc58c2ad47571b7ef8458d988cc"
 
 [[test]]
@@ -25917,8 +25914,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L165-L166"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "b6e1b132a3ce795b894c5778e472ef59f408aa782083e64f3f9c61484efe9dd3"
 
 [[test]]
