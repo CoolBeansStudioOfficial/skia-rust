@@ -42542,8 +42542,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SamplingTest.cpp#L26-L64"
 module = "core"
-status = "todo"
-reason = "decodes png/jpg resources (codecs not ported)"
+status = "passing"
 span_hash = "4e5a5dc99955fc5aaad915d458dae3b30891a5262657589d1de43ae2222c4f14"
 
 [[test]]

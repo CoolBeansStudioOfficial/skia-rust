@@ -412,6 +412,8 @@ pub mod rust_exif_test;
 #[cfg(test)]
 pub mod safe_math_test;
 #[cfg(test)]
+pub mod sampling_test;
+#[cfg(test)]
 pub mod scalar_test;
 #[cfg(test)]
 pub mod scale_to_sides_test;
