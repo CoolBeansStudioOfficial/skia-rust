@@ -15,7 +15,12 @@ use skia_rust_core::path_effect::PathEffect;
 use skia_rust_core::path_types::{PathDirection, PathFillType};
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
+use skia_rust_core::blur_types::BlurStyle;
+use skia_rust_core::mask_filter::MaskFilter;
+use skia_rust_core::path_builder::PathBuilder;
+use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::dash_path_effect;
+use skia_rust_effects::image_filters::blur;
 
 // Port of: gm/inversepaths.cpp#L12-L14 (chrome/m156)
 fn generate_square(cx: scalar, cy: scalar, w: scalar) -> Path {
@@ -143,5 +148,70 @@ crate::def_simple_gm!(inverse_paths, canvas, 800, 1200, {
             canvas.restore();
             canvas.translate((0.0, dy));
         }
+    }
+});
+
+// Port of: gm/inversepaths.cpp#L181-L197 (chrome/m156), inverse_fill_filters
+crate::def_simple_gm!(inverse_fill_filters, canvas, 384, 128, {
+    let draw = |paint: &Paint| {
+        let mut path = Path::circle((65.0, 65.0), 30.0, None);
+        path.set_fill_type(PathFillType::InverseWinding);
+        canvas.save();
+        canvas.clip_rect(Rect::from_xywh(0.0, 0.0, 128.0, 128.0), None, None);
+        canvas.draw_path(&path, paint);
+        canvas.restore();
+
+        let mut stroke = Paint::default();
+        stroke.set_style(Style::Stroke);
+        stroke.set_color(Color::WHITE);
+        canvas.draw_rect(Rect::from_xywh(0.0, 0.0, 128.0, 128.0), &stroke);
+    };
+
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    draw(&paint);
+    canvas.translate((128.0, 0.0));
+    paint.set_image_filter(blur(5.0, 5.0, TileMode::Decal, None, None));
+    draw(&paint);
+    canvas.translate((128.0, 0.0));
+    paint.set_image_filter(None);
+    paint.set_mask_filter(MaskFilter::blur(BlurStyle::Normal, 5.0, None));
+    draw(&paint);
+});
+
+// Port of: gm/inversepaths.cpp#L199-L231 (chrome/m156), inverse_windingmode_filters
+crate::def_simple_gm!(inverse_windingmode_filters, canvas, 256, 100, {
+    let mut builder = PathBuilder::new();
+    builder.add_rect(Rect::from_ltrb(10.0, 10.0, 30.0, 30.0), PathDirection::CW, None);
+    builder.add_rect(Rect::from_ltrb(20.0, 20.0, 40.0, 40.0), PathDirection::CW, None);
+    builder.add_rect(Rect::from_ltrb(10.0, 60.0, 30.0, 80.0), PathDirection::CW, None);
+    builder.add_rect(Rect::from_ltrb(20.0, 70.0, 40.0, 90.0), PathDirection::CCW, None);
+    let mut path = builder.detach();
+
+    let mut stroke_paint = Paint::default();
+    stroke_paint.set_style(Style::Stroke);
+    let clip_rect = Rect::from_ltrb(0.0, 0.0, 51.0, 99.0);
+    canvas.draw_path(&path, &stroke_paint);
+
+    let mut fill_paint = Paint::default();
+    fill_paint.set_mask_filter(MaskFilter::blur(BlurStyle::Normal, 1.0, None));
+    for fill_type in [
+        PathFillType::Winding,
+        PathFillType::EvenOdd,
+        PathFillType::InverseWinding,
+        PathFillType::InverseEvenOdd,
+    ] {
+        canvas.translate((51.0, 0.0));
+        canvas.save();
+        canvas.clip_rect(clip_rect, None, None);
+        path.set_fill_type(fill_type);
+        canvas.draw_path(&path, &fill_paint);
+        canvas.restore();
+
+        let mut clip_paint = Paint::default();
+        clip_paint.set_color(Color::RED);
+        clip_paint.set_style(Style::Stroke);
+        clip_paint.set_stroke_width(1.0);
+        canvas.draw_rect(clip_rect, &clip_paint);
     }
 });
