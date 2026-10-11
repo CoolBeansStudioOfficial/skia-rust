@@ -29829,8 +29829,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L547-L566"
 module = "core"
-status = "todo"
-reason = "needs SkCanvasStack (SkNWayCanvas-based) and SkCanvas subclassing (LifeLineCanvas), which are not on main"
+status = "passing"
 span_hash = "aefb78412dea48269953b9bf2d4ccdf28a24fa45a0fbba6acfc4f26c9ff6352b"
 
 [[test]]
@@ -29926,8 +29925,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L518-L544"
 module = "core"
-status = "todo"
-reason = "needs SkNWayCanvas (SkCanvas subclass forwarding to a list of canvases), which is not on main"
+status = "passing"
 span_hash = "3019540f28bbff2b2a987546491216be8a010ac6eed35a24f57b3bcbbfaa7ec2"
 
 [[test]]
@@ -39847,8 +39845,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4891-L4911"
 module = "core"
-status = "todo"
-reason = "needs SkMakeNullCanvas, which is SkNWayCanvas(0, 0) (include/utils/SkNullCanvas.h); SkNWayCanvas is not on main"
+status = "passing"
 span_hash = "fce26fa9ead1e78b9df98fb1f64f48b5457bdd0e394baccec13f90a585c32b9e"
 
 [[test]]
