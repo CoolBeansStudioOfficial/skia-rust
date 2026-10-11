@@ -123,6 +123,13 @@ pub mod testing {
         }
     }
 
+    /// The oracle N32 forced on this thread, or the host's `kN32_SkColorType` when none is forced.
+    /// GMs that read N32 pixels as raw `SkColor`s use it to read them in the oracle's byte order.
+    #[must_use]
+    pub fn oracle_n32() -> ColorType {
+        ORACLE_N32.get().unwrap_or(ColorType::N32)
+    }
+
     /// Restores the previous oracle N32 of this thread when dropped. Not `Send`: it must drop on
     /// the thread that created it.
     #[must_use = "the oracle's N32 is only forced while the guard is alive"]

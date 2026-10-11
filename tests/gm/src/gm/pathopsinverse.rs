@@ -48,9 +48,9 @@ fn make_paint(color: Color) -> Paint {
 }
 
 // Port of: gm/pathopsinverse.cpp#L30-L36 (chrome/m156), blend
-// `rgba_raw` is whether the C++ raw `*(SkColor*) pixels` read sees an RGBA-ordered pixel, i.e. an
-// `8888` canvas on a host whose N32 is RGBA (the `-rgba` oracle variants); the BGRA goldens (and
-// the 565/f16 ones, made on the BGRA oracle) see the colour itself.
+// `rgba_raw` is whether the C++ raw `*(SkColor*) pixels` read sees an RGBA-ordered pixel: the N32
+// of the oracle build the goldens come from (`oracle_n32::testing::oracle_n32`) is RGBA (the
+// `-rgba` variants); on the BGRA oracle the read sees the colour itself.
 fn blend(one: Color, two: Color, rgba_raw: bool) -> Color {
     let mut temp = Bitmap::new();
     temp.alloc_n32_pixels((1, 1), None);
@@ -113,7 +113,9 @@ impl GM for PathOpsInverseGm {
     // Port of: gm/pathopsinverse.cpp#L44-L72 (chrome/m156), onDraw
     fn on_draw(&mut self, canvas: &Canvas) {
         // `onOnceBeforeDraw`, deferred so the blend can see which config is being drawn.
-        *self = PathOpsInverseGm::new(canvas.image_info().color_type() == ColorType::RGBA8888);
+        *self = PathOpsInverseGm::new(
+            skia_rust_raster::oracle_n32::testing::oracle_n32() == ColorType::RGBA8888,
+        );
         let mut y_pos = 0;
         for one_fill in 0..=1 {
             let one_f = if one_fill != 0 {
