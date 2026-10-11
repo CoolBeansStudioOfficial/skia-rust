@@ -924,10 +924,6 @@ fn graphite_read_pixels_test_driver<T: SourceInfo>(
 
 // Port of: tests/graphite/ReadWritePixelsGraphiteTest.cpp#L559-L646 (chrome/m156)
 def_graphite_adapter_test!(
-    #[cfg_attr(
-        skia_rust_adapter_tests,
-        ignore = "aborts the test binary: the wrapped source texture is deleted (release callback of ManagedGraphiteTexture) while the read-back submission still uses it, so Queue::submit reports a destroyed texture; see the manifest reason"
-    )]
     ImageAsyncReadPixelsGraphite,
     |reporter, context| {
         let mut rules = ReadPixelTestRules {
@@ -982,10 +978,6 @@ def_graphite_adapter_test!(
 
 // Port of: tests/graphite/ReadWritePixelsGraphiteTest.cpp#L648-L712 (chrome/m156)
 def_graphite_adapter_test!(
-    #[cfg_attr(
-        skia_rust_adapter_tests,
-        ignore = "912 of the read-backs fail: the wrapped source texture is deleted while the read-back submission still uses it (Queue::submit: texture destroyed); see the manifest reason"
-    )]
     SurfaceAsyncReadPixelsGraphite,
     |reporter, context| {
         let rules = ReadPixelTestRules {
