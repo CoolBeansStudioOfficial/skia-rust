@@ -177,6 +177,23 @@ impl FontStyle {
         }
     }
 
+    /// `fValue`: the packed style, which `SkTypefaceProxyPrototype` serializes (it is a friend).
+    // Port of: include/core/SkFontStyle.h#L80-L81 (chrome/m156)
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn raw_value(&self) -> i32 {
+        self.value
+    }
+
+    /// A style with the given `fValue`, as `SkTypefaceProxyPrototype::style()` makes it. Unlike
+    /// [`new`](Self::new), the value is not pinned.
+    // Port of: src/core/SkTypeface_remote.h#L83-L87 (chrome/m156)
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn from_raw_value(value: i32) -> Self {
+        Self { value }
+    }
+
     /// `SkFontStyle::weight()`.
     // Port of: include/core/SkFontStyle.h#L62 (chrome/m156)
     #[must_use]
