@@ -70,6 +70,7 @@ use skia_rust_effects::{
     path_1d_path_effect, path_2d_path_effect,
 };
 use skia_rust_raster::bitmap_device::BitmapDevice;
+use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_tools::font_tool_utils::{default_font, test_font_mgr};
 
 use crate::Fuzz;
@@ -390,17 +391,22 @@ fn make_fuzz_shader(fuzz: &mut Fuzz<'_>, depth: i32) -> Option<Shader> {
             }
         }
         8 => {
-            let _pic = make_fuzz_picture(fuzz, depth - 1);
+            let pic = make_fuzz_picture(fuzz, depth - 1);
             let tm_x = tile_mode(fuzz.next_enum(TileMode::Decal as i32));
             let tm_y = tile_mode(fuzz.next_enum(TileMode::Decal as i32));
             let use_matrix = fuzz.next_bool();
             let use_tile = fuzz.next_bool();
             let matrix = use_matrix.then(|| nice_matrix(fuzz));
             let tile = use_tile.then(|| next_rect(fuzz));
-            // skia-rust: SkPicture::makeShader (SkPictureShader) is not ported. Every read above
-            // is kept, and the shader is left out.
-            let _ = (tm_x, tm_y, matrix, tile);
-            None
+            // `pic->makeShader(tmX, tmY, SkFilterMode::kNearest, matrix, tile)`
+            pic.and_then(|pic| {
+                pic.to_shader(
+                    (tm_x, tm_y),
+                    FilterMode::Nearest,
+                    matrix.as_ref(),
+                    tile.as_ref(),
+                )
+            })
         }
         // EFFECTS:
         10 => {
