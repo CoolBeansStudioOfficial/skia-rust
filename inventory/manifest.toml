@@ -32230,8 +32230,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2376-L2401"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "efaf4ca3e755ff1a82da3207667d5ff04d669159a1be5a4e977bc1ccbecebac6"
 
 [[test]]
@@ -32240,8 +32239,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2000-L2044"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "11785566e1bf37f5e6749ad01aa45b65863c7cc311ed6e6da6a9ceba8f353e14"
 
 [[test]]
@@ -32250,8 +32248,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2230-L2258"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "e11c90e59e6fd6bb16f60debc87d5b3301b16fa31c1913dc97705673e2716057"
 
 [[test]]
@@ -32260,8 +32257,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2113-L2130"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "06fb5b5a3820f283af1bcf25db07deedf4d2cd37be88eec67ea923c9927a8e67"
 
 [[test]]
@@ -32270,8 +32266,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1740-L1813"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "08a5685d9d895b9daecb94f37f564f889f762874063ab2b93cb898dff1019acb"
 
 [[test]]
@@ -32280,8 +32275,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1472-L1518"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "084f60a7bf0dca8b39f9f74ef9a1cf31005512e08803ebf8e6921fbb0313a722"
 
 [[test]]
@@ -32290,8 +32284,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2178-L2228"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "a41bd505d5c7083e2618e1e2c84574d75e5a9f1b072f62c056e1e45e61915bdd"
 
 [[test]]
@@ -32300,8 +32293,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1520-L1567"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "8b75bbe15977614f58bbf27c75b64df49ebe99cb495259c9283066c4a7f5aebc"
 
 [[test]]
@@ -32310,8 +32302,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2132-L2176"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "ba4b7ce19cfdb41bb537734a04853bf6c73a9e2c072f914b1e2e78524a25f44b"
 
 [[test]]
@@ -32320,8 +32311,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2260-L2305"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "d4e579ae35aa4dd5f3be637c9223c319782431bcb2fc446dc3173e64dcb051ba"
 
 [[test]]
@@ -32330,8 +32320,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2307-L2374"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "6b704a2fad79598d78e5484785233fd6a4e60947c7e6e3700f5eed70aca03199"
 
 [[test]]
@@ -32340,8 +32329,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1698-L1712"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "e1bb80ef8fa1f0488fde80aca5f9abe07afbfeaaa94e79807883f38883562f4e"
 
 [[test]]
@@ -32350,8 +32338,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1585-L1609"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "36dd50a5af3b9f2fd86ff8428a3a4d36db751e23ef33d1cd0df01c452c82bbfa"
 
 [[test]]
@@ -32360,8 +32347,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1569-L1583"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "a325944ed5b7e4f38cb87f2c0166a001c6a83b45826049f1bd31d6e951a302e1"
 
 [[test]]
@@ -32370,8 +32356,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1439-L1467"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "9296069d7f802f7fa2aafa607f6cd238d0bcb2606510b86036087a4db10ed2e5"
 
 [[test]]
@@ -32380,8 +32365,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1410-L1437"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "0b2deb1dceebec65bf319defc5d998af42f43c27bb03a4b009b295f5c1de7fb7"
 
 [[test]]
@@ -32390,8 +32374,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1815-L1866"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "55f75aa3e2d10854f34b7367e63b0493b50136f16b947a4b84e5bdfdcdd711be"
 
 [[test]]
@@ -32400,8 +32383,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1868-L1891"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "3556864a0d696beaaf002b5b76e757f2742c8e2e7792939782ef436085937dc3"
 
 [[test]]
@@ -32410,8 +32392,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1611-L1639"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "5c88f30d7748a407d6cb767a92a48762ecbd41353ea60ed5ec234b3d792fd184"
 
 [[test]]
@@ -32420,8 +32401,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2722-L2785"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "d71184fa50dbe3a0f11491381c9b50953714e1410f3374282d46441f05a324d2"
 
 [[test]]
@@ -32430,8 +32410,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1641-L1696"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "751c37c93f794f1c14ec47376f9a9e55e00727610e1a4f5675c9849d562fccf2"
 
 [[test]]
@@ -32440,8 +32419,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2676-L2720"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "b704a2c2231075169304b0c0a668d5ea4b360cb8f5dd3aec680fd660c7d7bd6f"
 
 [[test]]
@@ -32450,8 +32428,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2406-L2573"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "2bd77d23d26b2835f1fdf4ec3fd512892a047ebce311d0baf3716b13d45f92d9"
 
 [[test]]
@@ -32460,8 +32437,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2575-L2674"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "8853949d7b12248a8b222b5c8e10b6996b717b9ed523e97fd847018b8f3634e8"
 
 [[test]]
@@ -32470,8 +32446,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1717-L1738"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "fb69648b5fa293cb3290f247633d32bab75620d86f389b9cd306a56db05e8d8e"
 
 [[test]]
@@ -32480,8 +32455,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1918-L1961"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "6f03fd7d35d5c7a40ea2b8dd4ff91e1cf3009b423e6fdeff72150090c99340ea"
 
 [[test]]
@@ -32490,8 +32464,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1963-L1995"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "95cd13f7efcf6202dd851bbbd147e12961113f2b50f73c308c772e02c8e84caf"
 
 [[test]]
@@ -32500,8 +32473,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1896-L1916"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "aaea11e73ebd885d0c36a2e4e056ff71f4ad695d2300dc553aae4bfe69ce91f5"
 
 [[test]]
@@ -32510,8 +32482,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2079-L2111"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "efd38cdbbe9e542980ba5474a4e5e49c4f3fbb77145deffd9abf92cb891d14a6"
 
 [[test]]
@@ -32520,8 +32491,7 @@ kind = "unit"
 macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2046-L2077"
 module = "effects"
-status = "todo"
-reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
+status = "passing"
 span_hash = "631e6d7b953af373f313735c2d1602073dc577fe3bfd3f5f792c9f5844ec8351"
 
 [[test]]

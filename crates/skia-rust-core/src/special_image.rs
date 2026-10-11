@@ -196,6 +196,18 @@ impl SpecialImage {
         matches!(self.backing, Backing::Texture(_))
     }
 
+    /// The ID of the pixels this image shows (`uniqueID()`): a raster image's bitmap generation
+    /// ID, shared by its subsets, or the ID of its texture-backed image.
+    // Port of: src/core/SkSpecialImage.h#L61 (chrome/m156)
+    #[doc(alias = "uniqueID")]
+    #[must_use]
+    pub fn unique_id(&self) -> u32 {
+        match &self.backing {
+            Backing::Raster(bm) => bm.generation_id(),
+            Backing::Texture(image) => image.unique_id(),
+        }
+    }
+
     /// `isExactFit()`: whether the subset is the whole backing store.
     // Port of: src/core/SkSpecialImage.h#L67 (chrome/m156)
     #[doc(alias = "isExactFit")]

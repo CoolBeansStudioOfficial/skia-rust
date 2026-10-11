@@ -65,8 +65,9 @@ pub fn default_sampling() -> SamplingOptions {
 
 /// `FilterResult::PixelBoundary`: what the pixels around the image subset are.
 // Port of: src/core/SkImageFilterTypes.h#L689-L697 (chrome/m156)
+#[doc(hidden)] // reached through `test_access` only
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum PixelBoundary {
+pub enum PixelBoundary {
     /// Pixels outside the image subset are of unknown value, possibly uninitialized.
     Unknown,
     /// Pixels bordering the image subset are transparent black.
@@ -2291,5 +2292,69 @@ impl Builder<'_, '_> {
         result.layer_bounds = output_bounds;
         result.tile_mode = low_res_image.tile_mode();
         result
+    }
+}
+
+/// Test-only access to the internals of [`FilterResult`]: the port of `FilterResultTestAccess`
+/// (`tests/FilterResultTest.cpp`). Hidden from the public docs; not part of the API.
+// Port of: tests/FilterResultTest.cpp#L49-L165 (chrome/m156)
+#[doc(hidden)]
+pub mod test_access {
+    use super::{BoundsAnalysis, BoundsScope, PixelBoundary, ShaderFlags};
+    use crate::blender::Blender;
+    use crate::device::Device;
+    use crate::image_filter_result::default_sampling;
+    use crate::image_filter_types::Context;
+    use crate::rect::IRect;
+    use crate::sampling_options::SamplingOptions;
+    use crate::shader::Shader;
+
+    /// `FilterResultTestAccess::Draw`: `FilterResult::draw(ctx, device, preserveDeviceState)`.
+    // Port of: tests/FilterResultTest.cpp#L51-L56 (chrome/m156)
+    pub fn draw(
+        image: &super::FilterResult,
+        ctx: &Context<'_>,
+        device: &mut dyn Device,
+        preserve_device_state: bool,
+    ) {
+        let no_blender: Option<&Blender> = None;
+        image.draw_into(ctx, device, preserve_device_state, no_blender);
+    }
+
+    /// `FilterResultTestAccess::AsShader`: `asShader()` with the default sampling and no flags.
+    // Port of: tests/FilterResultTest.cpp#L58-L63 (chrome/m156)
+    pub fn as_shader(
+        image: &super::FilterResult,
+        ctx: &Context<'_>,
+        sample_bounds: IRect,
+    ) -> Option<Shader> {
+        image.as_shader(ctx, default_sampling(), ShaderFlags::empty(), sample_bounds)
+    }
+
+    /// `FilterResult::analyzeBounds(LayerSpace<SkIRect>)` with the default (deferred) scope.
+    // Port of: src/core/SkImageFilterTypes.h#L914-L916 (chrome/m156)
+    pub fn analyze_bounds(image: &super::FilterResult, dst_bounds: IRect) -> BoundsAnalysis {
+        image.analyze_bounds(
+            &crate::matrix::Matrix::new_identity(),
+            dst_bounds,
+            BoundsScope::Deferred,
+        )
+    }
+
+    /// `FilterResult::getAnalyzedShaderView`.
+    // Port of: src/core/SkImageFilterTypes.h#L975-L976 (chrome/m156)
+    pub fn get_analyzed_shader_view(
+        image: &super::FilterResult,
+        ctx: &Context<'_>,
+        final_sampling: SamplingOptions,
+        analysis: BoundsAnalysis,
+    ) -> Option<Shader> {
+        image.get_analyzed_shader_view(ctx, final_sampling, analysis)
+    }
+
+    /// `FilterResult::fBoundary`.
+    // Port of: src/core/SkImageFilterTypes.h#L689-L697 (chrome/m156)
+    pub fn boundary(image: &super::FilterResult) -> PixelBoundary {
+        image.boundary
     }
 }
