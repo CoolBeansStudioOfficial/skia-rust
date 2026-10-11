@@ -51,8 +51,8 @@ impl GM for TileImageFilterGm {
     // Port of: gm/tileimagefilter.cpp#L26-L29 (chrome/m156), onOnceBeforeDraw
     fn on_once_before_draw(&mut self) {
         // ToolUtils::CreateStringImage is CreateStringBitmap(...).asImage().
-        self.bitmap = create_string_bitmap(50, 50, Color::from(0xD000_D000), 10, 45, 50, "e")
-            .as_image();
+        self.bitmap =
+            create_string_bitmap(50, 50, Color::from(0xD000_D000), 10, 45, 50, "e").as_image();
         self.checkerboard = Some(create_checkerboard_image(
             80,
             80,
@@ -64,7 +64,10 @@ impl GM for TileImageFilterGm {
 
     // Port of: gm/tileimagefilter.cpp#L35-L121 (chrome/m156), onDraw
     fn on_draw(&mut self, canvas: &Canvas) {
-        let bitmap = self.bitmap.clone().expect("the bitmap is made in onOnceBeforeDraw");
+        let bitmap = self
+            .bitmap
+            .clone()
+            .expect("the bitmap is made in onOnceBeforeDraw");
         let checkerboard = self
             .checkerboard
             .clone()
@@ -137,7 +140,10 @@ impl GM for TileImageFilterGm {
                 0.0, 0.0, 1.0, 0.0, 0.0, //
                 0.0, 0.0, 0.0, 1.0, 0.0,
             ];
-            let src_rect = Rect::from_wh(int_to_scalar(bitmap.width()), int_to_scalar(bitmap.height()));
+            let src_rect = Rect::from_wh(
+                int_to_scalar(bitmap.width()),
+                int_to_scalar(bitmap.height()),
+            );
             let dst_rect = Rect::from_wh(
                 int_to_scalar(bitmap.width() * 2),
                 int_to_scalar(bitmap.height() * 2),

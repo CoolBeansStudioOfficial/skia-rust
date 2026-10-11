@@ -137,7 +137,8 @@ crate::def_gm!(
 
 // Port of: gm/imagesource2.cpp#L98-L100 (chrome/m156)
 crate::def_gm!(
-    ImageSourceGM_med = "ImageSourceGM(\"med\", SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear))",
+    ImageSourceGM_med =
+        "ImageSourceGM(\"med\", SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear))",
     ImageSourceGm::new(
         "med",
         SamplingOptions::new(

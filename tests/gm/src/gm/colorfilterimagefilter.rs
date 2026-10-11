@@ -8,14 +8,14 @@
 use crate::prelude::*;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{AutoCanvasRestore, SaveLayerRec};
+use skia_rust_core::color::colors;
 use skia_rust_core::color_filter::ColorFilter;
 use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color_matrix::ColorMatrix;
 use skia_rust_core::image_filter::ImageFilter;
 use skia_rust_core::paint::Paint;
-use skia_rust_core::rect::Rect;
-use skia_rust_core::color::colors;
 use skia_rust_core::point::Point;
+use skia_rust_core::rect::Rect;
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;

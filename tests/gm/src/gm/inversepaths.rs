@@ -9,15 +9,15 @@
 #![allow(clippy::cast_precision_loss)]
 
 use crate::prelude::*;
+use skia_rust_core::blur_types::BlurStyle;
+use skia_rust_core::mask_filter::MaskFilter;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
+use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_effect::PathEffect;
 use skia_rust_core::path_types::{PathDirection, PathFillType};
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
-use skia_rust_core::blur_types::BlurStyle;
-use skia_rust_core::mask_filter::MaskFilter;
-use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::dash_path_effect;
 use skia_rust_effects::image_filters::blur;
@@ -182,10 +182,26 @@ crate::def_simple_gm!(inverse_fill_filters, canvas, 384, 128, {
 // Port of: gm/inversepaths.cpp#L199-L231 (chrome/m156), inverse_windingmode_filters
 crate::def_simple_gm!(inverse_windingmode_filters, canvas, 256, 100, {
     let mut builder = PathBuilder::new();
-    builder.add_rect(Rect::from_ltrb(10.0, 10.0, 30.0, 30.0), PathDirection::CW, None);
-    builder.add_rect(Rect::from_ltrb(20.0, 20.0, 40.0, 40.0), PathDirection::CW, None);
-    builder.add_rect(Rect::from_ltrb(10.0, 60.0, 30.0, 80.0), PathDirection::CW, None);
-    builder.add_rect(Rect::from_ltrb(20.0, 70.0, 40.0, 90.0), PathDirection::CCW, None);
+    builder.add_rect(
+        Rect::from_ltrb(10.0, 10.0, 30.0, 30.0),
+        PathDirection::CW,
+        None,
+    );
+    builder.add_rect(
+        Rect::from_ltrb(20.0, 20.0, 40.0, 40.0),
+        PathDirection::CW,
+        None,
+    );
+    builder.add_rect(
+        Rect::from_ltrb(10.0, 60.0, 30.0, 80.0),
+        PathDirection::CW,
+        None,
+    );
+    builder.add_rect(
+        Rect::from_ltrb(20.0, 70.0, 40.0, 90.0),
+        PathDirection::CCW,
+        None,
+    );
     let mut path = builder.detach();
 
     let mut stroke_paint = Paint::default();

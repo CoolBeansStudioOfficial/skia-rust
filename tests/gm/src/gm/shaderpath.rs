@@ -73,9 +73,7 @@ struct ShaderPathGm {
 
 impl ShaderPathGm {
     fn new() -> Self {
-        Self {
-            bmp: Bitmap::new(),
-        }
+        Self { bmp: Bitmap::new() }
     }
 }
 
@@ -105,12 +103,7 @@ impl GM for ShaderPathGm {
         bmp_paint.set_alpha_f(0.5);
         let sampling = SamplingOptions::from(FilterMode::Linear);
         if let Some(image) = self.bmp.as_image() {
-            canvas.draw_image_with_sampling_options(
-                &image,
-                (5.0, 5.0),
-                sampling,
-                Some(&bmp_paint),
-            );
+            canvas.draw_image_with_sampling_options(&image, (5.0, 5.0), sampling, Some(&bmp_paint));
         }
 
         let mut outline_paint = Paint::default();
@@ -141,11 +134,7 @@ impl GM for ShaderPathGm {
 
                 let mut fill_paint = Paint::default();
                 fill_paint.set_anti_alias(true);
-                fill_paint.set_shader(self.bmp.to_shader(
-                    (tm0, tm1),
-                    sampling,
-                    &local_m,
-                ));
+                fill_paint.set_shader(self.bmp.to_shader((tm0, tm1), sampling, &local_m));
                 canvas.draw_path(&path, &fill_paint);
                 canvas.draw_path(&path, &outline_paint);
                 canvas.translate((50.0, 0.0));

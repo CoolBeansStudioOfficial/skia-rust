@@ -51,7 +51,8 @@ impl GM for ComplexClipBlurTiledGm {
                     tile_canvas.clear(Color::TRANSPARENT);
                     tile_canvas.translate((-x, -y));
                     let rect = Rect::from_wh(int_to_scalar(WIDTH), int_to_scalar(HEIGHT));
-                    tile_canvas.save_layer(&SaveLayerRec::default().bounds(&rect).paint(&blur_paint));
+                    tile_canvas
+                        .save_layer(&SaveLayerRec::default().bounds(&rect).paint(&blur_paint));
                     let rrect = RRect::new_rect_xy(rect.with_inset((20.0, 20.0)), 25.0, 25.0);
                     tile_canvas.clip_rrect(&rrect, ClipOp::Difference, true);
                     let paint = Paint::default();
