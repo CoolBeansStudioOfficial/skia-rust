@@ -44,13 +44,11 @@ use skia_rust_libpng::{
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
-use crate::codec_priv::{
-    ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource, serial_test_lock,
-};
+use crate::codec_priv::{ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource};
 use crate::resources::{get_resource_as_data, get_resource_as_image, resource_dir};
 use crate::tools::tool_utils;
 use crate::unit::codec_exact_read_test::SharedStream;
-use crate::{Reporter, def_test, errorf, reporter_assert, skip_missing_resource};
+use crate::{Reporter, def_serial_test, def_test, errorf, reporter_assert, skip_missing_resource};
 
 /// The `getPixels(info, pixels, rowBytes)` that the C++ test template calls on either an
 /// `SkCodec` or an `SkAndroidCodec`. The Android codec's `getPixels` forwards to
@@ -1160,8 +1158,7 @@ fn plane_png_decoder<'a>(
 }
 
 // Port of: tests/CodecTest.cpp#L2690-L2713 (chrome/m156), a serial test
-def_test!(Ico_usesRegisteredPngDecoder, |r| {
-    let _lock = serial_test_lock();
+def_serial_test!(Ico_usesRegisteredPngDecoder, |r| {
     let path = "images/mandrill_128.png";
     let ico = skip_missing_resource!(make_ico_from_png_resource(path), path);
 
@@ -1187,8 +1184,7 @@ def_test!(Ico_usesRegisteredPngDecoder, |r| {
 });
 
 // Port of: tests/CodecTest.cpp#L2715-L2725 (chrome/m156), a serial test
-def_test!(Ico_fallbackToLibpngWhenPngNotRegistered, |r| {
-    let _lock = serial_test_lock();
+def_serial_test!(Ico_fallbackToLibpngWhenPngNotRegistered, |r| {
     let scoped = ScopedCodecDecoders::new();
     scoped.clear();
     codecs::register(ico_decoder());

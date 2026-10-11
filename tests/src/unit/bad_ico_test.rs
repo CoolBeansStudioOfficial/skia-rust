@@ -13,10 +13,10 @@ use skia_rust_core::stream::{MemoryStream, Stream};
 
 use crate::codec_priv::{
     ScopedCodecDecoders, make_ico_from_png_resource, make_ico_with_png, png_decoder,
-    png_rust_decoder, serial_test_lock,
+    png_rust_decoder,
 };
 use crate::resources::get_resource_as_data;
-use crate::{Reporter, def_test, reporter_assert, skip_missing_resource};
+use crate::{Reporter, def_serial_test, def_test, reporter_assert, skip_missing_resource};
 
 // Port of: tests/BadIcoTest.cpp#L33-L63 (chrome/m156)
 def_test!(BadImage, |_r| {
@@ -35,8 +35,6 @@ def_test!(BadImage, |_r| {
         "skbug5883.gif",
     ];
 
-    // The registry is read by SkCodec::MakeFromStream, so the serial tests that change it wait.
-    let _lock = serial_test_lock();
     let bad_images_folder = "invalid_images";
     for name in bad_images {
         let path = format!("{bad_images_folder}/{name}");
@@ -86,13 +84,11 @@ fn test_bad_png_in_ico_does_not_fallback(reporter: &mut Reporter, png: Decoder) 
 }
 
 // Port of: tests/BadIcoTest.cpp#L121-L123 (chrome/m156), with the libpng decoder
-def_test!(Ico_malformedPngWithLibpngNoRedundantFallback, |r| {
-    let _lock = serial_test_lock();
+def_serial_test!(Ico_malformedPngWithLibpngNoRedundantFallback, |r| {
     test_bad_png_in_ico_does_not_fallback(r, png_decoder());
 });
 
 // Port of: tests/BadIcoTest.cpp#L115-L117 (chrome/m156), `SK_CODEC_DECODES_PNG_WITH_RUST`
-def_test!(Ico_malformedPngWithRustDecoderDoesNotFallback, |r| {
-    let _lock = serial_test_lock();
+def_serial_test!(Ico_malformedPngWithRustDecoderDoesNotFallback, |r| {
     test_bad_png_in_ico_does_not_fallback(r, png_rust_decoder());
 });
