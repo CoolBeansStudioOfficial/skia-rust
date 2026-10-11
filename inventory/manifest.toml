@@ -36114,8 +36114,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1543-L1564"
 module = "core"
-status = "todo"
-reason = "decodes images/mandrill_32.png (codecs not ported)"
+status = "passing"
 span_hash = "8e99d63ff0220c59a7607076a06120b75f7f58e6ea6424268c4a24c7e1939c87"
 
 [[test]]
