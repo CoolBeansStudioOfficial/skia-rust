@@ -186,13 +186,9 @@ const TARGETS: &[Target] = &[
 ];
 
 /// Inputs whose `.wgsl` golden is in the pinned tree but which no `gni` list names. The
-/// `compute/Atomic*` inputs are missing from `sksl_compute_tests`, while their `.wgsl`, `.metal`
-/// and `.asm.comp` goldens exist. They are compiled with the WGSL rule, as the manifest scan
-/// (`xtask`'s `scan_sksl_goldens`) already treats them.
-const UNLISTED_WGSL_INPUTS: &[&str] = &[
-    "compute/AtomicDeclarations.compute",
-    "compute/AtomicOperationsOverArrayAndStruct.compute",
-];
+/// `compute/Atomic{Declarations,OperationsOverArrayAndStruct}` goldens are such stale files: Skia
+/// never regenerates or runs them, so the manifest excludes them and nothing is planned for them.
+const UNLISTED_WGSL_INPUTS: &[&str] = &[];
 
 /// One golden and the input that produces it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -317,6 +313,11 @@ mod tests {
     use super::{GniLists, parse_gni, plan};
     use std::path::Path;
 
+    const STALE_WGSL_GOLDENS: &[&str] = &[
+        "tests/sksl/compute/AtomicDeclarations.wgsl",
+        "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl",
+    ];
+
     const ORPHAN_ERROR_GOLDENS: &[&str] = &[
         "tests/sksl/errors/ReservedNameSampler1DShadow.glsl",
         "tests/sksl/errors/ReservedNameSampler2DShadow.glsl",
@@ -343,7 +344,7 @@ mod tests {
 
     /// The mapping must reproduce the golden set the manifest scans (`xtask`'s
     /// `scan_sksl_goldens`): 365 `.skrp`, 62 `.stage`, 420 `.wgsl`, 338 error `.glsl` and 77
-    /// `.minified.sksl`. Skipped without a Skia checkout.
+    /// `.minified.sksl`, less the excluded stale and orphan goldens Skia does not run. Skipped without a Skia checkout.
     #[test]
     fn plan_matches_the_pinned_goldens() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../third_party/skia");
@@ -356,17 +357,24 @@ mod tests {
         let count = |ext: &str| jobs.iter().filter(|j| j.id.ends_with(ext)).count();
         assert_eq!(count(".skrp"), 365);
         assert_eq!(count(".stage"), 62);
-        assert_eq!(count(".wgsl"), 420);
+        // The two stale `compute/Atomic*` WGSL goldens (no `gni` entry) are not planned.
+        assert_eq!(count(".wgsl"), 418);
         assert_eq!(count(".minified.sksl"), 77);
         // Five error goldens have no input in `resources/sksl` and no `gni` entry, so there is
         // nothing to compile. The manifest still scans them (as `todo`); they are not planned.
         assert_eq!(count(".glsl"), 333);
+        for stale in STALE_WGSL_GOLDENS {
+            assert!(
+                !jobs.iter().any(|j| j.id == *stale),
+                "{stale} is not run by Skia"
+            );
+        }
         for orphan in ORPHAN_ERROR_GOLDENS {
             assert!(
                 !jobs.iter().any(|j| j.id == *orphan),
                 "{orphan} has no input"
             );
         }
-        assert_eq!(jobs.len(), 365 + 62 + 420 + 77 + 333);
+        assert_eq!(jobs.len(), 365 + 62 + 418 + 77 + 333);
     }
 }

@@ -19041,8 +19041,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/crbug_224618.cpp#L116-L116"
 module = "raster"
-status = "todo"
-reason = "not ported in this sweep: 3-D SkM44 transforms and animation timing; no missing API identified yet"
+status = "passing"
 span_hash = "aa2d7d994189dc45687a003f564c69cc6a2245e9ea55d6e124b11cfe74e8366f"
 
 [[test]]
@@ -19688,8 +19687,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawable.cpp#L39-L52"
 module = "raster"
-status = "todo"
-reason = "SkCanvas::drawDrawable is ported; the GM itself (MyDrawable) is not ported yet"
+status = "passing"
 span_hash = "d2447b3cbe180175fd3fe3565dc0eea935af656c9cc172539bd92869ce78b566"
 
 [[test]]
@@ -19943,7 +19941,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/emboss.cpp#L202-L324"
 module = "effects"
 status = "todo"
-reason = "needs images, text and the dither/color shader on an emboss paint"
+reason = "draws text and images under an emboss mask filter, which EmbossGM (gm/emboss.cpp::EmbossGM, failing) shows mismatches on every config (text drawn after the emboss mask is black); the helpers are not ported, notes/gm_emboss_cpp_EmbossGM.md"
 span_hash = "d65602f66fd45b7075b3c7dd8d2c738f0eebd9a20e171294f8e0b3c60e7fe4f1"
 
 [[test]]
@@ -20145,8 +20143,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/filterfastbounds.cpp#L334-L334"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: 335-line GM over Picture/Tile/MatrixTransform/DropShadow image filters, whose fast-bounds path has not been checked against the golden"
+status = "passing"
 span_hash = "0bdb74bd7488427d37404fdf8e86afcc0895dbb24c4e273ec204d030c96a8346"
 
 [[test]]
@@ -21610,7 +21607,7 @@ macro = "DEF_GM"
 source = "gm/hdr_pip_blur.cpp#L199-L199"
 module = "effects"
 status = "todo"
-reason = "needs colour-managed offscreen surfaces (canvas makeSurface with Rec2020/PQ colour spaces) and SkImage::makeColorSpace on raster images; not ported"
+reason = "needs SkCanvas::makeSurface (an offscreen surface with a Rec2020 colour space made from a canvas) and SkSurface::makeTemporaryImage, which are not ported; SkImage::makeColorSpace and SkImages::MakeWithFilter are on main"
 span_hash = "32e3564d88a9e68bf785432ec2bda3fc35e99bd25ac14df9217f0d51fe3cef6b"
 
 [[test]]
@@ -21794,8 +21791,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image_shader.cpp#L168-L168"
 module = "effects"
-status = "todo"
-reason = "draws picture, encoded and texture images: not ported"
+status = "passing"
 span_hash = "87752d8778cea41be42db95db4d069f91b723ecc2b45db97d62f6a794869ebc6"
 
 [[test]]
@@ -22593,8 +22589,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/makecolorspace.cpp#L66-L97"
 module = "skcms"
-status = "todo"
-reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
+status = "passing"
 span_hash = "630226c8aec6e99b7a83362ecd99bd98bbd12972153dcdd0a3b96a9615601622"
 
 [[test]]
@@ -22603,8 +22598,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/makecolorspace.cpp#L99-L164"
 module = "skcms"
-status = "todo"
-reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
+status = "passing"
 span_hash = "89ec913c798f7b3f664ad7c968c9056a99ee22b8190dbc56b23d372f9f104413"
 
 [[test]]
@@ -22613,8 +22607,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/makecolorspace.cpp#L166-L231"
 module = "skcms"
-status = "todo"
-reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
+status = "passing"
 span_hash = "2a15a3367f9c9325eec4c7bf6e992ff40ce0b6b1289ee406e0e511a3bf8da4a8"
 
 [[test]]
@@ -23065,8 +23058,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/overdrawcanvas.cpp#L33-L59"
 module = "raster"
-status = "todo"
-reason = "SkOverdrawCanvas (skia_rust_raster::overdraw_canvas) and SkOverdrawColorFilter are ported; the GM is not ported yet, and its text is not verified against the goldens"
+status = "passing"
 span_hash = "16b0ee844c3b6ff17820cc99e9e7c8902bf0899deb06cd480c1119c29edac37e"
 
 [[test]]
@@ -23075,8 +23067,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/overdrawcanvas.cpp#L93-L98"
 module = "text"
-status = "todo"
-reason = "SkOverdrawCanvas is ported, but not the overdraw of a glyph run list with RSXforms (nothing is drawn for it), which this GM draws; the GM is not ported yet"
+status = "passing"
 span_hash = "8bdae51cfab52ddf0fa1ad9dda66300afc5d1358c898ec3838ffde9942b033b6"
 
 [[test]]
@@ -23393,8 +23384,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathmeasure.cpp#L59-L61"
 module = "raster"
-status = "todo"
-reason = "source is #if 0 (no live GM; the repro needs GBs of RAM)"
+status = "excluded"
+reason = "compiled out: gm/pathmeasure.cpp#L57-L62 is #if 0 (no live GM; the repro needs GBs of RAM)"
 span_hash = "d3dc7d7aadc3ae7b0d83f6a33984d6fbb196fe9d2c924e1a391022796f47f632"
 
 [[test]]
@@ -23821,8 +23812,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/recordopts.cpp#L142-L230"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: 230-line GM over SkImageFilters::Picture and TableARGB colour filters, with Ganesh-only flush helpers"
+status = "passing"
 span_hash = "e8c43157ad064dca707ee60568d10f240f469ccc126cf6b6050ff18c3b8d2e18"
 
 [[test]]
@@ -25895,8 +25885,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L167-L168"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "616eda1fdcb5a30e150eec589f08e172dc1176aa947a22d260ce7d305a5d8fe1"
 
 [[test]]
@@ -25905,8 +25894,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L169-L170"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "39371c0e14bd3675f1f81cad92e168a7005b366bfdd01a57c52150c479f97d7e"
 
 [[test]]
@@ -25915,8 +25903,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L163-L164"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "413261afa1c9df7dc8d93c4f920014999b441cc58c2ad47571b7ef8458d988cc"
 
 [[test]]
@@ -25925,8 +25912,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L165-L166"
 module = "raster"
-status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
+status = "passing"
 span_hash = "b6e1b132a3ce795b894c5778e472ef59f408aa782083e64f3f9c61484efe9dd3"
 
 [[test]]
@@ -26437,7 +26423,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/ExternalProperties.cpp#L138-L138"
 module = "skottie"
 status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer and the text property handles (TextPropertyHandle, onTextProperty)"
 span_hash = "cf6518affcf7117dc7efb0545bd2f814687da4d2e66647672ce3942fd674b1bc"
 
 [[test]]
@@ -26446,8 +26432,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L182-L182"
 module = "skottie"
-status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+status = "passing"
 span_hash = "541f39506ae3df91222ff1b07d8febc9c4fe77b7f4c22fb710a0b016585ddd4a"
 
 [[test]]
@@ -26457,7 +26442,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L183-L183"
 module = "skottie"
 status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer"
 span_hash = "f74e03d29d896f95053bb67b85a11800925db8023addbdc7df4f839799a6dc98"
 
 [[test]]
@@ -26466,8 +26451,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L242-L242"
 module = "skottie"
-status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+status = "passing"
 span_hash = "6c83508dc70d702b41352f5622d7651704762b270d0ee34fa4ff5a07e7af2329"
 
 [[test]]
@@ -26477,7 +26461,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L94-L94"
 module = "skottie"
 status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer"
 span_hash = "fd5304773225efaa47b6e282a52395f1f0a417cc9e9239a51c353a27ef1b9c67"
 
 [[test]]
@@ -55351,8 +55335,8 @@ id = "tests/sksl/compute/AtomicDeclarations.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicDeclarations.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "excluded"
+reason = "stale golden: Skia never regenerates it (input listed in UNLISTED_WGSL_INPUTS, not in gn/sksl_tests.gni), so it is not run by Skia"
 span_hash = "c60414d8276eb3b4efc757dfe73a7f325ff3d0fb8f74065fe5ec3b1c794b9989"
 
 [[test]]
@@ -55404,8 +55388,8 @@ id = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "excluded"
+reason = "stale golden: Skia never regenerates it (input listed in UNLISTED_WGSL_INPUTS, not in gn/sksl_tests.gni), so it is not run by Skia"
 span_hash = "e4ddea6cb00400f18fb2ee450e687687cdd5674ad13bb0ed7b2ddab9c7bc1763"
 
 [[test]]
@@ -58054,7 +58038,8 @@ id = "tests/sksl/errors/ReservedNameSampler1DShadow.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler1DShadow.glsl"
 module = "sksl"
-status = "todo"
+status = "excluded"
+reason = "orphan golden: its input is not in the pinned Skia tree or gn/sksl_tests.gni, so Skia does not run it (the error text is pinned by a parser unit test)"
 span_hash = "8d12b34d1ca59eb6e3f4f16faac571d2ed24329481bde6497498cb78071dc4a2"
 
 [[test]]
@@ -58062,7 +58047,8 @@ id = "tests/sksl/errors/ReservedNameSampler2DRectShadow.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler2DRectShadow.glsl"
 module = "sksl"
-status = "todo"
+status = "excluded"
+reason = "orphan golden: its input is not in the pinned Skia tree or gn/sksl_tests.gni, so Skia does not run it (the error text is pinned by a parser unit test)"
 span_hash = "d8d303630a0fed94b2b5a96944cc0d8246dd9a59e9bd82a9dfffb8713b33e963"
 
 [[test]]
@@ -58070,7 +58056,8 @@ id = "tests/sksl/errors/ReservedNameSampler2DShadow.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler2DShadow.glsl"
 module = "sksl"
-status = "todo"
+status = "excluded"
+reason = "orphan golden: its input is not in the pinned Skia tree or gn/sksl_tests.gni, so Skia does not run it (the error text is pinned by a parser unit test)"
 span_hash = "929e2e4da64d8e627f5aabf16bd62a0d8f6c24cb5d2750231788b62d2e8eb12d"
 
 [[test]]
@@ -58078,7 +58065,8 @@ id = "tests/sksl/errors/ReservedNameSampler3DRect.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler3DRect.glsl"
 module = "sksl"
-status = "todo"
+status = "excluded"
+reason = "orphan golden: its input is not in the pinned Skia tree or gn/sksl_tests.gni, so Skia does not run it (the error text is pinned by a parser unit test)"
 span_hash = "c1277e7d10c90b696f36ea1e571125b379cb7d2a75bae9fee69553a9d5231cd8"
 
 [[test]]
@@ -58086,7 +58074,8 @@ id = "tests/sksl/errors/ReservedNameSamplerCube.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSamplerCube.glsl"
 module = "sksl"
-status = "todo"
+status = "excluded"
+reason = "orphan golden: its input is not in the pinned Skia tree or gn/sksl_tests.gni, so Skia does not run it (the error text is pinned by a parser unit test)"
 span_hash = "dd27a0c141b6316fd3194ce2010850b9319607c297585b1927476272d376ad85"
 
 [[test]]
@@ -62283,8 +62272,8 @@ id = "tests/sksl/intrinsics/IsInf.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsInf.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "todo"
+reason = "needs-tint-validation: the golden is Tint's error text (`Tint compilation failed.`) from ValidateWGSL; Tint is not available and naga is not a faithful substitute (docs/design/sksl.md R6)"
 span_hash = "e69a050ac40fae5106c7a112f06693b316dcfe8487f7d71a13c4f6a98e04c33d"
 
 [[test]]
@@ -62336,8 +62325,8 @@ id = "tests/sksl/intrinsics/IsNan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsNan.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "todo"
+reason = "needs-tint-validation: the golden is Tint's error text (`Tint compilation failed.`) from ValidateWGSL; Tint is not available and naga is not a faithful substitute (docs/design/sksl.md R6)"
 span_hash = "ebea7f542c6d5cf030135ff0b1d906a155660b903653a64c024d8ffbcf678682"
 
 [[test]]
