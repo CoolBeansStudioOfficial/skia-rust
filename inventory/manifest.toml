@@ -15800,7 +15800,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
 status = "failing"
-reason = "Skia itself signals a bug on every input: SkPicture::serialize writes the stream form (the SkPictInfo, the sentinel byte 1, then the SkPictureData), but SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L226-L252) reads a 32-bit sentinel of 1 straight after the info, which the stream's byte 1 followed by the reader tag is not, so it returns null and fuzz->signalBug() raises SIGSEGV. The port follows Skia, so the replay is #[ignore]d until the upstream mismatch is fixed (docs/design/fuzz.md section 5, step 2); the empty input is the reproducer"
+reason = "Skia itself signals a bug on every input: SkPicture::serialize writes the stream form (the SkPictInfo, the sentinel byte 1, then the SkPictureData), but SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L226-L252) reads a 32-bit sentinel of 1 straight after the info, which the stream's byte 1 followed by the reader tag is not, so it returns null and fuzz->signalBug() raises SIGSEGV. The port follows Skia, so the replay is #[ignore]d until the upstream mismatch is fixed (docs/design/fuzz.md section 5, step 2); the reproducer is fuzz/regressions/RasterN32CanvasViaSerialization/one-zero-byte"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
