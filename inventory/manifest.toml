@@ -53015,8 +53015,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L223-L278"
 module = "gpu"
-status = "todo"
-reason = "portable now (RasterFromBitmap, TextureFromImage, RenderTarget and PromiseTextureFrom exist); not ported in this sweep (280 C++ lines)"
+status = "passing"
 span_hash = "c436c8d191665d858069448e5e207bc8a702b624d62b61e170e269fc2dde7255"
 
 [[test]]
@@ -53034,8 +53033,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L202-L221"
 module = "gpu"
-status = "todo"
-reason = "portable now (RasterFromBitmap, TextureFromImage, RenderTarget and PromiseTextureFrom exist); not ported in this sweep (280 C++ lines)"
+status = "passing"
 span_hash = "353c152200fc7c0e62d0fff8d16693abf0781f5db92f25eb614acd3fced7c4bb"
 
 [[test]]
