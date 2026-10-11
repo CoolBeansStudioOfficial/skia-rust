@@ -402,11 +402,73 @@ as `svg` because their file names contain "svgo", 18 as `core`/`text`/`effects`)
 | Deflate | `SkDeflateWStream` over zlib `deflate` (level −1) | round-trip only (`PDFDeflateWStreamTest.cpp#L120-L178`) | `skia-rust-zlib::Deflate` (already a Chromium-zlib port, byte-exact against `oracle/codec-diff/zlib`) |
 | JPEG | passthrough of the encoded bytes when decodable as YUV/gray; CMYK re-encoded | source bytes appear verbatim / CMYK does not (`PDFJpegEmbedTest.cpp#L65-L123`) | `SkPDF::JPEG::Decode/Encode` helpers on `skia-rust-libjpeg` |
 | Metadata | XMP, `SkUUID` from MD5, creation date | substrings (`PDFDocumentTest.cpp#L168-L244`) | exact port (MD5 ported if core lacks it) |
-| Fonts | Type3 for path-only/unembeddable (all portable typefaces), Type0/CIDFontType2 + `hb-subset` for TrueType, Type1 (FreeType-only metrics) | `ToUnicode` CMap text, `CanEmbedTypeface` | port all; subsetting per Q4 |
+| Fonts | Type3 for path-only/unembeddable (all portable typefaces), Type0/CIDFontType2 + `hb-subset` for TrueType, Type1 (FreeType-only metrics) | `ToUnicode` CMap text, `CanEmbedTypeface` | port all; subsetting by `skia-rust-hb-subset` (Q4, §7.1) |
 | Tagging, links, annotations | `SkPDFTag`, structure tree | substrings, structure (`PDFTagged*Test`) | exact port |
 
 No PDF sink golden exists (the oracle did not run the `pdf` config), so whole-document bytes are
-not compared today. Everything except `hb-subset` is pure Skia or an already-exact port.
+not compared today. Everything except `hb-subset` is pure Skia or an already-exact port; `hb-subset` is ported in §7.1.
+
+
+### 7.1 Font subsetting: `skia-rust-hb-subset`
+
+**Seam.** `SkPDFSubsetFont.cpp#L141-L217` (`subset_harfbuzz`) makes one `hb-subset` call: face from the typeface's stream
+(`hb_face_create` on the whole file, `ttc_index`), `hb_subset_input_create_or_fail`, the used glyph ids in
+`HB_SUBSET_SETS_GLYPH_INDEX`, flags `HB_SUBSET_FLAGS_RETAIN_GIDS` plus `HB_SUBSET_FLAGS_NOTDEF_OUTLINE` when glyph 0 is
+used, `hb_subset_or_fail`, `hb_face_reference_blob`. Every other input set keeps its default. The crate exposes that call:
+`skia_rust_hb_subset::subset_font(font_data, glyph_ids, ttc_index) -> Option<Vec<u8>>` (and `try_subset_font`, which also
+says whether `None` is a HarfBuzz failure or a part that is not ported). `skia-rust-pdf` (M26) calls it; the PDF crate is not
+touched by the port.
+
+**What is reachable, decided from the source.** `SkPDFFont::FontType` (`SkPDFFont.cpp#L333-L355`) sends variable fonts
+(`kVariable_FontFlag`, any `fvar`), `kCFF_Font` (FreeType's "CFF", also for OpenType-CFF and CFF2), non-standard containers and
+unembeddable fonts to Type3, and only `kTrueType_Font` reaches `SkPDFSubsetFont` (`emit_subset_type0`, `#L468-L473`);
+`kType1CID_Font` embeds the original data. So the subsetter sees non-variable TrueType-outline (`glyf`) fonts, with any of the
+layout, colour and metadata tables such a font can have.
+
+**Layers.** `serialize` is `hb_serialize_context_t` (objects packed from the tail, shared by content, links, snapshot/revert,
+discard); `sfnt` is `hb_face_builder` (tables sorted by size then tag, 4-byte padding, `head.checkSumAdjustment`); `plan` is
+`hb_subset_plan_t` (cmap-based glyph set, GSUB closure, composite closure, `RETAIN_GIDS` maps, name ids, MATH/COLR closures);
+one module per table family (`glyf`, `cmap`, `tables` = maxp/head/post/OS/2/hmtx/vmtx/hdmx/name, `gdef`, `gsubgpos` + `gsub` +
+`gpos` + `context`, `base`, `math`, `colr` + CPAL, `color` = sbix, `cbdt` = CBLC/CBDT, `var` = gvar). Reads use `View`, a byte
+slice with HarfBuzz's `Null` semantics (a read outside the data is 0); sets and maps are `BTreeSet`/`HashMap`. Fontations
+crates are not used: they would not produce HarfBuzz's bytes.
+
+**Ported (byte-exact against the pin).** Everything the table above names for TrueType fonts: `glyf`/`loca`/`head`, `cmap`
+(formats 4 and 12 output; 0/4/6/10/12/13 input), `hmtx`/`hhea`, `vmtx`/`vhea`, `maxp`, `post`, `name`, `OS/2` (including the
+unicode range bits), `hdmx`, `GDEF`, `GSUB`/`GPOS` (all lookup types and formats with 16-bit offsets, extension, feature,
+script and language-system pruning, duplicate-feature merging, GSUB closure), `BASE`, `MATH`, `COLR` (v0 and v1),
+`CPAL`, `sbix`, `CBLC`/`CBDT`, `gvar`, name-id closure from `STAT`/`fvar`/`CPAL`/layout features, passthrough of
+`STAT`/`cvt `/`fpgm`/`prep`/`fvar`/`avar`/`cvar`/`MVAR`, the drop list (`DSIG`, `kern`, `morx`, `SVG `, ...), the serialization
+buffer growth of `_hb_subset_table` (a table that needs more than 256 times its source fails, as in HarfBuzz), and
+`hb-repacker` (`graph`, `graph_gsubgpos`, `repacker`, `hbmap`): graph sorting by shortest distance, 24/32-bit space
+assignment and subgraph isolation, duplication of shared nodes, priority raising, `GSUB`/`GPOS` extension promotion, and the
+splitting of `PairPos` formats 1 and 2, `MarkBasePos` format 1 and `LigatureSubst` subtables. `hb_hashmap_t`'s open addressing is
+copied (`HbMap`) because the repacker visits nodes in its iteration order.
+
+**Not ported, with the reason.**
+- `CFF `, `CFF2`, `VORG`, and `HVAR`/`VVAR`: unreachable from Skia (above). They report `Unsupported`.
+- Variation data inside layout and colour tables (`GDEF` `ItemVariationStore`, `GSUB`/`GPOS` `FeatureVariations`, `BASE` and
+  `COLR` variation stores): variable fonts only, so unreachable. `Unsupported`.
+- The HarfBuzz sanitizer. A malformed table makes `hb-subset` fail (`FAIL` in the oracle); this port subsets what it can read
+  and applies size checks only. Fonts that sanitize (every font in the corpus) are unaffected.
+- `hb-repacker` pieces that no `GSUB`/`GPOS` the corpus can build reaches: the `GPOS` splitters for `PairPos` with device
+  tables inside value records are ported but only the device-table-free path is exercised by the oracle fonts.
+
+**Verification.** `oracle/subset-diff/` builds HarfBuzz at the pin with Skia's defines (`build.sh`), runs a C driver that calls
+`hb-subset` exactly as `SkPDFSubsetFont.cpp` does, over `corpus.txt` (every Skia resources font with outlines: single glyph,
+last glyph, ASCII, three seeded random sets, all glyphs, each with and without glyph 0) and records `expected.txt` (length and
+SHA-256 per entry). `crates/skia-rust-hb-subset/tests/subset_diff.rs` replays the corpus and requires identical bytes: no
+tolerance, and a font that is not ported must report `Unsupported` for the part it stops at (the test fails when a listed font
+becomes exact, so the list can only shrink). The same test accepts `HB_SUBSET_EXT_DIR` for a larger local corpus made by the same
+scripts (HarfBuzz's own test fonts and system fonts are not redistributable here). 5672 entries of such a local corpus
+(HarfBuzz's test fonts and system fonts) are exact; what does not match is two fonts that HarfBuzz rejects in its sanitizer
+(`FAIL` in the oracle) and the entries that need a part listed above.
+
+Real fonts hardly ever overflow in ways that reach the repacker's extension promotion and subtable splitting, so
+`oracle/subset-diff/gen_synthetic.py` writes synthetic fonts (`oracle/subset-diff/synthetic/`, replayed by
+`repacker_matches_hb_subset_on_synthetic_fonts`) whose `GSUB`/`GPOS` need them: ligature, mark-to-base and pair-positioning
+subtables that only fit after splitting, plain lookups promoted to extensions, shared nodes duplicated, and two `PairPos`
+format 2 fonts for which HarfBuzz itself fails (its split leaves the first half just over the limit); the port fails with it.
 
 ---
 
@@ -417,6 +479,7 @@ not compared today. Everything except `hb-subset` is pure Skia or an already-exa
 | `skia-rust-unicode` | `modules/skunicode` (ICU path, client), ICU shim | core; `icu_segmenter`, `icu_properties` (+`unicode_bidi`), `icu_casemap`, `unicode-bidi`; later `skia-rust-unicode-data` (M4) |
 | `skia-rust-shaper` | `modules/skshaper` (primitive, HarfBuzz-on-HarfRust, skunicode iterators, factory helpers) | core, unicode, `harfrust =0.9.0` |
 | `skia-rust-paragraph` | `modules/skparagraph` | core, effects, shaper, unicode |
+| `skia-rust-hb-subset` | `hb-subset` as Skia's PDF backend uses it (§7.1) | `std` only |
 | `skia-rust-resources` | `modules/skresources` | core, codec |
 | `skia-rust-sksg` | `modules/sksg` | core, effects |
 | `skia-rust-skottie` | `modules/skottie`, `modules/jsonreader` (as `skottie::json`) | sksg, resources, shaper, unicode, effects, codec |
@@ -535,7 +598,7 @@ critical path to the first module GM (`paragraph_`): M1 → M2 → M5/M6 (with M
 | Q1 | **HarfRust `=0.9.0`** tracks HarfBuzz 14.2.0, not the oracle's 13.1.0, and is the newest release compatible with Skia's `read-fonts =0.40.1` | Approve, with the divergence policy of decision 5 (vendored patch crate `third_party/harfrust` only when shaper-diff shows a difference that Skia's callbacks don't absorb). The pin moves with Skia's Fontations pins on milestone bumps |
 | Q2 | **Paragraph test fonts** (`skparagraph` asset v4: Roboto, Noto CJK/Emoji/Naskh, Source Han, Ahem, …; Apache-2.0 / OFL-1.1, tens of MB) | Proposed: don't commit them. Publish them once as a release asset `test-fonts-m156` (sha256 in `inventory/test-fonts.lock`), fetched and cached like the goldens. The PR that adds them lists the licences in `NOTICE`. Alternative: rebuild from `create.py`'s sources at test time (network and two git clones) |
 | Q3 | **Exactness target for segmentation**: reproduce Chromium's patched ICU (M4), or stock ICU4X with documented differences | Recommended: reproduce. The oracle and Skia's bots used Chromium's data, and the `.` word-break change shows up in ordinary Latin text (200 of 909 corpus strings) |
-| Q4 | **PDF font subsetting.** The default build uses `hb-subset`. The Rust subsetter (`skera`) needs skrifa ≥ 0.47 (two fontations versions in the tree) and does not produce HarfBuzz's bytes. No current test compares subset bytes | Options: (a) port Skia's `#else` branch (`SkPDFSubsetFont.cpp#L200-L210`: embed whole fonts) and record the deviation; (b) depend on `skera` with its own fontations versions behind the `pdf` feature; (c) port the `hb-subset` parts Skia uses (glyf/loca/cmap/hmtx/CFF; large). Recommended: (b), with the deviation recorded in `API_MAPPING.md` |
+| Q4 | **PDF font subsetting.** The default build uses `hb-subset`. The Rust subsetter (`skera`) needs skrifa ≥ 0.47 (two fontations versions in the tree) and does not produce HarfBuzz's bytes. No current test compares subset bytes | **Decided: (c).** Port the `hb-subset` parts Skia's PDF backend uses, byte-exact, in `skia-rust-hb-subset` (§7.1): `std` only, no `unsafe`, verified against HarfBuzz at the pin by `oracle/subset-diff`. The options were (a) port Skia's `#else` branch (`SkPDFSubsetFont.cpp#L200-L210`: embed whole fonts) and record the deviation, (b) depend on `skera`, (c) this. (c) is what the task asked for and makes the PDF font streams match Skia's; (a) and (b) would not. What is not ported is listed in §7.1 |
 | Q5 | **C/C++ in CI for shaper-diff and unicode-diff** (HarfBuzz about 75 s, ICU `common` about 150 s on 4 cores) | Recommended: committed expected files replayed by `cargo test` everywhere (rp-diff model). Rebuild and compare only in a cached Linux job when a case or a pin changes |
 | Q6 | **A Linux DM oracle for `--src lottie svg` and the `pdf`/`svg` sinks.** gpu.md Q1 already proposes CI-hosted oracle builds | If gpu.md Q1 is approved, add a CPU job: clang on Linux with the oracle's GN args, portable fonts. First check that it reproduces the existing RGBA-variant GM goldens byte for byte, then render the 187 lotties at those tiers. Until then they stay `needs-oracle` |
 | Q7 | **Pull SVG core (M12–M13) ahead of the shaper**, to unblock text T20 | Recommended (no shaping dependency; 13 text entries plus the SVG module) |

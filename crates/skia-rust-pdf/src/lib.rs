@@ -19,9 +19,9 @@
 //! and Type0/CID fonts, the `ToUnicode` maps, the CID glyph widths, Type1 fonts, and the text
 //! of the device (`font`, `glyph_use`, `to_unicode_cmap`, `cid_glyph_widths`, `type1_font`).
 //!
-//! Fonts are embedded whole: the subsetter is not ported (`docs/design/modules.md` Q4), and
-//! `subset_font` is the seam where it will go. It is the branch Skia takes when it is built
-//! without `SK_PDF_USE_HARFBUZZ_SUBSET`.
+//! Fonts are subset with `skia-rust-hb-subset`, the port of the `hb-subset` parts Skia uses
+//! (`docs/design/modules.md` Q4), through the `subset_font` seam, as Skia does when it is built
+//! with `SK_PDF_USE_HARFBUZZ_SUBSET`.
 
 pub mod bitmap;
 pub mod cid_glyph_widths;

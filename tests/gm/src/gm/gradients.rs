@@ -6,7 +6,6 @@
 // Not ported (the manifest entries stay `todo`):
 // * `gradients_color_space`, `gradients_hue_method`: they label each gradient with text
 //   (`SkFont`, Phase 5).
-// * `fancy_gradients`: `SkPictureRecorder` + `SkPicture::makeShader` (picture shader).
 // * `LCH`, `OKLCH`, `HSL`, `HWB` (`DEF_POWERLESS_HUE_GM`): `ToolUtils::draw_checkerboard` is a
 //   bitmap shader (image shaders, Phase 3).
 
@@ -18,6 +17,7 @@
 )]
 
 use crate::prelude::*;
+use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::AutoCanvasRestore;
 use skia_rust_core::color::colors;
 use skia_rust_core::color_space::ColorSpace;
@@ -25,13 +25,16 @@ use skia_rust_core::floating_point::float_midpoint;
 use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::scalar::scalar_interp;
+use skia_rust_core::sampling_options::FilterMode;
+use skia_rust_core::scalar::{scalar, scalar_interp};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::interpolation::{ColorSpace as InterpColorSpace, InPremul};
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_tools::font_tool_utils::default_portable_font;
 
 const G_COLORS: [Color4f; 5] = [
@@ -1825,3 +1828,187 @@ crate::def_simple_gm_bg_name!(
         );
     }
 );
+
+// Port of: gm/gradients.cpp#L796-L808 (chrome/m156), draw_circle_shader
+fn draw_circle_shader(
+    canvas: &Canvas,
+    (cx, cy, r): (scalar, scalar, scalar),
+    shader_func: impl FnOnce() -> Option<Shader>,
+) {
+    let mut p = Paint::default();
+    p.set_anti_alias(true);
+    p.set_shader(shader_func());
+    canvas.draw_circle((cx, cy), r, &p);
+
+    p.set_shader(None);
+    p.set_color(Color::new(0xFF88_8888)); // SK_ColorGRAY
+    p.set_style(Style::Stroke);
+    p.set_stroke_width(2.0);
+    canvas.draw_circle((cx, cy), r, &p);
+}
+
+// Port of: gm/gradients.cpp#L810-L893 (chrome/m156), the body of fancy_gradients
+#[allow(clippy::too_many_lines)] // mirrors the long C++ DEF_SIMPLE_GM body
+fn fancy_gradients_draw(canvas: &Canvas) {
+    draw_circle_shader(canvas, (150.0, 150.0, 100.0), || {
+        // Checkerboard using two linear gradients + picture shader.
+        let k_tile_size: scalar = 80.0 / 2.0_f32.sqrt();
+        let colors1 = [
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(1.0, 1.0, 1.0, 1.0),
+            Color4f::new(1.0, 1.0, 1.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+        ];
+        let colors2 = [
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 0.0),
+            Color4f::new(0.0, 0.0, 0.0, 0.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+        ];
+        let pos: [scalar; 6] = [0.0, 0.25, 0.25, 0.75, 0.75, 1.0];
+
+        let mut recorder = PictureRecorder::new();
+        let rc = recorder.begin_recording(Rect::from_wh(k_tile_size, k_tile_size), false);
+
+        let mut p = Paint::default();
+
+        let pts1 = (Point::new(0.0, 0.0), Point::new(k_tile_size, k_tile_size));
+        p.set_shader(gradient_shaders::linear_gradient(
+            pts1,
+            &Gradient::new(
+                Colors::new(&colors1, Some(&pos), TileMode::Clamp, None),
+                Interpolation::default(),
+            ),
+            None,
+        ));
+        rc.draw_paint(&p);
+
+        let pts2 = (Point::new(0.0, k_tile_size), Point::new(k_tile_size, 0.0));
+        p.set_shader(gradient_shaders::linear_gradient(
+            pts2,
+            &Gradient::new(
+                Colors::new(&colors2, Some(&pos), TileMode::Clamp, None),
+                Interpolation::default(),
+            ),
+            None,
+        ));
+        rc.draw_paint(&p);
+
+        let mut m = Matrix::new_identity();
+        m.pre_rotate(45.0, None);
+        recorder
+            .finish_recording_as_picture(None)
+            .and_then(|picture| {
+                picture.to_shader(
+                    (TileMode::Repeat, TileMode::Repeat),
+                    FilterMode::Nearest,
+                    &m,
+                    None,
+                )
+            })
+    });
+
+    draw_circle_shader(canvas, (400.0, 150.0, 100.0), || {
+        // Checkerboard using a sweep gradient + picture shader.
+        let k_tile_size: scalar = 80.0;
+        let colors = [
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(1.0, 1.0, 1.0, 1.0),
+            Color4f::new(1.0, 1.0, 1.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 0.0, 1.0),
+            Color4f::new(1.0, 1.0, 1.0, 1.0),
+            Color4f::new(1.0, 1.0, 1.0, 1.0),
+        ];
+        let pos: [scalar; 8] = [0.0, 0.25, 0.25, 0.5, 0.5, 0.75, 0.75, 1.0];
+
+        let mut p = Paint::default();
+        p.set_shader(gradient_shaders::sweep_gradient(
+            Point::new(k_tile_size / 2.0, k_tile_size / 2.0),
+            (0.0, 360.0),
+            &Gradient::new(
+                Colors::new(&colors, Some(&pos), TileMode::Clamp, None),
+                Interpolation::default(),
+            ),
+            None,
+        ));
+        let mut recorder = PictureRecorder::new();
+        recorder
+            .begin_recording(Rect::from_wh(k_tile_size, k_tile_size), false)
+            .draw_paint(&p);
+
+        recorder
+            .finish_recording_as_picture(None)
+            .and_then(|picture| {
+                picture.to_shader(
+                    (TileMode::Repeat, TileMode::Repeat),
+                    FilterMode::Nearest,
+                    None,
+                    None,
+                )
+            })
+    });
+
+    draw_circle_shader(canvas, (650.0, 150.0, 100.0), || {
+        // Dartboard using sweep + radial.
+        let a = Color4f::new(1.0, 1.0, 1.0, 1.0);
+        let b = Color4f::new(0.0, 0.0, 0.0, 1.0);
+        let colors = [a, a, b, b, a, a, b, b, a, a, b, b, a, a, b, b];
+        let pos: [scalar; 16] = [
+            0.0, 0.125, 0.125, 0.25, 0.25, 0.375, 0.375, 0.5, 0.5, 0.625, 0.625, 0.75, 0.75, 0.875,
+            0.875, 1.0,
+        ];
+
+        let center = Point::new(650.0, 150.0);
+        let sweep1 = gradient_shaders::sweep_gradient(
+            center,
+            (0.0, 360.0),
+            &Gradient::new(
+                Colors::new(&colors, Some(&pos), TileMode::Clamp, None),
+                Interpolation::default(),
+            ),
+            None,
+        )?;
+        let mut m = Matrix::new_identity();
+        m.pre_rotate(22.5, center);
+        let sweep2 = gradient_shaders::sweep_gradient(
+            center,
+            (0.0, 360.0),
+            &Gradient::new(
+                Colors::new(&colors, Some(&pos), TileMode::Clamp, None),
+                Interpolation::default(),
+            ),
+            &m,
+        )?;
+
+        let sweep = skia_rust_core::shaders::blend(BlendMode::Exclusion, sweep1, sweep2);
+
+        let radial_pos: [scalar; 16] = [
+            0.0, 0.02, 0.02, 0.04, 0.04, 0.08, 0.08, 0.16, 0.16, 0.31, 0.31, 0.62, 0.62, 1.0, 1.0,
+            1.0,
+        ];
+        let radial = gradient_shaders::radial_gradient(
+            (center, 100.0),
+            &Gradient::new(
+                Colors::new(&colors, Some(&radial_pos), TileMode::Clamp, None),
+                Interpolation::default(),
+            ),
+            None,
+        )?;
+        Some(skia_rust_core::shaders::blend(
+            BlendMode::Exclusion,
+            sweep,
+            radial,
+        ))
+    });
+}
+
+// Port of: gm/gradients.cpp#L810 (chrome/m156), DEF_SIMPLE_GM(fancy_gradients, canvas, 800, 300)
+crate::def_simple_gm!(fancy_gradients, canvas, 800, 300, {
+    fancy_gradients_draw(canvas);
+});
