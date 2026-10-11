@@ -30,9 +30,13 @@ members = [
     "tests",
     "tests/gm",
     "tests/tools",
+    "fuzz",
     "oracle/rp-diff",
     "xtask",
 ]
+# The cargo-fuzz package needs nightly and libfuzzer-sys, so it is its own workspace and stable
+# builds of this one never see it (docs/design/fuzz.md §4).
+exclude = ["fuzz/libfuzzer"]
 
 [workspace.package]
 version = "0.156.0"
