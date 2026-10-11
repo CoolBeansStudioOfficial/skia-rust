@@ -52,15 +52,15 @@ use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::scalar::{Scalar, scalar};
 use skia_rust_core::shader::Shader;
-use skia_rust_core::shaders::shader_base::{GradientInfo, GradientType, ShaderType};
 use skia_rust_core::shaders::ColorShader;
+use skia_rust_core::shaders::shader_base::{GradientInfo, GradientType, ShaderType};
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{DynamicMemoryWStream, WStream};
 use skia_rust_core::string_utils::format_g;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
-use skia_rust_core::utils::parse_path::{PathEncoding, to_svg_with_encoding};
 use skia_rust_core::utf::Unichar;
+use skia_rust_core::utils::parse_path::{PathEncoding, to_svg_with_encoding};
 use skia_rust_core::vertices::Vertices;
 use skia_rust_core::xml::XmlWriter;
 use skia_rust_raster::clip_stack_device::ClipStackDevice;
@@ -1490,10 +1490,7 @@ impl SvgDevice {
         root_element.add_attribute_i32("height", size.height);
 
         Self {
-            state: DeviceState::new(
-                ImageInfo::new_unknown(Some(size)),
-                SurfaceProps::default(),
-            ),
+            state: DeviceState::new(ImageInfo::new_unknown(Some(size)), SurfaceProps::default()),
             clip: ClipStackDevice::new(),
             inner: Inner {
                 clip_stack: Vec::new(),
@@ -1612,7 +1609,12 @@ impl Device for SvgDevice {
         let mut cs = AutoRestore::new(self.clip.cs_mut(), false);
         if src.is_some_and(|src| *src != bm_bounds) {
             cs.save();
-            cs.clip_rect(dst, local_to_device, ClipOp::Intersect, paint.is_anti_alias());
+            cs.clip_rect(
+                dst,
+                local_to_device,
+                ClipOp::Intersect,
+                paint.is_anti_alias(),
+            );
         }
 
         let adjusted_matrix = Matrix::concat(
@@ -1646,11 +1648,7 @@ impl Device for SvgDevice {
     // Port of: src/svg/SkSVGDevice.cpp#L1301-L1331 (chrome/m156)
     fn on_draw_glyph_run_list(&mut self, glyph_run_list: &GlyphRunList<'_>, paint: &Paint) {
         debug_assert!(!glyph_run_list.has_rsxform());
-        let draw_as_path = self
-            .inner
-            .opts
-            .flags
-            .contains(Flags::CONVERT_TEXT_TO_PATHS)
+        let draw_as_path = self.inner.opts.flags.contains(Flags::CONVERT_TEXT_TO_PATHS)
             || paint.path_effect().is_some();
 
         if draw_as_path {

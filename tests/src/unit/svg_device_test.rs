@@ -146,8 +146,8 @@ fn check_text_node(
                 reporter_assert!(reporter, xpos[0] == offset.x);
             }
         } else {
-            for i in 0..xpos_count {
-                reporter_assert!(reporter, xpos[i] == f32::from(expected.as_bytes()[i]));
+            for (i, x) in xpos.iter().enumerate() {
+                reporter_assert!(reporter, *x == f32::from(expected.as_bytes()[i]));
             }
         }
     }
@@ -166,11 +166,8 @@ fn check_text_node(
         if scalars_per_pos < 2 {
             reporter_assert!(reporter, ypos[0] == offset.y);
         } else {
-            for i in 0..ypos_count {
-                reporter_assert!(
-                    reporter,
-                    ypos[i] == 150.0 - f32::from(expected.as_bytes()[i])
-                );
+            for (i, y) in ypos.iter().enumerate() {
+                reporter_assert!(reporter, *y == 150.0 - f32::from(expected.as_bytes()[i]));
             }
         }
     }
@@ -200,14 +197,9 @@ fn test_whitespace_pos(reporter: &mut Reporter, txt: &str, expected: &str) {
     {
         let xpos: Vec<scalar> = (0..len).map(|i| f32::from(txt.as_bytes()[i])).collect();
 
-        let blob = TextBlob::from_pos_text_h(
-            txt.as_bytes(),
-            TextEncoding::UTF8,
-            &xpos,
-            offset.y,
-            &font,
-        )
-        .expect("a text blob");
+        let blob =
+            TextBlob::from_pos_text_h(txt.as_bytes(), TextEncoding::UTF8, &xpos, offset.y, &font)
+                .expect("a text blob");
         make_dom_canvas(&mut dom, 0).draw_text_blob(&blob, (0.0, 0.0), &paint);
     }
     let root = dom.finish_parsing();
@@ -297,12 +289,11 @@ fn set_image_shader(
         None,
     )
     .expect("a surface");
-    paint.set_shader(
-        surface
-            .image_snapshot()
-            .expect("an image")
-            .to_shader((x_tile, y_tile), SamplingOptions::default(), None),
-    );
+    paint.set_shader(surface.image_snapshot().expect("an image").to_shader(
+        (x_tile, y_tile),
+        SamplingOptions::default(),
+        None,
+    ));
 }
 
 // Attempt to find the three nodes on which we have expectations:
@@ -350,7 +341,7 @@ fn find_image_shader_nodes(
 }
 
 // Port of: tests/SVGDeviceTest.cpp#L257-L265 (chrome/m156)
-#[allow(clippy::too_many_arguments)] // mirrors the C++
+#[allow(clippy::too_many_arguments, clippy::cast_precision_loss)] // mirrors the C++ (SkIntToScalar)
 fn image_shader_test_setup(
     dom: &mut Dom,
     paint: &mut Paint,
@@ -405,11 +396,20 @@ def_test!(SVGDevice_image_shader_norepeat, |reporter| {
         &mut rect_node,
     );
     reporter_assert!(reporter, structure_appropriate);
-    let (pattern_node, image_node) = (pattern_node.expect("a pattern"), image_node.expect("an image"));
+    let (pattern_node, image_node) = (
+        pattern_node.expect("a pattern"),
+        image_node.expect("an image"),
+    );
 
     // the image should always maintain its size.
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "width")) == image_width);
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "height")) == image_height);
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "width")) == image_width
+    );
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "height")) == image_height
+    );
 
     // making the pattern as large as the container prevents
     // it from repeating.
@@ -453,15 +453,27 @@ def_test!(SVGDevice_image_shader_tilex, |reporter| {
         &mut rect_node,
     );
     reporter_assert!(reporter, structure_appropriate);
-    let (pattern_node, image_node) = (pattern_node.expect("a pattern"), image_node.expect("an image"));
+    let (pattern_node, image_node) = (
+        pattern_node.expect("a pattern"),
+        image_node.expect("an image"),
+    );
 
     // the imageNode should always maintain its size.
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "width")) == image_width);
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "height")) == image_height);
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "width")) == image_width
+    );
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "height")) == image_height
+    );
 
     // if the patternNode width matches the imageNode width,
     // it will repeat in along the x axis.
-    reporter_assert!(reporter, atoi(attr(&dom, pattern_node, "width")) == image_width);
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, pattern_node, "width")) == image_width
+    );
     reporter_assert!(reporter, attr(&dom, pattern_node, "height") == "100%");
 });
 
@@ -501,16 +513,28 @@ def_test!(SVGDevice_image_shader_tiley, |reporter| {
         &mut rect_node,
     );
     reporter_assert!(reporter, structure_appropriate);
-    let (pattern_node, image_node) = (pattern_node.expect("a pattern"), image_node.expect("an image"));
+    let (pattern_node, image_node) = (
+        pattern_node.expect("a pattern"),
+        image_node.expect("an image"),
+    );
 
     // the imageNode should always maintain its size.
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "width")) == image_node_width);
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "height")) == image_node_height);
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "width")) == image_node_width
+    );
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "height")) == image_node_height
+    );
 
     // making the patternNode as large as the container prevents
     // it from repeating.
     reporter_assert!(reporter, attr(&dom, pattern_node, "width") == "100%");
-    reporter_assert!(reporter, atoi(attr(&dom, pattern_node, "height")) == image_node_height);
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, pattern_node, "height")) == image_node_height
+    );
 });
 
 // Port of: tests/SVGDeviceTest.cpp#L352-L378 (chrome/m156)
@@ -549,14 +573,29 @@ def_test!(SVGDevice_image_shader_tileboth, |reporter| {
         &mut rect_node,
     );
     reporter_assert!(reporter, structure_appropriate);
-    let (pattern_node, image_node) = (pattern_node.expect("a pattern"), image_node.expect("an image"));
+    let (pattern_node, image_node) = (
+        pattern_node.expect("a pattern"),
+        image_node.expect("an image"),
+    );
 
     // the imageNode should always maintain its size.
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "width")) == image_width);
-    reporter_assert!(reporter, atoi(attr(&dom, image_node, "height")) == image_height);
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "width")) == image_width
+    );
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, image_node, "height")) == image_height
+    );
 
-    reporter_assert!(reporter, atoi(attr(&dom, pattern_node, "width")) == image_width);
-    reporter_assert!(reporter, atoi(attr(&dom, pattern_node, "height")) == image_height);
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, pattern_node, "width")) == image_width
+    );
+    reporter_assert!(
+        reporter,
+        atoi(attr(&dom, pattern_node, "height")) == image_height
+    );
 });
 
 // Port of: tests/SVGDeviceTest.cpp#L380-L459 (chrome/m156)
@@ -569,6 +608,7 @@ def_test!(SVGDevice_ColorFilters, |reporter| {
     }
     use CompositeType::{Blend, Composite};
 
+    #[allow(clippy::cast_possible_truncation)] // the C++ passes the double to a float parameter
     let mut check_blendmode = |bm: BlendMode,
                                ct: CompositeType,
                                expected_operator: Option<&str>,
@@ -592,13 +632,21 @@ def_test!(SVGDevice_ColorFilters, |reporter| {
         let root_element = root_element.expect("a root element");
 
         let filter_element = dom.get_first_child(root_element, Some("filter"));
-        abort_test!(reporter, filter_element.is_none(), "filter element not found");
+        abort_test!(
+            reporter,
+            filter_element.is_none(),
+            "filter element not found"
+        );
         let filter_element = filter_element.expect("a filter element");
         reporter_assert!(reporter, attr(&dom, filter_element, "width") == "100%");
         reporter_assert!(reporter, attr(&dom, filter_element, "height") == "100%");
 
         let flood_element = dom.get_first_child(filter_element, Some("feFlood"));
-        abort_test!(reporter, flood_element.is_none(), "feFlood element not found");
+        abort_test!(
+            reporter,
+            flood_element.is_none(),
+            "feFlood element not found"
+        );
         let flood_element = flood_element.expect("a flood element");
         reporter_assert!(reporter, attr(&dom, flood_element, "flood-color") == "red");
         reporter_assert!(
@@ -631,7 +679,10 @@ def_test!(SVGDevice_ColorFilters, |reporter| {
         let fe_element = fe_element.expect("an fe element");
 
         reporter_assert!(reporter, Some(attr(&dom, fe_element, "in")) == expected_in);
-        reporter_assert!(reporter, Some(attr(&dom, fe_element, "in2")) == expected_in2);
+        reporter_assert!(
+            reporter,
+            Some(attr(&dom, fe_element, "in2")) == expected_in2
+        );
         reporter_assert!(
             reporter,
             Some(attr(&dom, fe_element, expected_operator_attr)) == expected_operator
@@ -640,33 +691,189 @@ def_test!(SVGDevice_ColorFilters, |reporter| {
 
     check_blendmode(BlendMode::Src, CompositeType::None, None, None, None);
 
-    check_blendmode(BlendMode::SrcOver, Composite, Some("over"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::SrcIn, Composite, Some("in"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::SrcOut, Composite, Some("out"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::SrcATop, Composite, Some("atop"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::DstOver, Composite, Some("over"), Some("SourceGraphic"), Some("flood"));
-    check_blendmode(BlendMode::DstIn, Composite, Some("in"), Some("SourceGraphic"), Some("flood"));
-    check_blendmode(BlendMode::DstOut, Composite, Some("out"), Some("SourceGraphic"), Some("flood"));
-    check_blendmode(BlendMode::DstATop, Composite, Some("atop"), Some("SourceGraphic"), Some("flood"));
-    check_blendmode(BlendMode::Xor, Composite, Some("xor"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Plus, Composite, Some("arithmetic"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Modulate, Composite, Some("arithmetic"), Some("flood"), Some("SourceGraphic"));
+    check_blendmode(
+        BlendMode::SrcOver,
+        Composite,
+        Some("over"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::SrcIn,
+        Composite,
+        Some("in"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::SrcOut,
+        Composite,
+        Some("out"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::SrcATop,
+        Composite,
+        Some("atop"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::DstOver,
+        Composite,
+        Some("over"),
+        Some("SourceGraphic"),
+        Some("flood"),
+    );
+    check_blendmode(
+        BlendMode::DstIn,
+        Composite,
+        Some("in"),
+        Some("SourceGraphic"),
+        Some("flood"),
+    );
+    check_blendmode(
+        BlendMode::DstOut,
+        Composite,
+        Some("out"),
+        Some("SourceGraphic"),
+        Some("flood"),
+    );
+    check_blendmode(
+        BlendMode::DstATop,
+        Composite,
+        Some("atop"),
+        Some("SourceGraphic"),
+        Some("flood"),
+    );
+    check_blendmode(
+        BlendMode::Xor,
+        Composite,
+        Some("xor"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Plus,
+        Composite,
+        Some("arithmetic"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Modulate,
+        Composite,
+        Some("arithmetic"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
 
-    check_blendmode(BlendMode::Multiply, Blend, Some("multiply"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Screen, Blend, Some("screen"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Darken, Blend, Some("darken"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Lighten, Blend, Some("lighten"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Overlay, Blend, Some("overlay"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::ColorDodge, Blend, Some("color-dodge"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::ColorBurn, Blend, Some("color-burn"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::HardLight, Blend, Some("hard-light"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::SoftLight, Blend, Some("soft-light"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Difference, Blend, Some("difference"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Exclusion, Blend, Some("exclusion"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Hue, Blend, Some("hue"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Saturation, Blend, Some("saturation"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Color, Blend, Some("color"), Some("flood"), Some("SourceGraphic"));
-    check_blendmode(BlendMode::Luminosity, Blend, Some("luminosity"), Some("flood"), Some("SourceGraphic"));
+    check_blendmode(
+        BlendMode::Multiply,
+        Blend,
+        Some("multiply"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Screen,
+        Blend,
+        Some("screen"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Darken,
+        Blend,
+        Some("darken"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Lighten,
+        Blend,
+        Some("lighten"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Overlay,
+        Blend,
+        Some("overlay"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::ColorDodge,
+        Blend,
+        Some("color-dodge"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::ColorBurn,
+        Blend,
+        Some("color-burn"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::HardLight,
+        Blend,
+        Some("hard-light"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::SoftLight,
+        Blend,
+        Some("soft-light"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Difference,
+        Blend,
+        Some("difference"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Exclusion,
+        Blend,
+        Some("exclusion"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Hue,
+        Blend,
+        Some("hue"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Saturation,
+        Blend,
+        Some("saturation"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Color,
+        Blend,
+        Some("color"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
+    check_blendmode(
+        BlendMode::Luminosity,
+        Blend,
+        Some("luminosity"),
+        Some("flood"),
+        Some("SourceGraphic"),
+    );
 });
 
 // Port of: tests/SVGDeviceTest.cpp#L461-L490 (chrome/m156)
@@ -675,6 +882,7 @@ def_test!(SVGDevice_textpath, |reporter| {
     let font = default_portable_font();
     let mut paint = Paint::default();
 
+    #[allow(clippy::nonminimal_bool)] // mirrors `!!textElement == !expect_path`
     let mut check_text = |reporter: &mut Reporter, paint: &Paint, flags: u32, expect_path: bool| {
         // By default, we emit <text> nodes.
         {
@@ -704,12 +912,7 @@ def_test!(SVGDevice_textpath, |reporter| {
     check_text(reporter, &paint, 0, false);
 
     // With kConvertTextToPaths_Flag, we emit <path> nodes.
-    check_text(
-        reporter,
-        &paint,
-        Flags::CONVERT_TEXT_TO_PATHS.bits(),
-        true,
-    );
+    check_text(reporter, &paint, Flags::CONVERT_TEXT_TO_PATHS.bits(), true);
 
     // We also use paths in the presence of path effects.
     let intervals: [scalar; 2] = [10.0, 5.0];
@@ -1092,7 +1295,11 @@ def_test!(SVGDevice_color_shader, |reporter| {
         return;
     };
     let ellipse_element = dom.get_first_child(root_element, Some("ellipse"));
-    reporter_assert!(reporter, ellipse_element.is_some(), "ellipse element not found");
+    reporter_assert!(
+        reporter,
+        ellipse_element.is_some(),
+        "ellipse element not found"
+    );
     let Some(ellipse_element) = ellipse_element else {
         return;
     };
