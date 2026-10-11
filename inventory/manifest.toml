@@ -35478,8 +35478,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1306-L1308"
 module = "effects"
-status = "todo"
-reason = "needs the FilterList helper (tests/ImageFilterTest.cpp#L179-L313, every image filter built in one list) and test_cropRects (#L544-L581); not ported yet"
+status = "passing"
 span_hash = "2b5cc0f5d0a1f7fa8532eb66646e2e14ca04d68e519f8afc8174d48aa8affc6c"
 
 [[test]]
@@ -35516,8 +35515,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L818-L893"
 module = "effects"
-status = "todo"
-reason = "needs the FilterList helper (tests/ImageFilterTest.cpp#L179-L313, every image filter built in one list) and its tiled-draw comparison (#L818-L893); not ported yet"
+status = "passing"
 span_hash = "7d8dbbf91d1ea298177343063cc202a6feda95971d2f8bfd837455d215628459"
 
 [[test]]
@@ -35630,8 +35628,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1319-L1343"
 module = "effects"
-status = "todo"
-reason = "needs MatrixTestImageFilter (tests/ImageFilterTest.cpp#L118-L177), a custom SkImageFilter_Base subclass whose onFilterImage reports to the Reporter; the test is not ported yet (the Rust port needs Reporter access from inside a filter)"
+status = "passing"
 span_hash = "2acdbacd4a7b604c8f587dd41db850a9c10c050a4b9f73645a8c29a28304718d"
 
 [[test]]

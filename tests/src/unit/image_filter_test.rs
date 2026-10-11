@@ -17,6 +17,7 @@
 
 use std::sync::Arc;
 
+use crate::tools::tool_utils::equal_pixels;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
@@ -27,6 +28,7 @@ use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_filter::{ImageFilter, MapDirection};
+use skia_rust_core::image_filter::{ImageFilterBase, ImageFilterCommon};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place};
 use skia_rust_core::image_info::ImageInfo;
@@ -52,6 +54,7 @@ use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 use skia_rust_raster::image_filter_backend::make_raster_backend;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{
     Reporter, def_graphite_adapter_test, def_graphite_test_for_all_contexts, def_test,
@@ -2691,4 +2694,489 @@ def_test!(ImageFilterDrawTiledBlurRTree, |reporter| {
             break;
         }
     }
+});
+
+/// One entry of `FilterList`: the filter, its name, and whether it needs a saveLayer.
+struct NamedFilter {
+    name: &'static str,
+    filter: Option<ImageFilter>,
+    needs_save_layer: bool,
+}
+
+/// `FilterList`: every image filter, built on `input` and cropped to `crop_rect`.
+// Port of: tests/ImageFilterTest.cpp#L179-L312 (chrome/m156)
+struct FilterList {
+    filters: Vec<NamedFilter>,
+}
+
+impl FilterList {
+    // Port of: tests/ImageFilterTest.cpp#L181-L305 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // one block per filter, as in the C++ constructor
+    fn new(input: Option<ImageFilter>, crop_rect: Option<IRect>) -> Self {
+        let crop = crop_rect.map(Rect::from_irect);
+        let k_blur_sigma = 5.0_f32;
+        let location = skia_rust_core::point3::Point3::new(0.0, 0.0, 1.0);
+        let mut list = FilterList {
+            filters: Vec::new(),
+        };
+
+        {
+            let red = color_filters::blend(Color4f::from(Color::RED), None, BlendMode::SrcIn);
+            list.add(
+                "color filter",
+                image_filters::color_filter(red, input.clone(), crop),
+                false,
+            );
+        }
+        {
+            let gradient_image = make_gradient_circle(64, 64).as_image();
+            let gradient_source = image_filters::image_sampled(
+                gradient_image,
+                SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
+            );
+            list.add(
+                "displacement map",
+                image_filters::displacement_map(
+                    (ColorChannel::R, ColorChannel::B),
+                    20.0,
+                    gradient_source,
+                    input.clone(),
+                    crop,
+                ),
+                false,
+            );
+        }
+        list.add(
+            "blur",
+            image_filters::blur(1.0, 1.0, TileMode::Decal, input.clone(), crop),
+            false,
+        );
+        list.add(
+            "drop shadow",
+            image_filters::drop_shadow(
+                (1.0, 1.0),
+                (1.0, 1.0),
+                Color4f::from(Color::GREEN),
+                None,
+                input.clone(),
+                crop,
+            ),
+            false,
+        );
+        list.add(
+            "diffuse lighting",
+            image_filters::point_lit_diffuse(location, Color::GREEN, 0.0, 0.0, input.clone(), crop),
+            false,
+        );
+        list.add(
+            "specular lighting",
+            image_filters::point_lit_specular(
+                location,
+                Color::GREEN,
+                0.0,
+                0.0,
+                0.0,
+                input.clone(),
+                crop,
+            ),
+            false,
+        );
+        {
+            #[rustfmt::skip]
+            let kernel: [f32; 9] = [
+                1.0, 1.0, 1.0,
+                1.0, -7.0, 1.0,
+                1.0, 1.0, 1.0,
+            ];
+            // This filter needs a saveLayer bc it is in repeat mode
+            list.add(
+                "matrix convolution",
+                image_filters::matrix_convolution(
+                    (3, 3),
+                    &kernel,
+                    1.0,
+                    0.0,
+                    (1, 1),
+                    TileMode::Repeat,
+                    false,
+                    input.clone(),
+                    crop,
+                ),
+                true,
+            );
+        }
+        list.add(
+            "merge",
+            image_filters::merge(&[input.clone(), input.clone()], crop),
+            false,
+        );
+        {
+            let green_color_shader = shaders::color(Color::GREEN);
+            let left_side_crop_rect = IRect::from_xywh(0, 0, 32, 64);
+            let shader_filter_left = image_filters::shader(
+                Some(green_color_shader.clone()),
+                Dither::No,
+                Some(Rect::from_irect(left_side_crop_rect)),
+            );
+            let right_side_crop_rect = IRect::from_xywh(32, 0, 32, 64);
+            let shader_filter_right = image_filters::shader(
+                Some(green_color_shader),
+                Dither::No,
+                Some(Rect::from_irect(right_side_crop_rect)),
+            );
+            list.add(
+                "merge with disjoint inputs",
+                image_filters::merge(&[shader_filter_left, shader_filter_right], crop),
+                false,
+            );
+        }
+        list.add(
+            "offset",
+            image_filters::offset((1.0, 1.0), input.clone(), crop),
+            false,
+        );
+        list.add(
+            "dilate",
+            image_filters::dilate((3.0, 2.0), input.clone(), crop),
+            false,
+        );
+        list.add(
+            "erode",
+            image_filters::erode((2.0, 3.0), input.clone(), crop),
+            false,
+        );
+        {
+            let dst = crop.unwrap_or_else(|| Rect::from_xywh(0.0, 0.0, 100.0, 100.0));
+            list.add(
+                "tile",
+                image_filters::tile(&Rect::from_xywh(0.0, 0.0, 50.0, 50.0), &dst, input.clone()),
+                false,
+            );
+        }
+        if crop.is_none() {
+            let mut matrix = Matrix::translate((1.0, 1.0));
+            matrix.post_rotate(45.0, Some((1.0, 1.0).into()));
+            list.add(
+                "matrix",
+                image_filters::matrix_transform(
+                    &matrix,
+                    SamplingOptions::new(FilterMode::Linear, MipmapMode::None),
+                    input.clone(),
+                ),
+                false,
+            );
+        }
+        {
+            let blur = image_filters::blur(
+                k_blur_sigma,
+                k_blur_sigma,
+                TileMode::Decal,
+                input.clone(),
+                None,
+            );
+            list.add(
+                "blur and offset",
+                image_filters::offset((k_blur_sigma, k_blur_sigma), blur, crop),
+                false,
+            );
+        }
+        {
+            let mut recorder = PictureRecorder::new();
+            {
+                let recording_canvas = recorder.begin_recording(Rect::from_iwh(64, 64), false);
+                let mut green_paint = Paint::default();
+                green_paint.set_color(Color::GREEN);
+                recording_canvas.draw_rect(
+                    Rect::from_irect(IRect::from_xywh(10, 10, 30, 20)),
+                    &green_paint,
+                );
+            }
+            let picture = recorder.finish_recording_as_picture(None);
+            let picture_filter = picture.and_then(|pic| image_filters::picture(Some(pic), None));
+            list.add(
+                "picture and blur",
+                image_filters::blur(
+                    k_blur_sigma,
+                    k_blur_sigma,
+                    TileMode::Decal,
+                    picture_filter,
+                    crop,
+                ),
+                false,
+            );
+        }
+        {
+            let paint_filter = image_filters::shader(
+                skia_rust_effects::perlin_noise_shader::shaders::turbulence(
+                    (1.0, 1.0),
+                    1,
+                    0.0,
+                    None,
+                ),
+                Dither::No,
+                None,
+            );
+            list.add(
+                "paint and blur",
+                image_filters::blur(
+                    k_blur_sigma,
+                    k_blur_sigma,
+                    TileMode::Decal,
+                    paint_filter,
+                    crop,
+                ),
+                false,
+            );
+        }
+        list.add(
+            "blend",
+            image_filters::blend(BlendMode::Src, input.clone(), input, crop),
+            false,
+        );
+        list
+    }
+
+    fn add(&mut self, name: &'static str, filter: Option<ImageFilter>, needs_save_layer: bool) {
+        self.filters.push(NamedFilter {
+            name,
+            filter,
+            needs_save_layer,
+        });
+    }
+
+    fn count(&self) -> usize {
+        self.filters.len()
+    }
+
+    fn filter(&self, index: usize) -> Option<ImageFilter> {
+        self.filters[index].filter.clone()
+    }
+
+    fn name(&self, index: usize) -> &'static str {
+        self.filters[index].name
+    }
+
+    fn needs_save_layer(&self, index: usize) -> bool {
+        self.filters[index].needs_save_layer
+    }
+}
+
+// Port of: tests/ImageFilterTest.cpp#L544-L581 (chrome/m156)
+fn test_crop_rects(reporter: &mut Reporter) {
+    // Check that all filters offset to their absolute crop rect,
+    // unaffected by the input crop rect.
+    // Tests pass by not asserting.
+    let src_img = create_empty_special_image(100, Color::TRANSPARENT);
+    reporter_assert!(reporter, src_img.is_some());
+
+    let input_crop_rect = IRect::from_xywh(8, 13, 80, 80);
+    let crop_rect = IRect::from_xywh(20, 30, 60, 60);
+    let input = make_grayscale(None, Some(Rect::from_irect(input_crop_rect)));
+
+    let filters = FilterList::new(input, Some(crop_rect));
+
+    for i in 0..filters.count() {
+        let Some(filter) = filters.filter(i) else {
+            errorf!(reporter, "{}", filters.name(i));
+            continue;
+        };
+        let ctx = make_context_wh(100, 100, src_img.clone());
+        let (result_img, offset) = filter.as_base().filter_image(&ctx).image_and_offset(&ctx);
+        if result_img.is_none() {
+            errorf!(reporter, "{}", filters.name(i));
+        }
+        if offset.x != 20 || offset.y != 30 {
+            errorf!(reporter, "{}", filters.name(i));
+        }
+    }
+}
+
+// Port of: tests/ImageFilterTest.cpp#L563-L581 (chrome/m156)
+def_test!(ImageFilterCropRect, |reporter| {
+    test_crop_rects(reporter);
+});
+
+// Port of: tests/ImageFilterTest.cpp#L818-L893 (chrome/m156)
+def_test!(
+    #[allow(clippy::cast_precision_loss, clippy::cast_sign_loss)]
+    // mirrors the C++ int loops and SkIntToScalar
+    ImageFilterDrawTiled,
+    |reporter| {
+        // Check that all filters when drawn tiled (with subsequent clip rects) exactly
+        // match the same filters drawn with a single full-canvas bitmap draw.
+        // Tests pass by not asserting.
+        let filters = FilterList::new(None, None);
+
+        let width = 64_i32;
+        let height = 64_i32;
+        let mut untiled_result = Bitmap::new();
+        untiled_result.alloc_n32_pixels((width, height), None);
+        let mut tiled_result = Bitmap::new();
+        tiled_result.alloc_n32_pixels((width, height), None);
+        let tile_size = 8;
+        let mut text_paint = Paint::default();
+        text_paint.set_color(Color::WHITE);
+        let mut font = skia_rust_tools::font_tool_utils::default_portable_font();
+        font.set_size(64.0);
+        let text = "ABC";
+        let y_pos = 64.0_f32;
+
+        for scale in [1.0_f32, 2.0] {
+            for i in 0..filters.count() {
+                let mut combined_paint = Paint::default();
+                combined_paint.set_color(Color::WHITE);
+                combined_paint.set_image_filter(filters.filter(i));
+
+                {
+                    let untiled_canvas =
+                        CoreCanvas::from_bitmap(&mut untiled_result, None).expect("a canvas");
+                    untiled_canvas.clear(Color::TRANSPARENT);
+                    untiled_canvas.save();
+                    untiled_canvas.scale((scale, scale));
+                    untiled_canvas.draw_str(text, (0.0, y_pos), &font, &combined_paint);
+                    untiled_canvas.restore();
+                }
+
+                {
+                    let tiled_canvas =
+                        CoreCanvas::from_bitmap(&mut tiled_result, None).expect("a canvas");
+                    tiled_canvas.clear(Color::TRANSPARENT);
+                    for y in (0..height)
+                        .step_by(usize::try_from(tile_size).expect("a positive tile size"))
+                    {
+                        for x in (0..width)
+                            .step_by(usize::try_from(tile_size).expect("a positive tile size"))
+                        {
+                            tiled_canvas.save();
+                            let clip_rect = Rect::from_xywh(
+                                x as f32,
+                                y as f32,
+                                tile_size as f32,
+                                tile_size as f32,
+                            );
+                            tiled_canvas.clip_rect(clip_rect, None, None);
+                            if filters.needs_save_layer(i) {
+                                tiled_canvas
+                                    .save_layer(&SaveLayerRec::default().paint(&combined_paint));
+                                tiled_canvas.scale((scale, scale));
+                                tiled_canvas.draw_str(text, (0.0, y_pos), &font, &text_paint);
+                                tiled_canvas.restore();
+                            } else {
+                                tiled_canvas.scale((scale, scale));
+                                tiled_canvas.draw_str(text, (0.0, y_pos), &font, &combined_paint);
+                            }
+                            tiled_canvas.restore();
+                        }
+                    }
+                }
+
+                let untiled_pixmap = untiled_result.pixmap();
+                let tiled_pixmap = tiled_result.pixmap();
+                if !equal_pixels(&untiled_pixmap, &tiled_pixmap) {
+                    errorf!(
+                        reporter,
+                        "{}\nTiled image filter doesn't match untiled reference",
+                        filters.name(i)
+                    );
+                }
+            }
+        }
+    }
+);
+
+/// `MatrixTestImageFilter`: a filter that checks the layer matrix it is given. The C++ reports
+/// a failed check through the reporter; here the failure is recorded in `mismatch`, which the
+/// test reports after drawing.
+// Port of: tests/ImageFilterTest.cpp#L118-L152 (chrome/m156)
+#[derive(Debug)]
+struct MatrixTestImageFilter {
+    common: ImageFilterCommon,
+    expected_matrix: M44,
+    mismatch: Arc<AtomicBool>,
+}
+
+impl MatrixTestImageFilter {
+    // Port of: tests/ImageFilterTest.cpp#L120-L127 (chrome/m156)
+    fn new(expected_matrix: M44, mismatch: Arc<AtomicBool>) -> Self {
+        // Layers have an extra pixel of padding that adjusts the coordinate space
+        let mut expected_matrix = expected_matrix;
+        expected_matrix.post_translate(1.0, 1.0, None);
+        Self {
+            common: ImageFilterCommon::new(Vec::new(), None),
+            expected_matrix,
+            mismatch,
+        }
+    }
+}
+
+impl ImageFilterBase for MatrixTestImageFilter {
+    fn common(&self) -> &ImageFilterCommon {
+        &self.common
+    }
+
+    // Port of: tests/ImageFilterTest.cpp#L137-L141 (chrome/m156)
+    fn on_filter_image(&self, context: &Context<'_>) -> FilterResult {
+        if *context.mapping().layer_matrix() != self.expected_matrix {
+            self.mismatch.store(true, Ordering::Relaxed);
+        }
+        context.source().clone()
+    }
+
+    // Port of: tests/ImageFilterTest.cpp#L143-L149 (chrome/m156)
+    fn on_get_input_layer_bounds(
+        &self,
+        _mapping: &Mapping,
+        desired_output: IRect,
+        _content_bounds: Option<IRect>,
+    ) -> IRect {
+        desired_output
+    }
+
+    // Port of: tests/ImageFilterTest.cpp#L151-L155 (chrome/m156)
+    fn on_get_output_layer_bounds(
+        &self,
+        _mapping: &Mapping,
+        content_bounds: Option<IRect>,
+    ) -> Option<IRect> {
+        content_bounds
+    }
+}
+
+// Port of: tests/ImageFilterTest.cpp#L1319-L1343 (chrome/m156)
+def_test!(ImageFilterMatrix, |reporter| {
+    let mut temp = Bitmap::new();
+    temp.alloc_n32_pixels((100, 100), None);
+    let canvas = CoreCanvas::from_bitmap(&mut temp, None).expect("a canvas");
+    canvas.scale((2.0, 2.0));
+
+    let expected_matrix = canvas.local_to_device();
+
+    let mismatch = Arc::new(AtomicBool::new(false));
+    let mut recorder = PictureRecorder::new();
+    let picture = {
+        let recording_canvas = recorder.begin_recording_with_factory(
+            Rect::from_iwh(100, 100),
+            Some(&skia_rust_core::bbh_factory::RTreeFactory),
+        );
+
+        let mut paint = Paint::default();
+        paint.set_image_filter(ImageFilter::from_base(MatrixTestImageFilter::new(
+            expected_matrix,
+            Arc::clone(&mismatch),
+        )));
+        recording_canvas.save_layer(&SaveLayerRec::default().paint(&paint));
+        let mut solid_paint = Paint::default();
+        solid_paint.set_color(Color::WHITE);
+        recording_canvas.save();
+        recording_canvas.scale((10.0, 10.0));
+        recording_canvas.draw_rect(Rect::from_iwh(100, 100), &solid_paint);
+        recording_canvas.restore(); // scale
+        recording_canvas.restore(); // saveLayer
+        recorder
+            .finish_recording_as_picture(None)
+            .expect("a picture")
+    };
+
+    canvas.draw_picture(&picture, None, None);
+    reporter_assert!(reporter, !mismatch.load(Ordering::Relaxed));
 });
