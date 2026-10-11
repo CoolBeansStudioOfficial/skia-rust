@@ -5,9 +5,10 @@
 //! `sk_gpu_test::ManagedGraphiteTexture`: a Graphite backend texture the test owns, created and
 //! filled from pixmaps, deleted when the value drops.
 //!
-//! Skia's version also holds a finished-proc reference that keeps the texture alive until the GPU
-//! has finished the recording that uses it. The tests here read their results back before the
-//! value drops, so the texture is deleted on drop instead. The value holds the context's resource
+//! As in Skia, `MakeUnInit` adds a finished proc to the recorder that holds a reference to the
+//! texture, so the texture is not deleted until the GPU has finished the recording that uploads to
+//! it, even if the wrapping image (and its release callback) is gone by then. The value is a
+//! reference-counted handle (`sk_sp<ManagedGraphiteTexture>`) and holds the context's resource
 //! provider (`ContextPriv::resource_provider`), not a borrow of the context, so the test can keep
 //! using the context while it lives.
 
@@ -20,13 +21,19 @@ use skia_rust_gpu::gpu::gpu_types::{Mipmapped, Protected, Renderable};
 use skia_rust_gpu::gpu::ref_cnted_callback::CallbackProc;
 use skia_rust_gpu::graphite::backend_texture::BackendTexture;
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
+use skia_rust_gpu::graphite::graphite_types::InsertFinishInfo;
 use skia_rust_gpu::graphite::recorder::Recorder;
 use skia_rust_gpu::graphite::wgpu::WgpuContext;
 
 /// `ManagedGraphiteTexture`: a backend texture that is deleted through the context's resource
 /// provider on drop.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ManagedGraphiteTexture {
+    inner: Arc<Inner>,
+}
+
+#[derive(Debug)]
+struct Inner {
     provider: SharedResourceProvider,
     texture: BackendTexture,
 }
@@ -55,7 +62,13 @@ impl ManagedGraphiteTexture {
         if !texture.is_valid() {
             return None;
         }
-        Some(Self { provider, texture })
+        let mbet = Self {
+            inner: Arc::new(Inner { provider, texture }),
+        };
+        // `recorder->addFinishInfo({mbet->releaseContext(), FinishedProc})`
+        let keep_alive = mbet.clone();
+        recorder.add_finish_info(InsertFinishInfo::new(Box::new(move |_| drop(keep_alive))));
+        Some(mbet)
     }
 
     /// `MakeFromPixmap(recorder, src, mipmapped, renderable, isProtected)`: a texture holding
@@ -95,7 +108,7 @@ impl ManagedGraphiteTexture {
             }
         }
 
-        if !recorder.update_backend_texture(&mbet.texture, &levels, None) {
+        if !recorder.update_backend_texture(&mbet.inner.texture, &levels, None) {
             return None;
         }
         Some(mbet)
@@ -123,7 +136,7 @@ impl ManagedGraphiteTexture {
             renderable,
             is_protected,
         )?;
-        if !recorder.update_backend_texture(&mbet.texture, levels, None) {
+        if !recorder.update_backend_texture(&mbet.inner.texture, levels, None) {
             return None;
         }
         Some(mbet)
@@ -134,19 +147,19 @@ impl ManagedGraphiteTexture {
     // Port of: tools/gpu/ManagedBackendTexture.cpp#L168-L170 (chrome/m156)
     #[doc(alias = "releaseContext")]
     #[must_use]
-    pub fn release_context(self: &Arc<Self>) -> CallbackProc {
-        let keep_alive = Arc::clone(self);
+    pub fn release_context(&self) -> CallbackProc {
+        let keep_alive = self.clone();
         CallbackProc::Result(Box::new(move |_| drop(keep_alive)))
     }
 
     /// `texture()`: the backend texture.
     #[must_use]
     pub fn texture(&self) -> &BackendTexture {
-        &self.texture
+        &self.inner.texture
     }
 }
 
-impl Drop for ManagedGraphiteTexture {
+impl Drop for Inner {
     // Port of: tools/gpu/ManagedBackendTexture.cpp#L172-L176 (chrome/m156), `deleteBackendTexture`
     // with the backend check done by the caller's recorder
     fn drop(&mut self) {

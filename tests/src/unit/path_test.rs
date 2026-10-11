@@ -8,8 +8,7 @@
 // Not ported yet (manifest stays `todo`): DEF_TESTs that need the helpers of PathTest.cpp or a
 // missing API:
 //   Paths (about 70 static helpers of PathTest.cpp, not ported; several need SkRegion::setPath,
-//   SkStrokeRec and SkPath::dump),
-//   skbug_6450 (SkMakeNullCanvas is SkNWayCanvas(0, 0), not ported).
+//   SkStrokeRec and SkPath::dump).
 
 use crate::{Reporter, def_test, def_tier_test, reporter_assert};
 use skia_rust_core::blend_mode::BlendMode;
@@ -30,13 +29,14 @@ use skia_rust_core::path_iter::PathIter;
 use skia_rust_core::path_priv::{self, PathEdgeIter};
 use skia_rust_core::path_types::{PathDirection, PathFillType, PathVerb};
 use skia_rust_core::path_utils::fill_path_with_paint;
-use skia_rust_core::point::Point;
+use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::scalar::{
     SCALAR_INFINITY, SCALAR_MAX, SCALAR_NAN, Scalar, scalar, scalar_sqrt,
 };
+use skia_rust_core::utils::n_way_canvas::make_null_canvas;
 use skia_rust_core::utils::parse_path;
 use skia_rust_core::vertices::{VertexMode, Vertices};
 use skia_rust_raster::surfaces;
@@ -357,6 +357,37 @@ def_test!(conservatively_contains_rect, |_reporter| {
 
     // this should not assert
     let _ = path.conservatively_contains_rect(Rect::new(-211_747.0, 12.1115, -197_893.0, 25.0321));
+});
+
+// Port of: tests/PathTest.cpp#L4891-L4911 (chrome/m156)
+// The literals are the C++ ones, written with the digits that identify the same f32.
+#[allow(clippy::unreadable_literal)]
+fn skbug_6450_rrects() -> (RRect, RRect) {
+    let ri = Rect::new(0.18554693, 195.26283, 0.18578438, 752.6444);
+    let rdi = [
+        Vector::new(1.8115998e-09, 7.587688e-05),
+        Vector::new(0.000118725, 0.000118725),
+        Vector::new(0.000118725, 0.000118725),
+        Vector::new(0.000118725, 0.4862976),
+    ];
+    let mut irr = RRect::new();
+    irr.set_rect_radii(ri, &rdi);
+    let ro = Rect::new(9.183548e-39, 2.1710848e+9, 2.1694584e+9, 3.4780813e+9);
+    let rdo = [
+        Vector::new(0.0, 0.0),
+        Vector::new(0.0103298295, 0.1858874),
+        Vector::new(2.5299973e-29, 169.00194),
+        Vector::new(195.26274, 195.16125),
+    ];
+    let mut orr = RRect::new();
+    orr.set_rect_radii(ro, &rdo);
+    (orr, irr)
+}
+
+// Port of: tests/PathTest.cpp#L4891-L4911 (chrome/m156)
+def_test!(skbug_6450, |_reporter| {
+    let (orr, irr) = skbug_6450_rrects();
+    make_null_canvas().draw_drrect(orr, irr, &Paint::default());
 });
 
 // Port of: tests/PathTest.cpp#L4914-L4920 (chrome/m156)

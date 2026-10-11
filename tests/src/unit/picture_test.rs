@@ -6,7 +6,6 @@
 // Not ported yet:
 // - `Picture`: the `drawImage(nullptr, 0, 0)` call in `test_bad_bitmap` has no Rust spelling
 //   (see that function). Every other assertion and call of `Picture` is ported and runs.
-// - `Picture_nested_draw_drawable`, `Picture_recursion_limit`: need `SkDrawable` (not ported).
 // `ClipCountingCanvas` is not used by any test of the file and is not ported.
 
 #![cfg(test)]
@@ -19,6 +18,7 @@ use skia_rust_core::canvas::{
 };
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
+use skia_rust_core::drawable::{Drawable, DrawableBase};
 use skia_rust_core::font::Font;
 use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::image_info::ImageInfo;
@@ -26,6 +26,7 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::picture::Picture;
+use skia_rust_core::picture_priv;
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
@@ -633,6 +634,247 @@ def_test!(Picture_nested_op_count, |r| {
     check(&make_pic(10, Some(&leaf1)), 10, 10);
     // 10 DrawPicture ops recorded, each holding 10 ops: 10 shallow; 10 * (1 + 10) = 110 nested.
     check(&make_pic(10, Some(&leaf10)), 10, 110);
+});
+
+// Port of: tests/PictureTest.cpp#L936-L1082 (chrome/m156)
+#[allow(clippy::similar_names, clippy::too_many_lines)] // the names and size of the C++ test
+fn picture_nested_draw_drawable(r: &mut Reporter) {
+    #[derive(Debug)]
+    struct MultiOpDrawable {
+        num_ops: i32,
+        child_drawable: Option<Drawable>,
+        num_child_draws: i32,
+        child_picture: Option<Picture>,
+    }
+
+    impl MultiOpDrawable {
+        fn make(
+            num_ops: i32,
+            child_drawable: Option<Drawable>,
+            num_child_draws: i32,
+            child_picture: Option<Picture>,
+        ) -> Drawable {
+            Drawable::new(Arc::new(MultiOpDrawable {
+                num_ops,
+                child_drawable,
+                num_child_draws,
+                child_picture,
+            }))
+        }
+    }
+
+    impl DrawableBase for MultiOpDrawable {
+        fn on_draw(&self, canvas: &Canvas) {
+            let paint = Paint::default();
+            for _ in 0..self.num_ops {
+                canvas.draw_rect(Rect::from_xywh(10.0, 10.0, 80.0, 80.0), &paint);
+            }
+
+            if let Some(child_drawable) = &self.child_drawable {
+                for _ in 0..self.num_child_draws {
+                    canvas.draw_drawable(child_drawable, None);
+                }
+            }
+
+            if let Some(child_picture) = &self.child_picture {
+                canvas.draw_picture(child_picture, None, None);
+            }
+        }
+
+        fn on_get_bounds(&self) -> Rect {
+            Rect::from_xywh(0.0, 0.0, 100.0, 100.0)
+        }
+    }
+
+    let make_picture = |n: i32, drawable: &Drawable| -> Picture {
+        let mut rec = PictureRecorder::new();
+        let c = rec.begin_recording(Rect::new(0.0, 0.0, 100.0, 100.0), false);
+        for _ in 0..n {
+            c.draw_drawable(drawable, None);
+        }
+        rec.finish_recording_as_picture(None).unwrap()
+    };
+
+    let make_rect_picture = |n: i32| -> Picture {
+        let mut rec = PictureRecorder::new();
+        let c = rec.begin_recording(Rect::new(0.0, 0.0, 100.0, 100.0), false);
+        let paint = Paint::default();
+        for _ in 0..n {
+            c.draw_rect(Rect::from_xywh(10.0, 10.0, 80.0, 80.0), &paint);
+        }
+        rec.finish_recording_as_picture(None).unwrap()
+    };
+
+    let mut check_shallow_and_nested =
+        |pic: &Picture, expected_shallow: usize, expected_nested: usize| {
+            let s = pic.approximate_op_count_nested(false);
+            let n = pic.approximate_op_count_nested(true);
+            reporter_assert!(r, s == expected_shallow);
+            reporter_assert!(r, n == expected_nested);
+        };
+
+    let drawable1 = MultiOpDrawable::make(1, None, 0, None);
+    let drawable10 = MultiOpDrawable::make(10, None, 0, None);
+    let pic10 = make_rect_picture(10);
+
+    let drawable1_withpic = MultiOpDrawable::make(1, None, 0, Some(pic10.clone()));
+    let drawable10_withpic = MultiOpDrawable::make(10, None, 0, Some(pic10.clone()));
+
+    let drawable1_child1 = MultiOpDrawable::make(0, Some(drawable1.clone()), 1, None);
+    let drawable1_child10 = MultiOpDrawable::make(0, Some(drawable10.clone()), 1, None);
+    let drawable10_child1 = MultiOpDrawable::make(0, Some(drawable1.clone()), 10, None);
+    let drawable10_child10 = MultiOpDrawable::make(0, Some(drawable10.clone()), 10, None);
+
+    let mixed_parent =
+        MultiOpDrawable::make(5, Some(drawable10_child10.clone()), 2, Some(pic10.clone()));
+
+    // 1. Leaf drawables (direct drawRect ops only)
+    {
+        // draw `drawable1` once: 1 shallow draw and 1 (drawDrawable) + 1 (child op) = 2 nested
+        // draws
+        check_shallow_and_nested(&make_picture(1, &drawable1), 1, 2);
+        // draw `drawable10` once: 1 shallow draw and 1 (drawDrawable) + 10 (child ops) = 11
+        // nested draws
+        check_shallow_and_nested(&make_picture(1, &drawable10), 1, 11);
+
+        // draw `drawable1` ten times: 10 shallow draws and 10 * 2 = 20 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable1), 10, 20);
+        // draw `drawable10` ten times: 10 shallow draws and 10 * 11 = 110 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable10), 10, 110);
+    }
+
+    // 2. Drawables with an internal picture layer
+    // pic10 has 10 rect ops.
+    // Inside drawable1_withpic: 1 rect + 1 (drawPicture) + 10 (from pic10) = 12 internal ops.
+    // Inside drawable10_withpic: 10 rects + 1 (drawPicture) + 10 (from pic10) = 21 internal ops.
+    {
+        // 1 (drawDrawable) + 12 (internal ops) = 13 nested draws
+        check_shallow_and_nested(&make_picture(1, &drawable1_withpic), 1, 13);
+        // 1 (drawDrawable) + 21 (internal ops) = 22 nested draws
+        check_shallow_and_nested(&make_picture(1, &drawable10_withpic), 1, 22);
+
+        // 10 * 13 = 130 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable1_withpic), 10, 130);
+        // 10 * 22 = 220 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable10_withpic), 10, 220);
+    }
+
+    // 3. Drawables with an internal drawable layer, calling the internal drawable multiple times
+    // drawable1 has 1 rect: 1 child drawDrawable adds 1 + 1 = 2 ops.
+    // drawable10 has 10 rects: 1 child drawDrawable adds 1 + 10 = 11 ops.
+    // Internal ops:
+    //   drawable1_child1:    1 * (1 + 1) = 2 ops
+    //   drawable1_child10:   1 * (1 + 10) = 11 ops
+    //   drawable10_child1:   10 * (1 + 1) = 20 ops
+    //   drawable10_child10:  10 * (1 + 10) = 110 ops
+    {
+        // 1 (drawDrawable) + 2 (internal ops) = 3 nested draws
+        check_shallow_and_nested(&make_picture(1, &drawable1_child1), 1, 3);
+        // 1 (drawDrawable) + 11 (internal ops) = 12 nested draws
+        check_shallow_and_nested(&make_picture(1, &drawable1_child10), 1, 12);
+        // 1 (drawDrawable) + 20 (internal ops) = 21 nested draws
+        check_shallow_and_nested(&make_picture(1, &drawable10_child1), 1, 21);
+        // 1 (drawDrawable) + 110 (internal ops) = 111 nested draws
+        check_shallow_and_nested(&make_picture(1, &drawable10_child10), 1, 111);
+
+        // 10 * 3 = 30 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable1_child1), 10, 30);
+        // 10 * 12 = 120 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable1_child10), 10, 120);
+        // 10 * 21 = 210 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable10_child1), 10, 210);
+        // 10 * 111 = 1110 nested draws
+        check_shallow_and_nested(&make_picture(10, &drawable10_child10), 10, 1110);
+    }
+
+    // 4. Multi-level nested drawables mixing direct ops, child drawables, and child pictures
+    // 5 direct rects + 2 * (1 + 110) from child drawable + (1 + 10) from pic10 = 238 internal ops
+    // Top-level picture has 1 DrawDrawable -> 1 + 238 = 239 ops
+    {
+        check_shallow_and_nested(&make_picture(1, &mixed_parent), 1, 239);
+        check_shallow_and_nested(&make_picture(10, &mixed_parent), 10, 2390);
+    }
+}
+
+def_test!(
+    #[allow(clippy::semicolon_if_nothing_returned)] // rustfmt drops the semicolon in the macro
+    Picture_nested_draw_drawable,
+    |r| { picture_nested_draw_drawable(r) }
+);
+
+// Port of: tests/PictureTest.cpp#L1084-L1153 (chrome/m156)
+def_test!(Picture_recursion_limit, |r| {
+    // 1. Test deeply nested SkPicture hierarchy exceeding kDefaultRecursionLimit
+    {
+        // Leaf picture with 2 rects (> kMaxPictureOpsToUnrollInsteadOfRef so it is not unrolled).
+        let mut leaf_rec = PictureRecorder::new();
+        let leaf_canvas = leaf_rec.begin_recording(Rect::new(0.0, 0.0, 100.0, 100.0), false);
+        leaf_canvas.draw_rect(Rect::from_xywh(0.0, 0.0, 50.0, 50.0), &Paint::default());
+        leaf_canvas.draw_rect(Rect::from_xywh(50.0, 50.0, 50.0, 50.0), &Paint::default());
+        let mut cur_pic = leaf_rec.finish_recording_as_picture(None).unwrap();
+
+        // Build a chain deeper than kDefaultRecursionLimit (each level has 1 rect + 1 child
+        // drawPicture)
+        let chain_depth = picture_priv::DEFAULT_RECURSION_LIMIT + 10;
+        for _ in 0..chain_depth {
+            let mut rec = PictureRecorder::new();
+            let c = rec.begin_recording(Rect::new(0.0, 0.0, 100.0, 100.0), false);
+            c.draw_rect(Rect::from_xywh(0.0, 0.0, 10.0, 10.0), &Paint::default());
+            c.draw_picture(&cur_pic, None, None);
+            cur_pic = rec.finish_recording_as_picture(None).unwrap();
+        }
+
+        // At each level up to limit (100 levels from 0 to 99), we have:
+        // 1 rect (+1) + 1 drawPicture (+1) = 2.
+        // At depth 100 (kDefaultRecursionLimit), recursion stops: 1 rect (+1) + 1 drawPicture
+        // (+1) = 2. Total ops = (kDefaultRecursionLimit * 2) + 2 = 202. Without recursion limit,
+        // it would have traversed all 110 levels = (110 * 2) + 2 = 222 ops.
+        let expected_ops = (picture_priv::DEFAULT_RECURSION_LIMIT * 2) + 2;
+        reporter_assert!(r, cur_pic.approximate_op_count_nested(true) == expected_ops);
+    }
+
+    // 2. Test deeply nested SkDrawable hierarchy exceeding kDefaultRecursionLimit
+    {
+        #[derive(Debug)]
+        struct ChainDrawable {
+            child: Option<Drawable>,
+        }
+
+        impl DrawableBase for ChainDrawable {
+            fn on_draw(&self, canvas: &Canvas) {
+                if let Some(child) = &self.child {
+                    canvas.draw_drawable(child, None);
+                } else {
+                    canvas.draw_rect(Rect::from_xywh(0.0, 0.0, 10.0, 10.0), &Paint::default());
+                }
+            }
+
+            fn on_get_bounds(&self) -> Rect {
+                Rect::from_xywh(0.0, 0.0, 100.0, 100.0)
+            }
+        }
+
+        // Leaf drawable with 1 rect (no child)
+        let mut cur_drawable = Drawable::new(Arc::new(ChainDrawable { child: None }));
+        let chain_depth = picture_priv::DEFAULT_RECURSION_LIMIT + 10;
+        for _ in 0..chain_depth {
+            cur_drawable = Drawable::new(Arc::new(ChainDrawable {
+                child: Some(cur_drawable),
+            }));
+        }
+
+        let mut rec = PictureRecorder::new();
+        let c = rec.begin_recording(Rect::new(0.0, 0.0, 100.0, 100.0), false);
+        c.draw_drawable(&cur_drawable, None);
+        let pic = rec.finish_recording_as_picture(None).unwrap();
+
+        // 100 levels traversed (depth 0 to 99) each add 1 for DrawDrawable (+1).
+        // At depth 100, recursion stops and returns 1 for DrawDrawable.
+        // Total ops = kDefaultRecursionLimit + 1 = 101.
+        // Without limit, it would be (kChainDepth + 1) + 1 = 112 ops.
+        let expected_ops = picture_priv::DEFAULT_RECURSION_LIMIT + 1;
+        reporter_assert!(r, pic.approximate_op_count_nested(true) == expected_ops);
+    }
 });
 
 // Port of: tests/PictureTest.cpp#L48-L54 (chrome/m156)

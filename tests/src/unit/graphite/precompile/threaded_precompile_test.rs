@@ -9,14 +9,14 @@
 
 #![cfg(test)]
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::executor::{Executor, ThreadPool, WorkOrder};
+use skia_rust_core::executor::{Executor, ThreadPool, Work, WorkOrder};
 use skia_rust_effects::gradient::Interpolation;
 use skia_rust_gpu::graphite::context_options::{Callback, ContextOptions};
 use skia_rust_gpu::graphite::draw_types::DrawTypeFlags;
@@ -37,6 +37,71 @@ use crate::{def_graphite_test_for_contexts_with_options, reporter_assert};
 // count differs.
 fn threaded_options(options: &mut ContextOptions) {
     let executor: Arc<dyn Executor> = Arc::new(ThreadPool::new(WorkOrder::Fifo, 2, 2, false));
+    options.executor = Some(Callback(executor));
+}
+
+// An executor that holds the work it is given until a thread waits for it (`borrow`, which
+// `SkTaskGroup::wait` calls while it waits), and then hands it to the pool.
+//
+// ThreadedPipelinePrecompilePurgingTest expects no cache hits because "the threaded PipelineManager
+// deduplicates all the compilation tasks": every duplicate request for a pipeline (the opaque and
+// non-opaque PaintOptions combinations reduce to one PaintParamsKey) must find the first request's
+// task still active. Skia relies on a compile taking far longer than the precompile thread needs
+// to issue the next request. That is a race, not a guarantee: a request that arrives after the
+// compile has put the pipeline into the GlobalCache (and the task has left `fActiveTasks`) is a
+// cache hit, and a precompile thread that is descheduled for a few milliseconds (a loaded Windows
+// runner running the tests in parallel) loses it. Holding the compiles until the requests are all
+// issued gives the ordering the test assumes, deterministically, and leaves everything under test
+// (the GlobalCache counts, the dedupe in `PipelineManager::find_or_create_task`, the purge) as it
+// is.
+struct DeferringExecutor {
+    inner: Arc<dyn Executor>,
+    held: Mutex<Vec<(Work, i32)>>,
+}
+
+impl DeferringExecutor {
+    fn new(inner: Arc<dyn Executor>) -> Self {
+        Self {
+            inner,
+            held: Mutex::new(Vec::new()),
+        }
+    }
+
+    // Hands the work held so far to the pool, in the order it was added. Work added later is held
+    // again until the next `borrow`, which the waiting thread calls in a loop, so a wait never
+    // starves. (The executor is shared by all the contexts of the test, which wait one after
+    // another.)
+    fn release(&self) {
+        let held = std::mem::take(
+            &mut *self
+                .held
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        );
+        for (work, work_list) in held {
+            self.inner.add_to_work_list(work, work_list);
+        }
+    }
+}
+
+impl Executor for DeferringExecutor {
+    fn add_to_work_list(&self, work: Work, work_list: i32) {
+        self.held
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push((work, work_list));
+    }
+
+    fn borrow(&self) {
+        self.release();
+        self.inner.borrow();
+    }
+}
+
+// `threaded_options` with the compiles held until the test waits for them.
+fn threaded_options_compiles_after_requests(options: &mut ContextOptions) {
+    let pool: Arc<dyn Executor> = Arc::new(ThreadPool::new(WorkOrder::Fifo, 2, 2, false));
+    let executor: Arc<dyn Executor> = Arc::new(DeferringExecutor::new(pool));
     options.executor = Some(Callback(executor));
 }
 
@@ -247,9 +312,8 @@ const NUM_OPACITY_VARIATIONS: u32 = 2;
 // purging.
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L505-L516 (chrome/m156)
 def_graphite_test_for_contexts_with_options!(
-    #[ignore = "timing-dependent: on Windows CI the dawn-d3d12 / dawn-vk-wgpucaps contexts report 1 / 7 graphics cache hits where 0 are expected (executor compile tasks race the draws); under investigation (port/gpu-unit-sweep-4)"]
     ThreadedPipelinePrecompilePurgingTest,
-    |options| { threaded_options(options) },
+    |options| { threaded_options_compiles_after_requests(options) },
     |reporter, context| {
         let num_purging_threads = 0;
         let num_precompile_threads = 1;

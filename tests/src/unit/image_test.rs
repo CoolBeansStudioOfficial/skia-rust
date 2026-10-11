@@ -4,11 +4,6 @@
 // Port of: tests/ImageTest.cpp (chrome/m156)
 //
 // Not ported (what the Rust port does not have, or cannot express):
-// * `ImageScalePixels`: needs `SkImage::scalePixels` with its caching hint (`kDisallow` and
-//   `kAllow` in turn); the raster `pixmap_draw::scale_pixels` takes no hint.
-// * `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: their `create_rasterproc_image` case
-//   needs `RasterFromPixmap` to share the pixels and call the release proc when the image is
-//   destroyed; the port copies and releases at once (`images::raster_from_pixmap`).
 // * `Image_ColorSpace`: not ported yet.
 // The Ganesh tests are excluded.
 
@@ -22,10 +17,12 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
+use skia_rust_core::color::pre_multiply_color;
 use skia_rust_core::color_priv::pack_argb32;
 use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
-use skia_rust_core::image::{Image, RequiredProperties};
+use skia_rust_core::image::{CachingHint, Image, RequiredProperties};
 use skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
 use skia_rust_core::image_generator::{ImageGenerator, generator_unique_id};
 use skia_rust_core::image_info::ImageInfo;
@@ -37,12 +34,15 @@ use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::{IRect, Rect};
-use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::serial_procs::SerialProcs;
 use skia_rust_core::shaders::image_shader::ImageShader;
+use skia_rust_core::size::ISize;
+use skia_rust_raster::pixmap_draw::ImageScalePixels;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::sync::{Arc, Mutex};
 
 use crate::resources::{get_resource_as_data, get_resource_as_image};
 use crate::tools::tool_utils::{PixelIter, equal_pixels_image};
@@ -475,7 +475,10 @@ def_test!(ImageEmpty, |reporter| {
         reporter,
         images::raster_from_data(&info, Data::new_empty(), 0).is_none()
     );
-    reporter_assert!(reporter, images::raster_from_pixmap(&pmap, || {}).is_none());
+    reporter_assert!(
+        reporter,
+        images::raster_from_pixmap(&info, Vec::<u8>::new(), 0, None::<fn()>).is_none()
+    );
     reporter_assert!(
         reporter,
         images::deferred_from_generator(Some(Box::new(EmptyGenerator::new()))).is_none()
@@ -781,4 +784,387 @@ def_test!(Image_nonfinite_dst, |reporter| {
             }
         }
     }
+});
+
+// Port of: tests/ImageTest.cpp#L145-L163 (chrome/m156), create_image_data
+fn create_image_data() -> (Data, ImageInfo) {
+    let info = ImageInfo::new_n32((20, 20), AlphaType::Opaque, None);
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(&info, None);
+    {
+        let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+        draw_image_test_pattern(&canvas);
+    }
+    let pixels = bm.peek_pixels().expect("pixels");
+    let data = Data::new_copy(pixels.addr().expect("an address"));
+    (data, info)
+}
+
+// Port of: tests/ImageTest.cpp#L164-L169 (chrome/m156), create_data_image
+fn create_data_image() -> Option<Image> {
+    let (data, info) = create_image_data();
+    images::raster_from_data(&info, data, info.min_row_bytes())
+}
+
+// Want to ensure that our Release is called when the owning image is destroyed
+// Port of: tests/ImageTest.cpp#L170-L179 (chrome/m156), RasterDataHolder
+//
+// skia-rust: the holder is shared with the release proc, which owns state in a closure.
+#[derive(Default)]
+struct RasterDataHolder {
+    f_data: Mutex<Option<Data>>,
+    f_release_count: AtomicI32,
+}
+
+impl RasterDataHolder {
+    fn release(&self) {
+        self.f_release_count.fetch_add(1, Ordering::SeqCst);
+        *self.f_data.lock().unwrap() = None;
+    }
+
+    fn release_count(&self) -> i32 {
+        self.f_release_count.load(Ordering::SeqCst)
+    }
+}
+
+// Port of: tests/ImageTest.cpp#L180-L187 (chrome/m156), create_rasterproc_image
+//
+// skia-rust: `SkPixmap(info, data->data(), rowBytes)` is the data itself, which the image shares
+// (`images::raster_from_pixmap` takes an owner of the pixels, see docs/API_MAPPING.md).
+fn create_rasterproc_image(data_holder: &Arc<RasterDataHolder>) -> Option<Image> {
+    let (data, info) = create_image_data();
+    *data_holder.f_data.lock().unwrap() = Some(data.clone());
+    let holder = Arc::clone(data_holder);
+    images::raster_from_pixmap(
+        &info,
+        data,
+        info.min_row_bytes(),
+        Some(move || holder.release()),
+    )
+}
+
+// Port of: tests/ImageTest.cpp#L188-L196 (chrome/m156), create_codec_image
+fn create_codec_image() -> Option<Image> {
+    let (data, info) = create_image_data();
+    let mut bytes = data.as_bytes().to_vec();
+    let mut bitmap = Bitmap::new();
+    assert!(bitmap.install_pixels(&info, std::mem::take(&mut bytes), info.min_row_bytes()));
+    let encoded = png_encoder::encode_pixmap(
+        &bitmap.peek_pixels().expect("pixels"),
+        &png_encoder::Options::default(),
+    )
+    .expect("encoded");
+    deferred_from_encoded_data(Some(encoded), None)
+}
+
+// Port of: tests/ImageTest.cpp#L733-L740 (chrome/m156), has_pixels
+fn has_pixels(pixels: &[u32], expected: u32) -> bool {
+    pixels.iter().all(|&pixel| pixel == expected)
+}
+
+// `image->readPixels(dContext, info, pixels, rowBytes, x, y)` on `SkPMColor` storage.
+fn read_pixels_u32(
+    image: &Image,
+    info: &ImageInfo,
+    pixels: &mut [u32; 4],
+    row_bytes: usize,
+    src: (i32, i32),
+) -> bool {
+    let mut bytes = [0_u8; 16];
+    for (chunk, pixel) in bytes.as_chunks_mut::<4>().0.iter_mut().zip(pixels.iter()) {
+        *chunk = pixel.to_ne_bytes();
+    }
+    let read = image.read_pixels(info, &mut bytes, row_bytes, src);
+    for (pixel, chunk) in pixels.iter_mut().zip(bytes.as_chunks::<4>().0) {
+        *pixel = u32::from_ne_bytes(*chunk);
+    }
+    read
+}
+
+// Port of: tests/ImageTest.cpp#L742-L789 (chrome/m156), image_test_read_pixels
+fn image_test_read_pixels(reporter: &mut Reporter, image: Option<&Image>) {
+    let Some(image) = image else {
+        errorf!(reporter, "Failed to create image!");
+        return;
+    };
+    let expected = pre_multiply_color(Color::WHITE);
+    let not_expected = !expected;
+
+    let (w, h) = (2_i32, 2_i32);
+    let row_bytes = 2 * size_of::<u32>();
+    let mut pixels = [0_u32; 4];
+
+    let mut info = ImageInfo::new_unknown(Some(ISize::new(w, h)));
+    reporter_assert!(
+        reporter,
+        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (0, 0))
+    );
+
+    // out-of-bounds should fail
+    info = ImageInfo::new_n32_premul((w, h), None);
+    reporter_assert!(
+        reporter,
+        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (-w, 0))
+    );
+    reporter_assert!(
+        reporter,
+        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (0, -h))
+    );
+    reporter_assert!(
+        reporter,
+        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (image.width(), 0))
+    );
+    reporter_assert!(
+        reporter,
+        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (0, image.height()))
+    );
+
+    // top-left should succeed
+    pixels.fill(not_expected);
+    reporter_assert!(
+        reporter,
+        read_pixels_u32(image, &info, &mut pixels, row_bytes, (0, 0))
+    );
+    reporter_assert!(reporter, has_pixels(&pixels, expected));
+
+    // bottom-right should succeed
+    pixels.fill(not_expected);
+    reporter_assert!(
+        reporter,
+        read_pixels_u32(
+            image,
+            &info,
+            &mut pixels,
+            row_bytes,
+            (image.width() - w, image.height() - h)
+        )
+    );
+    reporter_assert!(reporter, has_pixels(&pixels, expected));
+
+    // partial top-left should succeed
+    pixels.fill(not_expected);
+    reporter_assert!(
+        reporter,
+        read_pixels_u32(image, &info, &mut pixels, row_bytes, (-1, -1))
+    );
+    reporter_assert!(reporter, pixels[3] == expected);
+    reporter_assert!(reporter, has_pixels(&pixels[..3], not_expected));
+
+    // partial bottom-right should succeed
+    pixels.fill(not_expected);
+    reporter_assert!(
+        reporter,
+        read_pixels_u32(
+            image,
+            &info,
+            &mut pixels,
+            row_bytes,
+            (image.width() - 1, image.height() - 1)
+        )
+    );
+    reporter_assert!(reporter, pixels[0] == expected);
+    reporter_assert!(reporter, has_pixels(&pixels[1..], not_expected));
+}
+
+// Port of: tests/ImageTest.cpp#L790-L804 (chrome/m156)
+def_test!(ImageReadPixels, |reporter| {
+    let mut image = create_image();
+    image_test_read_pixels(reporter, image.as_ref());
+
+    image = create_data_image();
+    image_test_read_pixels(reporter, image.as_ref());
+
+    let data_holder = Arc::new(RasterDataHolder::default());
+    image = create_rasterproc_image(&data_holder);
+    image_test_read_pixels(reporter, image.as_ref());
+    drop(image);
+    reporter_assert!(reporter, 1 == data_holder.release_count());
+
+    let image = create_codec_image();
+    image_test_read_pixels(reporter, image.as_ref());
+});
+
+// Port of: tests/ImageTest.cpp#L815-L830 (chrome/m156), check_legacy_bitmap
+fn check_legacy_bitmap(reporter: &mut Reporter, image: &Image, bitmap: &Bitmap) {
+    reporter_assert!(reporter, image.width() == bitmap.width());
+    reporter_assert!(reporter, image.height() == bitmap.height());
+    reporter_assert!(reporter, image.alpha_type() == bitmap.alpha_type());
+
+    reporter_assert!(reporter, bitmap.is_immutable());
+
+    reporter_assert!(
+        reporter,
+        bitmap.peek_pixels().is_some_and(|pm| pm.addr().is_some())
+    );
+
+    let info = ImageInfo::new_n32((1, 1), bitmap.alpha_type(), None);
+    let mut image_color = [0_u8; size_of::<u32>()];
+    reporter_assert!(
+        reporter,
+        image.read_pixels(&info, &mut image_color, size_of::<u32>(), (0, 0))
+    );
+    reporter_assert!(
+        reporter,
+        u32::from_ne_bytes(image_color) == bitmap.get_addr32(0, 0)
+    );
+}
+
+// Port of: tests/ImageTest.cpp#L832-L851 (chrome/m156), test_legacy_bitmap
+fn test_legacy_bitmap(reporter: &mut Reporter, image: Option<&Image>) {
+    let Some(image) = image else {
+        errorf!(reporter, "Failed to create image.");
+        return;
+    };
+    let bitmap = image.as_legacy_bitmap();
+    reporter_assert!(reporter, bitmap.is_some());
+    let Some(bitmap) = bitmap else {
+        return;
+    };
+    check_legacy_bitmap(reporter, image, &bitmap);
+
+    // Test subsetting to exercise the rowBytes logic.
+    let mut tmp = Bitmap::new();
+    reporter_assert!(
+        reporter,
+        bitmap.extract_subset(
+            &mut tmp,
+            IRect::from_wh(image.width() / 2, image.height() / 2)
+        )
+    );
+    let subset_image = tmp.as_image();
+    reporter_assert!(reporter, subset_image.is_some());
+    let Some(subset_image) = subset_image else {
+        return;
+    };
+
+    let subset_bitmap = subset_image.as_legacy_bitmap();
+    reporter_assert!(reporter, subset_bitmap.is_some());
+    let Some(subset_bitmap) = subset_bitmap else {
+        return;
+    };
+    check_legacy_bitmap(reporter, &subset_image, &subset_bitmap);
+}
+
+// Port of: tests/ImageTest.cpp#L852-L868 (chrome/m156)
+def_test!(ImageLegacyBitmap, |reporter| {
+    let mut image = create_image();
+    test_legacy_bitmap(reporter, image.as_ref());
+
+    image = create_data_image();
+    test_legacy_bitmap(reporter, image.as_ref());
+
+    let data_holder = Arc::new(RasterDataHolder::default());
+    image = create_rasterproc_image(&data_holder);
+    test_legacy_bitmap(reporter, image.as_ref());
+    drop(image);
+    reporter_assert!(reporter, 1 == data_holder.release_count());
+
+    let image = create_codec_image();
+    test_legacy_bitmap(reporter, image.as_ref());
+});
+
+// Port of: tests/ImageTest.cpp#L880-L898 (chrome/m156), test_peek
+fn test_peek(reporter: &mut Reporter, image: Option<&Image>, expect_peek_success: bool) {
+    let Some(image) = image else {
+        errorf!(reporter, "Failed to create image!");
+        return;
+    };
+    let pm = image.peek_pixels();
+    let success = pm.is_some();
+    reporter_assert!(reporter, expect_peek_success == success);
+    if let Some(pm) = pm {
+        let info = pm.info();
+        reporter_assert!(reporter, 20 == info.width());
+        reporter_assert!(reporter, 20 == info.height());
+        reporter_assert!(reporter, ColorType::N32 == info.color_type());
+        reporter_assert!(
+            reporter,
+            AlphaType::Premul == info.alpha_type() || AlphaType::Opaque == info.alpha_type()
+        );
+        reporter_assert!(reporter, info.min_row_bytes() <= pm.row_bytes());
+        reporter_assert!(
+            reporter,
+            pre_multiply_color(Color::WHITE) == pm.addr32(0, 0)
+        );
+    }
+}
+
+// Port of: tests/ImageTest.cpp#L899-L914 (chrome/m156)
+def_test!(ImagePeek, |reporter| {
+    let mut image = create_image();
+    test_peek(reporter, image.as_ref(), true);
+
+    image = create_data_image();
+    test_peek(reporter, image.as_ref(), true);
+
+    let data_holder = Arc::new(RasterDataHolder::default());
+    image = create_rasterproc_image(&data_holder);
+    test_peek(reporter, image.as_ref(), true);
+    drop(image);
+    reporter_assert!(reporter, 1 == data_holder.release_count());
+
+    let image = create_codec_image();
+    test_peek(reporter, image.as_ref(), false);
+});
+
+// Port of: tests/ImageTest.cpp#L1472-L1486 (chrome/m156)
+fn check_scaled_pixels(reporter: &mut Reporter, pmap: &Pixmap<'_>, expected: u32) {
+    // Verify that all pixels contain the original test color
+    for y in 0..pmap.height() {
+        for x in 0..pmap.width() {
+            let pixel = pmap.addr32(x, y);
+            if pixel != expected {
+                errorf!(
+                    reporter,
+                    "Expected scaled pixels to be the same. At {},{} 0x{:08x} != 0x{:08x}",
+                    x,
+                    y,
+                    pixel,
+                    expected
+                );
+                return;
+            }
+        }
+    }
+}
+
+// Port of: tests/ImageTest.cpp#L1488-L1503 (chrome/m156)
+fn test_scale_pixels(reporter: &mut Reporter, image: &Image, expected: u32) {
+    let info = ImageInfo::new_n32_premul((image.width() * 2, image.height() * 2), None);
+
+    // Make sure to test kDisallow first, so we don't just get a cache hit in that case
+    for chint in [CachingHint::Disallow, CachingHint::Allow] {
+        // SkAutoPixmapStorage scaled; scaled.alloc(info)
+        let mut storage = vec![0_u8; info.compute_min_byte_size()];
+        let mut scaled = Pixmap::new(&info, &mut storage, info.min_row_bytes()).expect("a pixmap");
+        if !image.scale_pixels_with_hint(
+            &mut scaled,
+            &SamplingOptions::from(FilterMode::Linear),
+            chint,
+        ) {
+            errorf!(reporter, "Failed to scale image");
+            continue;
+        }
+
+        check_scaled_pixels(reporter, &scaled, expected);
+    }
+}
+
+// Port of: tests/ImageTest.cpp#L1505-L1520 (chrome/m156)
+def_test!(ImageScalePixels, |reporter| {
+    let pm_red = pack_argb32(0xFF, 0xFF, 0, 0);
+    let red = Color::RED;
+
+    // Test raster image
+    let info = ImageInfo::new_n32_premul((1, 1), None);
+    let mut surface = surfaces::raster(&info, None, None).expect("surface");
+    surface.canvas().clear(red);
+    let raster_image = surface.image_snapshot().expect("image");
+    test_scale_pixels(reporter, &raster_image, pm_red);
+
+    // Test encoded image
+    let data = png_encoder::encode_image(&raster_image, &png_encoder::Options::default())
+        .expect("encoded");
+    let codec_image = deferred_from_encoded_data(Some(data), None).expect("codec image");
+    test_scale_pixels(reporter, &codec_image, pm_red);
 });

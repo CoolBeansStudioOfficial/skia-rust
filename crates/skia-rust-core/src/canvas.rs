@@ -46,10 +46,12 @@ use crate::color::{Color, Color4f};
 use crate::color_filters;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
+use crate::data::Data;
 use crate::device::{
     CreateInfo, Device, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyph, PendingGlyphKind,
     clip_shader,
 };
+use crate::drawable::Drawable;
 use crate::floating_point::is_finite_all;
 use crate::font::Font;
 use crate::font_types::{GlyphId, TextEncoding};
@@ -402,12 +404,19 @@ pub trait CanvasHooks {
         false
     }
     /// `onDrawGlyphRunList`: `SkRecordCanvas` records the list as a text blob instead of drawing
-    /// it.
+    /// it. `total_matrix` is the canvas's matrix (`getTotalMatrix`), which a hook cannot ask the
+    /// canvas for while the canvas is drawing.
     // Port of: src/core/SkCanvas.h (onDrawGlyphRunList, chrome/m156), overridden by SkRecordCanvas
-    fn on_draw_glyph_run_list(&mut self, _list: &GlyphRunList<'_>, _paint: &Paint) -> bool {
+    fn on_draw_glyph_run_list(
+        &mut self,
+        _list: &GlyphRunList<'_>,
+        _paint: &Paint,
+        _total_matrix: &Matrix,
+    ) -> bool {
         false
     }
     /// `onDrawTextBlob`: `SkRecordCanvas` records the blob by reference instead of drawing it.
+    /// `total_matrix` is as for [`on_draw_glyph_run_list`](Self::on_draw_glyph_run_list).
     // Port of: src/core/SkCanvas.h (onDrawTextBlob, chrome/m156), overridden by SkRecordCanvas
     fn on_draw_text_blob(
         &mut self,
@@ -415,6 +424,7 @@ pub trait CanvasHooks {
         _x: scalar,
         _y: scalar,
         _paint: &Paint,
+        _total_matrix: &Matrix,
     ) -> bool {
         false
     }
@@ -459,6 +469,45 @@ pub trait CanvasHooks {
         _picture: &Picture,
         _matrix: Option<&Matrix>,
         _paint: Option<&Paint>,
+    ) -> bool {
+        false
+    }
+    /// `onDrawDrawable`.
+    fn on_draw_drawable(&mut self, _drawable: &Drawable, _matrix: Option<&Matrix>) -> bool {
+        false
+    }
+    /// `onDrawAnnotation`.
+    fn on_draw_annotation(&mut self, _rect: &Rect, _key: &str, _value: Option<&Data>) -> bool {
+        false
+    }
+    /// `onDrawMesh`.
+    fn on_draw_mesh(&mut self, _mesh: &Mesh, _blender: &Blender, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawSlug`.
+    fn on_draw_slug(&mut self, _slug: &Slug, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawEdgeAAQuad`.
+    fn on_draw_edge_aa_quad(
+        &mut self,
+        _rect: &Rect,
+        _clip: Option<&[Point; 4]>,
+        _aa_flags: QuadAAFlags,
+        _color: &Color4f,
+        _mode: BlendMode,
+    ) -> bool {
+        false
+    }
+    /// `onDrawEdgeAAImageSet2`.
+    fn on_draw_edge_aa_image_set2(
+        &mut self,
+        _image_set: &[ImageSetEntry],
+        _dst_clips: &[Point],
+        _preview_matrices: &[Matrix],
+        _sampling: &SamplingOptions,
+        _paint: Option<&Paint>,
+        _constraint: SrcRectConstraint,
     ) -> bool {
         false
     }
@@ -1740,6 +1789,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2710-L2716 (chrome/m156)
     fn on_draw_annotation(&mut self, rect: &Rect, key: &str, value: Option<&crate::data::Data>) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_annotation(rect, key, value)
+        {
+            return;
+        }
         if self.predraw_notify() {
             self.top_device_mut().draw_annotation(rect, key, value);
         }
@@ -1840,6 +1894,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2607-L2617 (chrome/m156)
     fn on_draw_mesh(&mut self, mesh: &Mesh, blender: Blender, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_mesh(mesh, &blender, paint)
+        {
+            return;
+        }
         let simple_paint = Self::clean_paint_for_draw_vertices(paint);
         if let Some(auto_layer) = self.about_to_draw(&simple_paint, None, PredrawFlags::NONE) {
             self.top_device_mut().draw_mesh(mesh, blender, paint);
@@ -2143,9 +2202,10 @@ impl CanvasState {
     /// by the caller, see `Canvas::draw_glyph_run_list`).
     // Port of: src/core/SkCanvas.cpp#L2436-L2441 (chrome/m156), onDrawTextBlob
     fn text_blob_hooked(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) -> bool {
+        let total_matrix = self.total_matrix();
         self.hooks
             .as_mut()
-            .is_some_and(|hooks| hooks.on_draw_text_blob(blob, x, y, paint))
+            .is_some_and(|hooks| hooks.on_draw_text_blob(blob, x, y, paint, &total_matrix))
     }
 
     // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), onDrawGlyphRunList
@@ -2158,8 +2218,9 @@ impl CanvasState {
         list: &GlyphRunList<'_>,
         paint: &Paint,
     ) -> Option<AutoLayerForImageFilter> {
+        let total_matrix = self.total_matrix();
         if let Some(hooks) = self.hooks.as_mut()
-            && hooks.on_draw_glyph_run_list(list, paint)
+            && hooks.on_draw_glyph_run_list(list, paint, &total_matrix)
         {
             return None;
         }
@@ -2204,6 +2265,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2488-L2498 (chrome/m156), onDrawSlug
     fn draw_slug(&mut self, slug: &Slug, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_slug(slug, paint)
+        {
+            return;
+        }
         let bounds = slug.source_bounds_with_origin();
         if self.internal_quick_reject(&bounds, paint, None) {
             return;
@@ -2378,6 +2444,12 @@ impl CanvasState {
     ) {
         debug_assert!(r.is_sorted());
 
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_edge_aa_quad(r, clip, edge_aa, &color, mode)
+        {
+            return;
+        }
+
         let mut paint = Paint::default();
         paint.set_color4f(color, None);
         paint.set_blend_mode(mode);
@@ -2403,6 +2475,19 @@ impl CanvasState {
         paint: Option<&Paint>,
         constraint: SrcRectConstraint,
     ) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_edge_aa_image_set2(
+                image_set,
+                dst_clips,
+                preview_matrices,
+                sampling,
+                paint,
+                constraint,
+            )
+        {
+            return;
+        }
+
         let count = image_set.len();
         if count == 0 {
             // Nothing to draw
@@ -4397,7 +4482,7 @@ impl Canvas {
     /// (see [`Device::on_draw_glyph_run_list_step`]).
     // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), and
     // src/core/SkGlyphRunPainter.cpp#L296-L322
-    fn draw_glyph_run_list(&self, list: &GlyphRunList<'_>, paint: &Paint) {
+    pub(crate) fn draw_glyph_run_list(&self, list: &GlyphRunList<'_>, paint: &Paint) {
         let Some(auto_layer) = self.state.borrow_mut().begin_glyph_run_list(list, paint) else {
             return;
         };
@@ -4448,6 +4533,48 @@ impl Canvas {
             self.restore_to_count(save_count);
         }
         self.state.borrow_mut().end_auto_layer(&auto_layer);
+    }
+
+    /// Draws `drawable` using the current clip and matrix, concatenated with `matrix` if any
+    /// (`drawDrawable(SkDrawable*, const SkMatrix*)`). A recording canvas references the
+    /// drawable instead of drawing it, so that it can be drawn when the recording is played.
+    // Port of: src/core/SkCanvas.cpp#L2668-L2677 (chrome/m156)
+    #[doc(alias = "drawDrawable")]
+    pub fn draw_drawable(&self, drawable: &Drawable, matrix: Option<&Matrix>) {
+        let matrix = matrix.filter(|m| !m.is_identity());
+        self.on_draw_drawable(drawable, matrix);
+    }
+
+    /// Draws `drawable` offset by `offset` (`drawDrawable(SkDrawable*, SkScalar, SkScalar)`).
+    // Port of: src/core/SkCanvas.cpp#L2655-L2666 (chrome/m156)
+    #[doc(alias = "drawDrawable")]
+    pub fn draw_drawable_at(&self, drawable: &Drawable, offset: impl Into<Point>) {
+        let offset = offset.into();
+        if offset.x != 0.0 || offset.y != 0.0 {
+            let matrix = Matrix::translate(Vector::new(offset.x, offset.y));
+            self.on_draw_drawable(drawable, Some(&matrix));
+        } else {
+            self.on_draw_drawable(drawable, None);
+        }
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2679-L2685 (chrome/m156)
+    fn on_draw_drawable(&self, drawable: &Drawable, matrix: Option<&Matrix>) {
+        {
+            let mut s = self.state.borrow_mut();
+            if let Some(hooks) = s.hooks.as_mut()
+                && hooks.on_draw_drawable(drawable, matrix)
+            {
+                return;
+            }
+            // drawable bounds are no longer reliable (e.g. android displaylist)
+            // so don't use them for quick-reject
+            if !s.predraw_notify() {
+                return;
+            }
+        }
+        // SkDevice::drawDrawable: drawable->draw(canvas, matrix)
+        drawable.draw(self, matrix);
     }
 
     /// Draws a path (`drawPath`).
@@ -4677,6 +4804,94 @@ impl Canvas {
             paint,
         );
         self
+    }
+
+    /// `SkCanvas::onDrawPaint`, which is protected in Skia: the draw a canvas that wraps another
+    /// makes on it (`SkOverdrawCanvas` calls `fList[0]->onDrawPaint(...)`). It skips the checks
+    /// of the public draw, and goes through the canvas's hooks.
+    #[doc(hidden)]
+    pub fn on_draw_paint(&self, paint: &Paint) {
+        self.state.borrow_mut().on_draw_paint(paint);
+    }
+
+    /// `SkCanvas::onDrawPoints` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_points(&self, mode: PointMode, pts: &[Point], paint: &Paint) {
+        self.state.borrow_mut().on_draw_points(mode, pts, paint);
+    }
+
+    /// `SkCanvas::onDrawRect` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_rect(&self, rect: &Rect, paint: &Paint) {
+        self.state.borrow_mut().on_draw_rect(rect, paint);
+    }
+
+    /// `SkCanvas::onDrawRegion` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_region(&self, region: &Region, paint: &Paint) {
+        self.state.borrow_mut().on_draw_region(region, paint);
+    }
+
+    /// `SkCanvas::onDrawOval` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_oval(&self, oval: &Rect, paint: &Paint) {
+        self.state.borrow_mut().on_draw_oval(oval, paint);
+    }
+
+    /// `SkCanvas::onDrawArc` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_arc(
+        &self,
+        oval: &Rect,
+        start_angle: scalar,
+        sweep_angle: scalar,
+        use_center: bool,
+        paint: &Paint,
+    ) {
+        self.state
+            .borrow_mut()
+            .on_draw_arc(oval, start_angle, sweep_angle, use_center, paint);
+    }
+
+    /// `SkCanvas::onDrawRRect` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_rrect(&self, rrect: &RRect, paint: &Paint) {
+        self.state.borrow_mut().draw_rrect(rrect, paint);
+    }
+
+    /// `SkCanvas::onDrawDRRect` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_drrect(&self, outer: &RRect, inner: &RRect, paint: &Paint) {
+        self.state.borrow_mut().on_draw_drrect(outer, inner, paint);
+    }
+
+    /// `SkCanvas::onDrawPath` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_path(&self, path: &Path, paint: &Paint) {
+        self.state.borrow_mut().draw_path(path, paint);
+    }
+
+    /// `SkCanvas::onDrawVerticesObject` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_vertices_object(&self, vertices: &Vertices, mode: BlendMode, paint: &Paint) {
+        self.state
+            .borrow_mut()
+            .on_draw_vertices_object(vertices, mode, paint);
+    }
+
+    /// `SkCanvas::onDrawPatch` (see [`on_draw_paint`](Self::on_draw_paint)).
+    #[doc(hidden)]
+    pub fn on_draw_patch(
+        &self,
+        cubics: &[Point; patch_utils::NUM_CTRL_PTS],
+        colors: Option<&[Color; patch_utils::NUM_CORNERS]>,
+        tex_coords: Option<&[Point; patch_utils::NUM_CORNERS]>,
+        mode: BlendMode,
+        paint: &Paint,
+    ) {
+        self.state
+            .borrow_mut()
+            .on_draw_patch(cubics, colors, tex_coords, mode, paint);
     }
 
     /// `drawImageRect` with a nullable paint, as the record replays it (`SkRecords::Draw`).

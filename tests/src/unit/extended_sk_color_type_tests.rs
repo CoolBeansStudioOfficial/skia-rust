@@ -141,7 +141,14 @@ fn raster_tests(reporter: &mut Reporter, test: &TestCase) {
         let mut src_pm =
             Pixmap::new(&native_ii, &mut src_bytes, native_ii.min_row_bytes()).expect("a pixmap");
         let _ = src_pm.erase_4f(colors::WHITE, None);
-        let i = images::raster_from_pixmap(&src_pm, || {});
+        // skia-rust: `RasterFromPixmap` shares the memory of an owner (docs/API_MAPPING.md); the
+        // pixmap's bytes are given to the image as a copy, as `src_pm` is read afterwards.
+        let i = images::raster_from_pixmap(
+            &native_ii,
+            src_pm.addr().expect("an address").to_vec(),
+            native_ii.min_row_bytes(),
+            None::<fn()>,
+        );
         reporter_assert!(reporter, i.is_some());
         let Some(i) = i else {
             return;
@@ -166,7 +173,14 @@ fn raster_tests(reporter: &mut Reporter, test: &TestCase) {
         let mut src_pm =
             Pixmap::new(&native_ii, &mut src_bytes, native_ii.min_row_bytes()).expect("a pixmap");
         let _ = src_pm.erase_4f(colors::WHITE, None);
-        let i = images::raster_from_pixmap(&src_pm, || {});
+        // skia-rust: `RasterFromPixmap` shares the memory of an owner (docs/API_MAPPING.md); the
+        // pixmap's bytes are given to the image as a copy, as `src_pm` is read afterwards.
+        let i = images::raster_from_pixmap(
+            &native_ii,
+            src_pm.addr().expect("an address").to_vec(),
+            native_ii.min_row_bytes(),
+            None::<fn()>,
+        );
         reporter_assert!(reporter, i.is_some());
         let Some(i) = i else {
             return;

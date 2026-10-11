@@ -12,8 +12,7 @@
 //! Serialization (`serialize`, `from_data`, `from_stream`) covers the pictures of paints, paths
 //! and draw ops that are ported; the sections that are not (text, images, nested pictures) are
 //! listed in `notes/picture-serialization.md`.
-//! `makeShader` (the picture shader is Phase 3) is not ported, and a picture holds no drawable
-//! snapshots (`SkDrawable` is not ported).
+//! A picture holds the snapshots of the drawables drawn into it (`SkSnapshotArray`).
 
 use std::fmt;
 use std::sync::Arc;
@@ -27,11 +26,14 @@ use crate::picture_data::{PictInfo, PictureData};
 use crate::picture_playback::forward_port;
 use crate::picture_priv::{self, CURRENT_VERSION};
 use crate::picture_record;
+use crate::read_buffer::ReadBuffer;
 use crate::record::Record;
 use crate::record_draw::record_draw;
 use crate::rect::{Contains, Rect};
 use crate::serial_procs::{DeserialProcs, SerialProcs};
 use crate::stream::{DynamicMemoryWStream, MemoryStream, Stream, WStream};
+use crate::typeface::Typeface;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// May be passed to [`Picture::playback_with_callback`] to stop it before all drawing commands
 /// have been processed (`SkPicture::AbortCallback`).
@@ -47,10 +49,48 @@ pub trait AbortCallback {
     fn abort(&mut self) -> bool;
 }
 
-/// The byte after the header of a serialized picture that says what the data is: the picture
-/// data (`kPictureData_TrailingStreamByteAfterPictInfo`).
+/// The byte after the header of a serialized picture that says what the data is: nothing follows
+/// (`kFailure_TrailingStreamByteAfterPictInfo`).
+// Port of: src/core/SkPicture.cpp#L41-L45 (chrome/m156)
+const FAILURE_TRAILING_BYTE: u8 = 0;
+
+/// The picture data follows (`kPictureData_TrailingStreamByteAfterPictInfo`).
 // Port of: src/core/SkPicture.cpp#L41-L45 (chrome/m156)
 const PICTURE_DATA_TRAILING_BYTE: u8 = 1;
+
+/// A negative size and the custom data of the picture proc follow
+/// (`kCustom_TrailingStreamByteAfterPictInfo`).
+// Port of: src/core/SkPicture.cpp#L41-L45 (chrome/m156)
+const CUSTOM_TRAILING_BYTE: u8 = 2;
+
+/// How many bytes of a custom picture are read at a time, so a size larger than the stream is not
+/// allocated up front.
+const READ_CHUNK: usize = 64 * 1024;
+
+/// The custom data the picture proc of `procs` makes for `picture`, if it makes any
+/// (`custom_serialize`). Data of 0 or 1 bytes is an empty one, which stands for a failure.
+// Port of: src/core/SkPicture.cpp#L261-L274 (chrome/m156), custom_serialize
+fn custom_serialize(picture: &Picture, procs: &SerialProcs) -> Option<Data> {
+    let proc = procs.picture.as_ref()?;
+    let data = proc(picture)?;
+    let size = data.size();
+    if i32::try_from(size).is_err() || size <= 1 {
+        return Some(Data::new_empty());
+    }
+    Some(data)
+}
+
+/// Writes `data` and pads it to 4 bytes with zeroes (`write_pad32`).
+// Port of: src/core/SkPicture.cpp#L276-L286 (chrome/m156), write_pad32
+fn write_pad32(stream: &mut dyn WStream, data: &[u8]) -> bool {
+    if !stream.write(data) {
+        return false;
+    }
+    if data.len() & 3 != 0 {
+        return stream.write(&[0u8; 4][..4 - (data.len() & 3)]);
+    }
+    true
+}
 
 /* This handles generating unique IDs */
 // Port of: src/core/SkPicture.cpp#L47-L54 (chrome/m156)
@@ -72,6 +112,8 @@ pub(crate) struct PictureInner {
     // When the record is None, then we treat the picture as a "placeholder"
     // placeholders provide the bare minimum to operate on a picture
     record: Option<Arc<Record>>,
+    // `fDrawablePicts`: the snapshots of the drawables, by the index of their `DrawDrawable` ops.
+    drawable_picts: Option<Vec<Picture>>,
     bbh: Option<Arc<dyn BBoxHierarchy>>,
     // `fAddedToCache`: whether a cache entry (a picture shader's image) was made from the picture.
     added_to_cache: AtomicBool,
@@ -126,6 +168,7 @@ impl Picture {
     pub(crate) fn new(
         cull: Rect,
         record: Option<Arc<Record>>,
+        drawable_picts: Option<Vec<Picture>>,
         bbh: Option<Arc<dyn BBoxHierarchy>>,
         approx_bytes_used_by_sub_pictures: usize,
     ) -> Picture {
@@ -135,6 +178,7 @@ impl Picture {
                 cull_rect: cull,
                 approx_bytes_used_by_sub_pictures,
                 record,
+                drawable_picts,
                 bbh,
                 added_to_cache: AtomicBool::new(false),
             }),
@@ -164,6 +208,8 @@ impl Picture {
         record_draw(
             record,
             canvas,
+            self.inner.drawable_picts.as_deref(),
+            None,
             if use_bbh {
                 self.inner.bbh.as_deref()
             } else {
@@ -210,7 +256,7 @@ impl Picture {
     #[doc(alias = "MakePlaceholder")]
     #[must_use]
     pub fn new_placeholder(cull: impl AsRef<Rect>) -> Picture {
-        picture_priv::make_picture(*cull.as_ref(), None, None, 0)
+        picture_priv::make_picture(*cull.as_ref(), None, None, None, 0)
     }
 
     /// Returns the approximate number of operations in the picture, not counting nested ones
@@ -269,19 +315,122 @@ impl Picture {
     // Port of: src/core/SkPicture.cpp#L301-L330 (chrome/m156), the private serialize
     pub fn serialize_into(&self, stream: &mut dyn WStream, procs: Option<&SerialProcs>) -> bool {
         let procs = procs.cloned().unwrap_or_default();
+        // The picture is made first, so a failure leaves the stream without a partial picture.
+        let mut body = DynamicMemoryWStream::new();
+        if !self.serialize_priv(&mut body, &procs, None, false) {
+            return false;
+        }
+        stream.write(body.detach_as_data().as_bytes())
+    }
+
+    /// The private serialize: `typeface_set` is the set of typefaces of the top-level picture
+    /// (`None` on the top level call), and `text_blobs_only` the first pass over the nested
+    /// pictures, which only fills the set. Returns false if the picture has a command that is not
+    /// serialized yet.
+    // Port of: src/core/SkPicture.cpp#L301-L330 (chrome/m156), the private serialize
+    pub(crate) fn serialize_priv(
+        &self,
+        stream: &mut dyn WStream,
+        procs: &SerialProcs,
+        typeface_set: Option<&mut Vec<Typeface>>,
+        text_blobs_only: bool,
+    ) -> bool {
+        let info = PictInfo::new(self.cull_rect(), CURRENT_VERSION);
+        if !info.write_to(stream) {
+            return false;
+        }
+
+        if let Some(custom) = custom_serialize(self, procs) {
+            let size = custom.size();
+            if size == 0 {
+                return stream.write8(FAILURE_TRAILING_BYTE);
+            }
+            let negated = -i32::try_from(size).expect("checked by custom_serialize");
+            return stream.write8(CUSTOM_TRAILING_BYTE)
+                && stream.write(&negated.to_ne_bytes())
+                && write_pad32(stream, custom.as_bytes());
+        }
+
         let Some(data) = picture_record::backport(self) else {
             return false;
         };
-        // The data is made first, so a failure leaves the stream without a partial picture.
-        let mut body = DynamicMemoryWStream::new();
-        if !data.serialize(&mut body, &procs) {
-            return false;
-        }
-        let body = body.detach_as_data();
+        stream.write8(PICTURE_DATA_TRAILING_BYTE)
+            && data.serialize(stream, procs, typeface_set, text_blobs_only)
+    }
+
+    /// Writes the picture into `buffer`, as the member of another object (`SkPicturePriv::Flatten`).
+    // Port of: src/core/SkPicture.cpp#L332-L353 (chrome/m156), Flatten
+    #[doc(alias = "Flatten")]
+    pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
         let info = PictInfo::new(self.cull_rect(), CURRENT_VERSION);
-        info.write_to(stream)
-            && stream.write8(PICTURE_DATA_TRAILING_BYTE)
-            && stream.write(body.as_bytes())
+        let data = picture_record::backport(self);
+
+        buffer.write_byte_array(&info.magic);
+        buffer.write_uint(info.version);
+        buffer.write_rect(&info.cull_rect);
+
+        if let Some(custom) = custom_serialize(self, buffer.serial_procs()) {
+            // custom_serialize checked that the size fits
+            let size = i32::try_from(custom.size()).unwrap_or(i32::MAX);
+            buffer.write_int(-size); // negative for custom format
+            buffer.write_pad32(custom.as_bytes());
+            return;
+        }
+
+        if let Some(data) = data {
+            buffer.write_int(1); // special size meaning SkPictureData
+            if !data.flatten(buffer) {
+                buffer.mark_flatten_failed();
+            }
+        } else {
+            buffer.write_int(0); // signal no content
+        }
+    }
+
+    /// Reads a picture written by [`flatten`](Self::flatten) (`SkPicturePriv::MakeFromBuffer`).
+    // Port of: src/core/SkPicture.cpp#L226-L252 (chrome/m156), MakeFromBuffer
+    #[doc(alias = "MakeFromBuffer")]
+    #[must_use]
+    pub fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        registry: &FlattenableRegistry,
+    ) -> Option<Picture> {
+        if !buffer.is_valid() {
+            return None;
+        }
+        // BufferIsSKP
+        let mut magic = [0u8; 8];
+        if !buffer.read_byte_array(&mut magic) {
+            return None;
+        }
+        let version = buffer.read_uint();
+        let cull_rect = buffer.read_rect();
+        let info = PictInfo {
+            magic,
+            version,
+            cull_rect,
+        };
+        if !info.is_valid() {
+            return None;
+        }
+
+        // size should be 0, 1, or negative
+        let custom_size = buffer.read32();
+        if custom_size < 0 {
+            let proc = buffer.deserial_procs().picture.clone()?;
+            let len = usize::try_from(custom_size.unsigned_abs()).ok()?;
+            let bytes = buffer.skip(len)?;
+            return proc(&bytes[..len]);
+        }
+        if custom_size != 1 {
+            // 1 is the magic 'size' that means SkPictureData follows
+            return None;
+        }
+        let data = PictureData::create_from_buffer(buffer, info.version, registry)?;
+        let picture = forward_port(&info, &data);
+        // need to propagate invalid state to the parent reader
+        buffer.validate(picture.is_some());
+        picture
     }
 
     /// Reads a picture from bytes that [`serialize`](Self::serialize) wrote, with the default
@@ -303,7 +452,13 @@ impl Picture {
         registry: &FlattenableRegistry,
     ) -> Option<Picture> {
         let mut stream = MemoryStream::from_data(Some(Data::new_copy(data)));
-        Self::make_from_stream_priv(&mut stream, procs, registry)
+        Self::make_from_stream_priv(
+            &mut stream,
+            procs,
+            registry,
+            None,
+            picture_priv::DEFAULT_RECURSION_LIMIT_I32,
+        )
     }
 
     /// Reads a picture from a stream that [`serialize_into`](Self::serialize_into) wrote, with the
@@ -312,17 +467,28 @@ impl Picture {
     #[doc(alias = "MakeFromStream")]
     #[must_use]
     pub fn from_stream(stream: &mut dyn Stream, procs: Option<&DeserialProcs>) -> Option<Picture> {
-        Self::make_from_stream_priv(stream, procs, &FlattenableRegistry::EMPTY)
+        Self::make_from_stream_priv(
+            stream,
+            procs,
+            &FlattenableRegistry::EMPTY,
+            None,
+            picture_priv::DEFAULT_RECURSION_LIMIT_I32,
+        )
     }
 
     /// `MakeFromStreamPriv`: reads the header, then the data that follows it. A picture whose
     /// data is a custom format needs a picture procedure, which is not ported.
     // Port of: src/core/SkPicture.cpp#L183-L226 (chrome/m156), MakeFromStreamPriv
-    fn make_from_stream_priv(
+    pub(crate) fn make_from_stream_priv(
         stream: &mut dyn Stream,
         procs: Option<&DeserialProcs>,
         registry: &FlattenableRegistry,
+        top_level_typefaces: Option<&[Typeface]>,
+        recursion_limit: i32,
     ) -> Option<Picture> {
+        if recursion_limit <= 0 {
+            return None;
+        }
         let info = PictInfo::read_from(stream)?;
         if !info.is_valid() {
             return None;
@@ -330,12 +496,42 @@ impl Picture {
         let procs = procs.cloned().unwrap_or_default();
         match stream.read_u8()? {
             PICTURE_DATA_TRAILING_BYTE => {
-                let data = PictureData::parse_stream(stream, info.version, &procs, registry)?;
+                let data = PictureData::parse_stream(
+                    stream,
+                    info.version,
+                    &procs,
+                    registry,
+                    top_level_typefaces,
+                    recursion_limit,
+                )?;
                 forward_port(&info, &data)
             }
-            // The custom format (and the failure marker) has no reader here.
+            CUSTOM_TRAILING_BYTE => {
+                let custom_size = i32::from_ne_bytes(stream.read_u32()?.to_ne_bytes());
+                if custom_size >= 0 {
+                    return None;
+                }
+                let proc = procs.picture.as_ref()?;
+                let len = usize::try_from(custom_size.unsigned_abs()).ok()?;
+                let mut bytes = Vec::new();
+                while bytes.len() < len {
+                    let start = bytes.len();
+                    let take = READ_CHUNK.min(len - start);
+                    bytes.resize(start + take, 0);
+                    if stream.read(&mut bytes[start..]) != take {
+                        return None;
+                    }
+                }
+                proc(&bytes)
+            }
+            // The failure marker, and anything else.
             _ => None,
         }
+    }
+
+    /// The snapshots of the drawables drawn into the picture (`fDrawablePicts`).
+    pub(crate) fn drawable_picts(&self) -> Option<&[Picture]> {
+        self.inner.drawable_picts.as_deref()
     }
 
     /// The commands of the picture, `None` for a placeholder.

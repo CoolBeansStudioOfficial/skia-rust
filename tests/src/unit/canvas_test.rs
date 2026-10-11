@@ -15,14 +15,16 @@
 //   (`SkCanvas::ColorBehavior`).
 // - `Canvas_SaveLayerWithNullBoundsAndZeroBoundsImageFilter`, `Canvas_ClippedOutImageFilter`,
 //   `Canvas_degenerate_dimension`: image filters (`SkImageFilters::Empty/Blur/Shader`, Phase 3).
-// - `NWayCanvas`, `CanvasStack`: `SkNWayCanvas`, `SkCanvasStack` and `SkCanvas` subclasses.
 // - `PaintFilterCanvas_ConsistentState`: `SkPaintFilterCanvas`.
 // - `TestManyDrawsGanesh`: GPU (Ganesh is out of scope).
 
 #![cfg(test)]
 
 use skia_rust_core::alpha_type::AlphaType;
-use skia_rust_core::canvas::{Canvas, SaveLayerRec};
+use std::cell::Cell;
+use std::rc::Rc;
+
+use skia_rust_core::canvas::{Canvas, CanvasHooks, SaveLayerRec};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::{Color, pre_multiply_color};
 use skia_rust_core::color_space::ColorSpace;
@@ -35,6 +37,8 @@ use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::stream::NullWStream;
+use skia_rust_core::utils::canvas_stack::CanvasStack;
+use skia_rust_core::utils::n_way_canvas::NWayCanvas;
 
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
@@ -140,6 +144,85 @@ def_tier_test!(Canvas_ClipEmptyPath, |_reporter| {
     builder.move_to((7.0, 7.0));
     canvas.clip_path(&builder.detach(), None, None); // should not assert here
     canvas.restore();
+});
+
+// Port of: tests/CanvasTest.cpp#L500-L514 (chrome/m156)
+// Subclass that takes a bool*, which it updates in its construct (true) and destructor (false)
+// to allow the caller to know how long the object is alive.
+//
+// skia-rust: a Rust canvas cannot be subclassed, so the subclass is a canvas whose hooks object
+// (the stand-in for the overrides) has the destructor.
+struct LifeLineHooks {
+    life_line: Rc<Cell<bool>>,
+}
+
+impl CanvasHooks for LifeLineHooks {}
+
+impl Drop for LifeLineHooks {
+    fn drop(&mut self) {
+        self.life_line.set(false);
+    }
+}
+
+fn life_line_canvas(w: i32, h: i32, life_line: &Rc<Cell<bool>>) -> Canvas {
+    let canvas = Canvas::new_no_pixels((w, h), None).expect("canvas");
+    canvas.set_hooks(Some(Box::new(LifeLineHooks {
+        life_line: Rc::clone(life_line),
+    })));
+    life_line.set(true);
+    canvas
+}
+
+// Port of: tests/CanvasTest.cpp#L518-L544 (chrome/m156)
+// Check that NWayCanvas does NOT try to manage the lifetime of its sub-canvases
+def_test!(NWayCanvas, |r| {
+    let w = 10;
+    let h = 10;
+    let life = [Rc::new(Cell::new(false)), Rc::new(Cell::new(false))];
+    {
+        let _c0 = life_line_canvas(w, h, &life[0]);
+        reporter_assert!(r, life[0].get());
+    }
+    reporter_assert!(r, !life[0].get());
+
+    let c0 = Rc::new(life_line_canvas(w, h, &life[0]));
+    let c1 = Rc::new(life_line_canvas(w, h, &life[1]));
+    reporter_assert!(r, life[0].get());
+    reporter_assert!(r, life[1].get());
+
+    {
+        let nway = NWayCanvas::new(w, h);
+        nway.add_canvas(Rc::clone(&c0));
+        nway.add_canvas(Rc::clone(&c1));
+        reporter_assert!(r, life[0].get());
+        reporter_assert!(r, life[1].get());
+    }
+    // Now assert that the death of the nway has NOT also killed the sub-canvases
+    reporter_assert!(r, life[0].get());
+    reporter_assert!(r, life[1].get());
+});
+
+// Port of: tests/CanvasTest.cpp#L547-L566 (chrome/m156)
+// Check that CanvasStack DOES manage the lifetime of its sub-canvases
+def_test!(CanvasStack, |r| {
+    let w = 10;
+    let h = 10;
+    let life = [Rc::new(Cell::new(false)), Rc::new(Cell::new(false))];
+    let c0 = life_line_canvas(w, h, &life[0]);
+    let c1 = life_line_canvas(w, h, &life[1]);
+    reporter_assert!(r, life[0].get());
+    reporter_assert!(r, life[1].get());
+
+    {
+        let stack = CanvasStack::new(w, h);
+        stack.push_canvas(c0, (0, 0));
+        stack.push_canvas(c1, (0, 0));
+        reporter_assert!(r, life[0].get());
+        reporter_assert!(r, life[1].get());
+    }
+    // Now assert that the death of the canvasstack has also killed the sub-canvases
+    reporter_assert!(r, !life[0].get());
+    reporter_assert!(r, !life[1].get());
 });
 
 // Port of: tests/CanvasTest.cpp#L568-L592 (chrome/m156)

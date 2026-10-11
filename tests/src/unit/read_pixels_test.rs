@@ -522,9 +522,16 @@ fn test_conversion(r: &mut Reporter, dst_info: &ImageInfo, src_info: &ImageInfo)
 
     let src_pixels = five_reference_pixels(src_info.color_type()).unwrap_or_default();
     let src_pixmap = Pixmap::new_readonly(src_info, &src_pixels, src_info.min_row_bytes());
-    let src = src_pixmap
-        .as_ref()
-        .and_then(|pm| images::raster_from_pixmap(pm, || {}));
+    // skia-rust: `RasterFromPixmap` shares the memory of an owner (docs/API_MAPPING.md); the
+    // pixels are given to the image as a copy.
+    let src = src_pixmap.as_ref().and_then(|_| {
+        images::raster_from_pixmap(
+            src_info,
+            src_pixels.clone(),
+            src_info.min_row_bytes(),
+            None::<fn()>,
+        )
+    });
     reporter_assert!(r, src.is_some());
     let Some(src) = src else {
         return;

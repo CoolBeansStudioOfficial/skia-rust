@@ -14,7 +14,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
 
 use crate::graphite::wgpu::async_wait::block_on;
-use crate::graphite::wgpu::shared_context::WgpuBackendContext;
+use crate::graphite::wgpu::shared_context::{AdapterFormatUsages, WgpuBackendContext};
 
 /// The features Skia's test context asks for (`AddPreferredFeatures`) that wgpu has.
 // Port of: tools/graphite/dawn/GraphiteDawnToggles.cpp#L46-L75 (chrome/m156)
@@ -53,14 +53,19 @@ pub fn adapter_backend_context(
     adapters.sort_by_key(|adapter| adapter.get_info().device_type != wgpu::DeviceType::Cpu);
     let adapter = adapters.into_iter().next()?;
     let info = adapter.get_info();
+    let required_features = adapter.features() & PREFERRED_FEATURES;
+    let usages = AdapterFormatUsages::from_adapter(&adapter, required_features);
     let (device, queue) = block_on(adapter.request_device(&wgpu::DeviceDescriptor {
         label: Some("adapter"),
-        required_features: adapter.features() & PREFERRED_FEATURES,
+        required_features,
         required_limits: adapter.limits(),
         ..Default::default()
     }))
     .ok()?;
-    Some((WgpuBackendContext::new(device, queue), info))
+    Some((
+        WgpuBackendContext::new(device, queue).with_adapter_format_usages(usages),
+        info,
+    ))
 }
 
 /// The one device a test binary shares: made on first use by [`adapter_backend_context`] with

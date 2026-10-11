@@ -12,17 +12,18 @@
 //!
 //! skia-rust: the factories are written by index, as in Skia, with their names in the factory
 //! section. The images are written with the image procedure of the serial procs. The sections
-//! for slugs, vertices, drawables and nested pictures are not written or read yet: a picture
-//! that has them is not serialized, and a stream that has them does not load.
+//! for slugs, vertices and drawables are not written or read yet: a picture that has them is not
+//! serialized, and a stream that has them does not load.
 
 use crate::flattenable::FlattenableRegistry;
 use crate::image::Image;
 use crate::paint::Paint;
 use crate::path::Path;
+use crate::picture::Picture;
 use crate::read_buffer::ReadBuffer;
 use crate::rect::Rect;
 use crate::serial_procs::{DeserialProcs, SerialProcs};
-use crate::stream::{Stream, WStream, size_of_packed_uint};
+use crate::stream::{NullWStream, Stream, WStream, size_of_packed_uint};
 use crate::text_blob::{TextBlob, make_from_buffer};
 use crate::typeface::{SerializeBehavior, Typeface};
 use crate::write_buffer::BinaryWriteBuffer;
@@ -63,6 +64,9 @@ const SLUG_BUFFER_TAG: u32 = four_byte_tag(b's', b'l', b'u', b'g');
 /// The vertices in the buffer (`SK_PICT_VERTICES_BUFFER_TAG`).
 // Port of: src/core/SkPictureData.h#L75 (chrome/m156)
 const VERTICES_BUFFER_TAG: u32 = four_byte_tag(b'v', b'e', b'r', b't');
+/// The drawables (`SK_PICT_DRAWABLE_TAG`).
+// Port of: src/core/SkPictureData.h#L66 (chrome/m156)
+const DRAWABLE_TAG: u32 = four_byte_tag(b'd', b'r', b'a', b'w');
 /// The images in the buffer (`SK_PICT_IMAGE_BUFFER_TAG`).
 // Port of: src/core/SkPictureData.h#L76 (chrome/m156)
 const IMAGE_BUFFER_TAG: u32 = four_byte_tag(b'i', b'm', b'a', b'g');
@@ -114,6 +118,20 @@ fn read_exact(stream: &mut dyn Stream, size: usize) -> Option<Vec<u8>> {
     Some(bytes)
 }
 
+// SkPictureData::serialize() will write out paints, and then write out an array of typefaces
+// (unique set). However, paint's serializer will respect SerialProcs, which can cause us to
+// call that custom typefaceproc on *every* typeface, not just on the unique ones. To avoid this,
+// we ignore the custom proc (here) when we serialize the paints, and then do respect it when
+// we serialize the typefaces.
+// Port of: src/core/SkPictureData.cpp#L203-L209 (chrome/m156), skip_typeface_proc
+fn skip_typeface_proc(procs: &SerialProcs) -> SerialProcs {
+    SerialProcs {
+        typeface: None,
+        image: procs.image.clone(),
+        picture: procs.picture.clone(),
+    }
+}
+
 /// Writes the factory section: its size, the count, and the name of each factory, with the
 /// length packed (`WriteFactories`).
 // Port of: src/core/SkPictureData.cpp#L84-L122 (chrome/m156), compute_chunk_size and WriteFactories
@@ -154,6 +172,8 @@ pub(crate) struct PictureData {
     /// `fImages`: the images that the ops refer to by index, from 0. An image that could not be
     /// read is the empty image of the read buffer (see `read_buffer::read_image`).
     images: Vec<Image>,
+    /// `fPictures`: the pictures that the ops refer to by index, from 1.
+    pictures: Vec<Picture>,
 }
 
 impl PictureData {
@@ -165,6 +185,7 @@ impl PictureData {
         paths: Vec<Path>,
         text_blobs: Vec<TextBlob>,
         images: Vec<Image>,
+        pictures: Vec<Picture>,
     ) -> PictureData {
         PictureData {
             op_data: Some(op_data),
@@ -174,7 +195,13 @@ impl PictureData {
             factories: Vec::new(),
             text_blobs,
             images,
+            pictures,
         }
+    }
+
+    /// The pictures the ops index (`fPictures`).
+    pub(crate) fn pictures(&self) -> &[Picture] {
+        &self.pictures
     }
 
     /// The op stream (`opData`).
@@ -202,86 +229,118 @@ impl PictureData {
         &self.images
     }
 
-    /// Writes the buffer of the tables: paints, then paths, then text blobs, then the (empty)
-    /// slugs, then the images (`flattenToBuffer`, with no vertices). The buffer records the
-    /// factories and typefaces that it writes by index, and writes the images with the image
-    /// procedure of `procs` (the typeface procedure is not used by the buffer, as in Skia's
-    /// `skip_typeface_proc`). `None` if a paint has an effect that is not written yet, or an image
-    /// cannot be written.
+    /// Writes the tables into `buffer`: paints, then paths, then text blobs, then the (empty)
+    /// slugs, then the images (`flattenToBuffer`, with no vertices). With `text_blobs_only`, only
+    /// the text blobs are written (the first pass over the sub-pictures, which fills the
+    /// typeface set). The buffer records the factories and typefaces that it writes by index.
+    /// Returns false if a paint has an effect that is not written yet, or an image cannot be
+    /// written.
     // Port of: src/core/SkPictureData.cpp#L151-L200 (chrome/m156), flattenToBuffer
-    fn flatten_to_buffer(&self, procs: &SerialProcs) -> Option<BinaryWriteBuffer> {
-        let buffer_procs = SerialProcs {
-            typeface: None,
-            image: procs.image.clone(),
-        };
-        let mut buffer = BinaryWriteBuffer::with_serial_procs(buffer_procs);
-        buffer.set_typeface_recorder();
-        buffer.set_factory_recorder();
-
-        if !self.paints.is_empty() {
-            write_tag_size_to_buffer(&mut buffer, PAINT_BUFFER_TAG, self.paints.len());
-            for paint in &self.paints {
-                if !buffer.write_paint(paint) {
-                    return None;
+    fn flatten_to_buffer(&self, buffer: &mut BinaryWriteBuffer, text_blobs_only: bool) -> bool {
+        if !text_blobs_only {
+            if !self.paints.is_empty() {
+                write_tag_size_to_buffer(buffer, PAINT_BUFFER_TAG, self.paints.len());
+                for paint in &self.paints {
+                    if !buffer.write_paint(paint) {
+                        return false;
+                    }
                 }
             }
-        }
-        if !self.paths.is_empty() {
-            write_tag_size_to_buffer(&mut buffer, PATH_BUFFER_TAG, self.paths.len());
-            buffer.write_int(i32::try_from(self.paths.len()).expect("SkToInt"));
-            for path in &self.paths {
-                buffer.write_path(path);
+            if !self.paths.is_empty() {
+                write_tag_size_to_buffer(buffer, PATH_BUFFER_TAG, self.paths.len());
+                buffer.write_int(i32::try_from(self.paths.len()).expect("SkToInt"));
+                for path in &self.paths {
+                    buffer.write_path(path);
+                }
             }
         }
         if !self.text_blobs.is_empty() {
-            write_tag_size_to_buffer(&mut buffer, TEXTBLOB_BUFFER_TAG, self.text_blobs.len());
+            write_tag_size_to_buffer(buffer, TEXTBLOB_BUFFER_TAG, self.text_blobs.len());
             for blob in &self.text_blobs {
-                blob.flatten(&mut buffer);
+                blob.flatten(buffer);
             }
         }
-        // The slugs are always written, even when there are none.
-        write_tag_size_to_buffer(&mut buffer, SLUG_BUFFER_TAG, 0);
-        if !self.images.is_empty() {
-            write_tag_size_to_buffer(&mut buffer, IMAGE_BUFFER_TAG, self.images.len());
-            for image in &self.images {
-                if !buffer.write_image(image) {
-                    return None;
+        if !text_blobs_only {
+            // The slugs are always written, even when there are none.
+            write_tag_size_to_buffer(buffer, SLUG_BUFFER_TAG, 0);
+            if !self.images.is_empty() {
+                write_tag_size_to_buffer(buffer, IMAGE_BUFFER_TAG, self.images.len());
+                for image in &self.images {
+                    if !buffer.write_image(image) {
+                        return false;
+                    }
                 }
             }
         }
-        Some(buffer)
+        true
     }
 
-    /// Writes the data of a picture to `stream` (`SkPictureData::serialize`, for the pictures
-    /// without nested pictures or text). `procs` decides how the typefaces are written. Returns
-    /// false if the data cannot be written (see [`flatten_to_buffer`](Self::flatten_to_buffer)),
-    /// or if the stream fails.
+    /// Writes the data of a picture to `stream` (`SkPictureData::serialize`). `procs` decides
+    /// how the typefaces and nested pictures are written. `top_level_typefaces` is the set of
+    /// typefaces of the top-level picture, which every nested picture adds to (`None` on the top
+    /// level call). `text_blobs_only` is the first pass over the nested pictures, which only fills
+    /// the typeface set. Returns false if the data cannot be written (see
+    /// [`flatten_to_buffer`](Self::flatten_to_buffer)), or if the stream fails.
     // Port of: src/core/SkPictureData.cpp#L219-L271 (chrome/m156), serialize
-    pub(crate) fn serialize(&self, stream: &mut dyn WStream, procs: &SerialProcs) -> bool {
+    pub(crate) fn serialize(
+        &self,
+        stream: &mut dyn WStream,
+        procs: &SerialProcs,
+        top_level_typefaces: Option<&mut Vec<Typeface>>,
+        text_blobs_only: bool,
+    ) -> bool {
         let Some(op_data) = self.op_data() else {
             return false;
         };
-        // The buffer is made first: the factories and typefaces it indexes are written before it.
-        let Some(buffer) = self.flatten_to_buffer(procs) else {
-            return false;
-        };
-
-        // The op stream comes first.
+        // This can happen at pretty much any time, so might as well do it first.
         if !write_tag_size(stream, READER_TAG, op_data.len()) || !stream.write(op_data) {
             return false;
         }
 
-        // The factories, by name, in the order that the buffer indexes them.
+        // We serialize all typefaces into the typeface section of the top-level picture.
+        let mut local_typefaces = Vec::new();
+        let typeface_set = top_level_typefaces.unwrap_or(&mut local_typefaces);
+
+        // We delay serializing the bulk of our data until after we've serialized
+        // factories and typefaces by first serializing to an in-memory write buffer.
+        let mut buffer = BinaryWriteBuffer::with_serial_procs(skip_typeface_proc(procs));
+        buffer.set_typeface_recorder_from(std::mem::take(typeface_set));
+        buffer.set_factory_recorder();
+        let flattened = self.flatten_to_buffer(&mut buffer, text_blobs_only);
+        *typeface_set = buffer.take_typeface_recorder();
+        if !flattened {
+            return false;
+        }
+
+        // Pretend to serialize our sub-pictures for the side effect of filling typefaceSet
+        // with typefaces from sub-pictures.
+        for pic in &self.pictures {
+            if !pic.serialize_priv(
+                &mut NullWStream::new(),
+                &SerialProcs::default(),
+                Some(typeface_set),
+                true,
+            ) {
+                return false;
+            }
+        }
+        if text_blobs_only {
+            return true; // return early from fake serialize
+        }
+
+        // We need to write factories before we write the buffer.
         if !write_factories(stream, buffer.factory_recorder().unwrap_or(&[])) {
             return false;
         }
 
-        // The typefaces that the buffer indexes: each as its custom bytes or as it serializes.
-        let typefaces = buffer.typeface_recorder().unwrap_or(&[]);
-        if !write_tag_size(stream, TYPEFACE_TAG, typefaces.len()) {
+        // We need to write typefaces before we write the buffer or any sub-picture. Pass the
+        // original typefaceproc (if any) now that we're ready to actually serialize the
+        // typefaces. We skipped this proc before, when we were serializing paints, so that the
+        // paints would just write indices into our typeface set.
+        if !write_tag_size(stream, TYPEFACE_TAG, typeface_set.len()) {
             return false;
         }
-        for typeface in typefaces {
+        for typeface in typeface_set.iter() {
             let custom = procs
                 .typeface
                 .as_ref()
@@ -302,13 +361,50 @@ impl PictureData {
             return false;
         }
 
-        // No nested pictures, and the end.
+        // Write sub-pictures by calling serialize again.
+        if !self.pictures.is_empty() {
+            if !write_tag_size(stream, PICTURE_TAG, self.pictures.len()) {
+                return false;
+            }
+            for pic in &self.pictures {
+                if !pic.serialize_priv(stream, procs, Some(typeface_set), false) {
+                    return false;
+                }
+            }
+        }
+
         stream.write32(EOF_TAG)
     }
 
+    /// Writes the data of a picture into `buffer` (`SkPictureData::flatten`), for a picture that
+    /// is part of another object (a picture shader). Returns false if the data cannot be written.
+    // Port of: src/core/SkPictureData.cpp#L330-L355 (chrome/m156), flatten
+    pub(crate) fn flatten(&self, buffer: &mut BinaryWriteBuffer) -> bool {
+        let Some(op_data) = self.op_data() else {
+            return false;
+        };
+        write_tag_size_to_buffer(buffer, READER_TAG, op_data.len());
+        buffer.write_byte_array(op_data);
+
+        if !self.pictures.is_empty() {
+            write_tag_size_to_buffer(buffer, PICTURE_TAG, self.pictures.len());
+            for pic in &self.pictures {
+                pic.flatten(buffer);
+            }
+        }
+
+        // Write this picture playback's data into a writebuffer
+        if !self.flatten_to_buffer(buffer, false) {
+            return false;
+        }
+        buffer.write_uint(EOF_TAG);
+        true
+    }
+
     /// Reads the data of a picture from `stream`, which holds the version `version`
-    /// (`SkPictureData::CreateFromStream`, with `parseStream`). `None` if the stream is invalid
-    /// or has a section that is not ported.
+    /// (`SkPictureData::CreateFromStream`, with `parseStream`). `top_level_typefaces` are the
+    /// typefaces of the top-level picture, for a nested one (`topLevelTFPlayback`). `None` if the
+    /// stream is invalid or has a section that is not ported.
     // Port of: src/core/SkPictureData.cpp#L537-L554 (chrome/m156), CreateFromStream, and
     // src/core/SkPictureData.cpp#L570-L588 (chrome/m156), parseStream
     pub(crate) fn parse_stream(
@@ -316,7 +412,12 @@ impl PictureData {
         version: u32,
         procs: &DeserialProcs,
         registry: &FlattenableRegistry,
+        top_level_typefaces: Option<&[Typeface]>,
+        recursion_limit: i32,
     ) -> Option<PictureData> {
+        if recursion_limit <= 0 {
+            return None;
+        }
         let mut data = PictureData::default();
         loop {
             let tag = stream.read_u32()?;
@@ -324,7 +425,50 @@ impl PictureData {
                 break;
             }
             let size = stream.read_u32()?;
-            data.parse_stream_tag(stream, tag, size, version, procs, registry)?;
+            data.parse_stream_tag(
+                stream,
+                tag,
+                size,
+                version,
+                procs,
+                registry,
+                top_level_typefaces,
+                recursion_limit,
+            )?;
+        }
+        Some(data)
+    }
+
+    /// Reads the data of a picture from `buffer`, for a picture that is part of another object
+    /// (`SkPictureData::CreateFromBuffer`, with `parseBuffer`). `None`, and the buffer is
+    /// invalid, if the data is invalid.
+    // Port of: src/core/SkPictureData.cpp#L556-L568 (chrome/m156), CreateFromBuffer, and
+    // src/core/SkPictureData.cpp#L590-L606 (chrome/m156), parseBuffer
+    pub(crate) fn create_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        version: u32,
+        registry: &FlattenableRegistry,
+    ) -> Option<PictureData> {
+        if !buffer.is_valid() {
+            return None;
+        }
+        let mut data = PictureData::default();
+        buffer.set_version(version);
+
+        while buffer.is_valid() {
+            let tag = buffer.read_uint();
+            if tag == EOF_TAG {
+                break;
+            }
+            let size = buffer.read_uint();
+            data.parse_buffer_tag(buffer, tag, size, registry);
+        }
+
+        // Check that we encountered required tags
+        if !buffer.validate(data.op_data.is_some()) {
+            // If we didn't build any opData, we are invalid. Even an EmptyPicture allocates the
+            // SkData for the ops (though its length may be zero).
+            return None;
         }
         Some(data)
     }
@@ -332,6 +476,8 @@ impl PictureData {
     /// Reads one section of the stream (`parseStreamTag`). An unknown tag is ignored, as it is in
     /// Skia.
     // Port of: src/core/SkPictureData.cpp#L298-L417 (chrome/m156), parseStreamTag
+    #[allow(clippy::too_many_arguments)] // mirrors parseStreamTag
+    #[allow(clippy::too_many_lines)] // one arm per tag, as the switch
     fn parse_stream_tag(
         &mut self,
         stream: &mut dyn Stream,
@@ -340,6 +486,8 @@ impl PictureData {
         version: u32,
         procs: &DeserialProcs,
         registry: &FlattenableRegistry,
+        top_level_typefaces: Option<&[Typeface]>,
+        recursion_limit: i32,
     ) -> Option<()> {
         let size = usize::try_from(size).ok()?;
         match tag {
@@ -375,16 +523,31 @@ impl PictureData {
                 }
             }
             PICTURE_TAG => {
-                // Nested pictures are not ported.
-                if size != 0 {
-                    return None;
+                debug_assert!(self.pictures.is_empty());
+                // A nested picture reads the typefaces of the top-level picture.
+                let top_level = top_level_typefaces.unwrap_or(&self.typefaces).to_vec();
+                for _ in 0..size {
+                    let pic = Picture::make_from_stream_priv(
+                        stream,
+                        Some(procs),
+                        registry,
+                        Some(&top_level),
+                        recursion_limit - 1,
+                    )?;
+                    self.pictures.push(pic);
                 }
             }
             BUFFER_SIZE_TAG => {
                 let bytes = read_exact(stream, size)?;
                 let mut buffer = ReadBuffer::with_deserial_procs(&bytes, procs.clone());
                 buffer.set_version(version);
-                buffer.set_typeface_array(self.typefaces.clone());
+                // .skp files <= v43 have typefaces serialized with each sub picture. Newer
+                // files serialize all typefaces with the top picture.
+                if self.typefaces.is_empty() {
+                    buffer.set_typeface_array(top_level_typefaces.unwrap_or(&[]).to_vec());
+                } else {
+                    buffer.set_typeface_array(self.typefaces.clone());
+                }
                 buffer.set_factory_names(self.factories.clone());
                 while buffer.available() > 0 && buffer.is_valid() {
                     let tag = buffer.read_uint();
@@ -400,9 +563,11 @@ impl PictureData {
         Some(())
     }
 
-    /// Reads one section of the buffer (`parseBufferTag`): paints and paths are read, the empty
-    /// sections of the other kinds are accepted, and anything else invalidates the buffer.
+    /// Reads one section of the buffer (`parseBufferTag`): paints, paths, text blobs, images and
+    /// nested pictures are read, the empty sections of the other kinds are accepted, and anything
+    /// else invalidates the buffer.
     // Port of: src/core/SkPictureData.cpp#L455-L535 (chrome/m156), parseBufferTag
+    #[allow(clippy::too_many_lines)] // one arm per tag, as the switch
     fn parse_buffer_tag(
         &mut self,
         buffer: &mut ReadBuffer<'_>,
@@ -474,8 +639,43 @@ impl PictureData {
                     self.images.push(image);
                 }
             }
+            READER_TAG => {
+                // Preflight check that we can initialize all data from the buffer
+                // before allocating it.
+                let Ok(count) = usize::try_from(size) else {
+                    buffer.validate(false);
+                    return;
+                };
+                if !buffer.validate_can_read_n(count, 1) {
+                    return;
+                }
+                let mut op_data = vec![0; count];
+                if !buffer.read_byte_array(&mut op_data) || !buffer.validate(self.op_data.is_none())
+                {
+                    return;
+                }
+                self.op_data = Some(op_data);
+            }
+            PICTURE_TAG => {
+                // `new_array_from_buffer`: the array must be empty, and each picture must read.
+                let Ok(count) = usize::try_from(size) else {
+                    buffer.validate(false);
+                    return;
+                };
+                if !buffer.validate(self.pictures.is_empty()) {
+                    return;
+                }
+                for _ in 0..count {
+                    let Some(pic) = Picture::make_from_buffer(buffer, registry) else {
+                        buffer.validate(false);
+                        self.pictures.clear();
+                        return;
+                    };
+                    self.pictures.push(pic);
+                }
+            }
             // The sections that are not ported: an empty one is fine, a full one is not.
-            SLUG_BUFFER_TAG | VERTICES_BUFFER_TAG => {
+            SLUG_BUFFER_TAG | VERTICES_BUFFER_TAG | DRAWABLE_TAG => {
                 buffer.validate(size == 0);
             }
             _ => {

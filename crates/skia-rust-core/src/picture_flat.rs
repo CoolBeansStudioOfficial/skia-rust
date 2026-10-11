@@ -36,6 +36,12 @@ pub(crate) mod draw_type {
     pub const CLIP_RRECT: u8 = 4;
     /// `DRAW_OVAL`.
     pub const DRAW_OVAL: u8 = 12;
+    /// `DRAW_PICTURE`.
+    pub const DRAW_PICTURE: u8 = 15;
+    /// `DRAW_PICTURE_MATRIX_PAINT`.
+    pub const DRAW_PICTURE_MATRIX_PAINT: u8 = 44;
+    /// `DRAW_ANNOTATION`.
+    pub const DRAW_ANNOTATION: u8 = 53;
     /// `DRAW_PAINT`.
     pub const DRAW_PAINT: u8 = 13;
     /// `DRAW_PATH`.

@@ -19,7 +19,11 @@
 //!   wraps caller pixels, as Skia); the surface's next draw detaches onto a copy
 //!   (`docs/design/pixels.md`), which replaces `onCopyOnWrite` and
 //!   `onRestoreBackingMutability`. The image is cached until then (`fCachedImage`).
-//! * `getCanvas` is `&mut self` and the canvas is created with the surface.
+//! * `getCanvas` is `&mut self` and the canvas is created with the surface. The canvas is shared
+//!   (`Rc<Canvas>`, [`Surface::shared_canvas`]) so that a canvas that wraps another, like
+//!   `SkOverdrawCanvas`, can hold the surface's canvas as Skia's `SkCanvas*`.
+//! * [`surfaces::null`](crate::surfaces::null) makes `SkNullSurface`: a surface that draws nothing
+//!   and has no pixels.
 //! * GPU surfaces, async readback, `characterize`, `wait`, capabilities and recorders are out of
 //!   scope.
 
@@ -36,6 +40,7 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::{IPoint, Point};
 use skia_rust_core::rect::{Contains, IRect};
 use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::size::ISize;
 use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::bitmap_device::BitmapDevice;
@@ -55,10 +60,12 @@ enum Target<'a> {
 #[derive(Debug)]
 pub struct Surface<'a> {
     base: Rc<SurfaceBase>,
-    canvas: Canvas,
+    canvas: Rc<Canvas>,
     info: ImageInfo,
     props: SurfaceProps,
     target: Option<Target<'a>>,
+    // `SkNullSurface`.
+    null: bool,
 }
 
 /// `kMaxTotalSize` (`SK_MaxS32`).
@@ -96,11 +103,35 @@ impl<'a> Surface<'a> {
         canvas.set_surface_base(Some(Rc::clone(&base)));
         Surface {
             base,
-            canvas,
+            canvas: Rc::new(canvas),
             info,
             props,
             target,
+            null: false,
         }
+    }
+
+    /// A surface that draws nothing (`SkNullSurface`, made by `SkSurfaces::Null`). `None` if a
+    /// dimension is less than 1.
+    // Port of: src/image/SkSurface_Null.cpp#L57-L63 (chrome/m156), with the canvas of
+    // `onNewCanvas` (`SkNoDrawCanvas`)
+    pub(crate) fn new_null(width: i32, height: i32) -> Option<Surface<'static>> {
+        if width < 1 || height < 1 {
+            return None;
+        }
+        let props = SurfaceProps::default();
+        let canvas = Canvas::new_no_pixels_irect(&IRect::from_wh(width, height), Some(&props));
+        let base = Rc::new(SurfaceBase::new());
+        canvas.set_surface_base(Some(Rc::clone(&base)));
+        Some(Surface {
+            base,
+            canvas: Rc::new(canvas),
+            // SkImageInfo::MakeUnknown(width, height)
+            info: ImageInfo::new_unknown(Some(ISize::new(width, height))),
+            props,
+            target: None,
+            null: true,
+        })
     }
 
     /// A surface with newly allocated, zeroed pixels (`SkSurfaces::Raster`); `row_bytes` of `None`
@@ -220,12 +251,23 @@ impl<'a> Surface<'a> {
         &self.canvas
     }
 
+    /// The canvas that draws into the surface, shared (`getCanvas`, for a canvas that wraps it,
+    /// like [`OverdrawCanvas`](crate::overdraw_canvas::OverdrawCanvas)).
+    #[must_use]
+    pub fn shared_canvas(&self) -> Rc<Canvas> {
+        Rc::clone(&self.canvas)
+    }
+
     /// A new surface compatible with this one (`makeSurface(info)`); a raster surface with the
-    /// same props.
-    // Port of: src/image/SkSurface_Raster.cpp#L96-L99 (chrome/m156)
+    /// same props, or a null surface for a null surface.
+    // Port of: src/image/SkSurface_Raster.cpp#L96-L99 and src/image/SkSurface_Null.cpp#L28-L30
+    // (chrome/m156)
     #[doc(alias = "makeSurface")]
     #[must_use]
     pub fn new_surface(&self, info: &ImageInfo) -> Option<Surface<'static>> {
+        if self.null {
+            return Surface::new_null(info.width(), info.height());
+        }
         Surface::new_raster(info, None, Some(&self.props))
     }
 
@@ -277,6 +319,10 @@ impl<'a> Surface<'a> {
         sampling: impl Into<SamplingOptions>,
         paint: Option<&Paint>,
     ) {
+        if self.null {
+            // SkNullSurface::onDraw
+            return;
+        }
         let image = self.canvas.with_root_bitmap(|bm| bm.as_image()).flatten();
         if let Some(image) = image {
             canvas.draw_image_with_sampling_options(image, offset, sampling, paint);
@@ -286,6 +332,10 @@ impl<'a> Surface<'a> {
     /// `SkSurface_Raster::onNewImageSnapshot`.
     // Port of: src/image/SkSurface_Raster.cpp#L112-L136 (chrome/m156)
     fn new_image_snapshot(&mut self, subset: Option<&IRect>) -> Option<Image> {
+        if self.null {
+            // SkNullSurface::onNewImageSnapshot
+            return None;
+        }
         let we_own_the_pixels = self.target.is_none();
         self.canvas.with_root_bitmap(|bitmap| {
             if let Some(subset) = subset {
@@ -349,7 +399,8 @@ impl<'a> Surface<'a> {
     // Port of: src/image/SkSurface.cpp#L193-L211 (chrome/m156)
     #[doc(alias = "writePixels")]
     pub fn write_pixels_from_pixmap(&mut self, src: &Pixmap<'_>, dst: impl Into<IPoint>) {
-        if src.addr().is_none() || src.width() <= 0 || src.height() <= 0 {
+        if self.null || src.addr().is_none() || src.width() <= 0 || src.height() <= 0 {
+            // (SkNullSurface::onWritePixels does nothing)
             return;
         }
 
