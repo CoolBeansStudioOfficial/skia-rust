@@ -9,18 +9,23 @@
 
 use std::sync::{Arc, Mutex};
 
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image::RequiredProperties;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::images::raster_from_bitmap;
 use skia_rust_core::size::ISize;
-use skia_rust_gpu::gpu::gpu_types::{Budgeted, Mipmapped, Protected, Renderable};
-use skia_rust_gpu::graphite::graphite_types::Volatile;
+use skia_rust_gpu::gpu::gpu_types::{Budgeted, Mipmapped, Origin, Protected, Renderable};
+use skia_rust_gpu::graphite::graphite_types::{InsertRecordingInfo, InsertStatus, Volatile};
+use skia_rust_gpu::graphite::image_factories::{promise_texture_from, texture_from_image};
 use skia_rust_gpu::graphite::resource::ResourceRef;
+use skia_rust_gpu::graphite::surface_graphite::Surface;
 use skia_rust_gpu::graphite::texture::Texture;
 use skia_rust_gpu::graphite::texture_proxy::TextureProxy;
+use skia_rust_gpu::graphite::texture_utils::PromiseTextureFulfillProc;
 
 use crate::{def_graphite_test_for_all_contexts, reporter_assert};
-
-// `GraphiteTextureTooLargeTest` and `GraphiteLazyTextureInvalidDimensions` of this file make
-// Graphite images, surfaces and promise images (G10d); they stay `todo`.
 
 def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context| {
     // Port of: tests/graphite/TextureProxyTest.cpp#L27-L200 (chrome/m156)
@@ -318,4 +323,96 @@ def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context
     // Clean up the backend textures.
     recorder.delete_backend_texture(&backend_texture);
     recorder.delete_backend_texture(&larger_backend_texture);
+});
+
+// Port of: tests/graphite/TextureProxyTest.cpp#L202-L221 (chrome/m156)
+def_graphite_test_for_all_contexts!(GraphiteTextureTooLargeTest, |reporter, context| {
+    let mut recorder = context.make_recorder(None);
+    let caps = context.wgpu_caps();
+    // Try to create a texture that is too large for the backend.
+    let dimensions = ISize {
+        width: caps.max_texture_size() + 1,
+        height: 1,
+    };
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_pixels_info(
+        &ImageInfo::new(dimensions, ColorType::RGBA8888, AlphaType::Premul, None),
+        None,
+    );
+    let raster_image = raster_from_bitmap(&bitmap).expect("a raster image");
+    let graphite_image =
+        texture_from_image(&recorder, &raster_image, RequiredProperties::default());
+    // Image creation should have failed.
+    reporter_assert!(reporter, graphite_image.is_none());
+    // Snapping should still succeed, no texture upload should actually be attempted.
+    reporter_assert!(reporter, recorder.snap().is_some());
+});
+
+// Port of: tests/graphite/TextureProxyTest.cpp#L223-L278 (chrome/m156)
+def_graphite_test_for_all_contexts!(GraphiteLazyTextureInvalidDimensions, |reporter, context| {
+    let mut recorder = context.make_recorder(None);
+    let max_texture_size = context.wgpu_caps().max_texture_size();
+    // Try to create textures with invalid dimensions.
+    let large_dimensions = ISize {
+        width: max_texture_size + 1,
+        height: 1,
+    };
+    let negative_dimensions = ISize {
+        width: -1,
+        height: -1,
+    };
+    for dimensions in [large_dimensions, negative_dimensions] {
+        let caps = context.wgpu_caps();
+        let image_info = ImageInfo::new(dimensions, ColorType::RGBA8888, AlphaType::Premul, None);
+        let texture_info = caps.get_default_sampled_texture_info(
+            image_info.color_type(),
+            Mipmapped::No,
+            Protected::No,
+            Renderable::No,
+        );
+        // The created BackendTexture should be invalid, so an invalid texture would be used to
+        // fulfill the promise image created later, if we were to attempt to draw it.
+        let backend_texture =
+            recorder.create_backend_texture(image_info.dimensions(), &texture_info);
+        // `FulfillContext`: the fulfill proc hands out the (invalid) backend texture.
+        let fulfill_context = backend_texture.clone();
+        reporter_assert!(reporter, !backend_texture.is_valid());
+
+        // Drawing should still succeed, as no image draw should actually be attempted with this
+        // texture.
+        let surface_image_info =
+            ImageInfo::new((1, 1), ColorType::RGBA8888, AlphaType::Premul, None);
+        let surface =
+            Surface::render_target(&recorder, &surface_image_info, Mipmapped::No, None, "")
+                .expect("a render target surface");
+        let fulfill: PromiseTextureFulfillProc =
+            Arc::new(move || (fulfill_context.clone(), None));
+        let promise_image = promise_texture_from(
+            &recorder,
+            image_info.dimensions(),
+            &texture_info,
+            image_info.color_info(),
+            Origin::TopLeft,
+            Volatile::No,
+            fulfill,
+            None,
+        );
+        // A null promise image (invalid dimensions) draws nothing (`RETURN_ON_NULL(image)`).
+        if let Some(promise_image) = &promise_image {
+            surface
+                .canvas()
+                .draw_image(promise_image, (0.0, 0.0), None);
+        }
+
+        let recording = recorder.snap();
+        let status = match recording {
+            Some(mut recording) => {
+                context.insert_recording(InsertRecordingInfo::new(&mut recording))
+            }
+            None => InsertStatus::InvalidRecording,
+        };
+        reporter_assert!(reporter, status == InsertStatus::Success);
+        // Clean up backend texture
+        context.delete_backend_texture(&backend_texture);
+    }
 });
