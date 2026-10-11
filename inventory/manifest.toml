@@ -43678,7 +43678,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L900-L933"
 module = "codec"
-status = "passing"
+status = "todo"
+reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
 span_hash = "471fbafe3a9de2084e462b789053ce5aac435865cff51a8f0d32cc36471f8da7"
 
 [[test]]
@@ -43687,7 +43688,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L982-L1047"
 module = "codec"
-status = "passing"
+status = "todo"
+reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
 span_hash = "060a0c5afe2acc84397d0d861f06223452e20139435c4f00990c1f830aa8cb88"
 
 [[test]]
@@ -43696,7 +43698,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L938-L978"
 module = "codec"
-status = "passing"
+status = "todo"
+reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
 span_hash = "e8f1e0fb849c3d6b9344caf28cb9f92e7d3a78aff7f68977d9de86297daf89ff"
 
 [[test]]
