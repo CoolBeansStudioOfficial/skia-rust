@@ -16455,8 +16455,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L771-L771"
 module = "raster"
-status = "todo"
-reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
+status = "passing"
 span_hash = "c92a3a6925413b25b011751846fdf85cf77b6adf7d82ecfcc5cdf8d9f6e965ab"
 
 [[test]]
@@ -16465,8 +16464,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L676-L676"
 module = "raster"
-status = "todo"
-reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
+status = "passing"
 span_hash = "465a4037c5bee5b7922a5a72155a57a6313aa493558380d0605741780a166d98"
 
 [[test]]
@@ -16484,8 +16482,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L507-L513"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "050520a4ae95bd2322529cd8884575c3ca7e4d89f960bcfed9a58f757e69d5f0"
 
 [[test]]
@@ -16494,8 +16491,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L515-L521"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "b077c0f1394e2ac07d5799531a45dec38b1ca7bfa1809f153992f9917130025e"
 
 [[test]]
@@ -16504,8 +16500,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L523-L529"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "a38529b2ccf21bffc37dcee2b6176743b6617f25f32f4a218369923241423ca1"
 
 [[test]]
@@ -16514,8 +16509,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L531-L537"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "69dea62989952f64a3a991dabfd8bfe440dd8150bd82537ba1d1479021ed1939"
 
 [[test]]
@@ -16524,8 +16518,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L539-L545"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "ea8d5b9cfa4a3cc414c744780d0e59ef1f4a0e48da4e66943a497e86a85d99ea"
 
 [[test]]
@@ -16535,7 +16528,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L483-L489"
 module = "codec"
 status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+reason = "YUV[A]420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
 span_hash = "c20c68c8ff2779eb0ecbd4fd15157002c23a2d63b9ae7a23fbf4e5fa5d58da04"
 
 [[test]]
@@ -16545,7 +16538,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L491-L497"
 module = "codec"
 status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+reason = "YUV420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
 span_hash = "59cb3f4b6de73888618938253e0b6da6b3d2d0679009c532000efeda1ced7ead"
 
 [[test]]
@@ -16554,8 +16547,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L499-L505"
 module = "codec"
-status = "todo"
-reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
+status = "passing"
 span_hash = "6aa09cbd3de950255007f8b179bee644c6e94255bfb9e345e8c703dbf64db457"
 
 [[test]]
