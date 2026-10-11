@@ -17,6 +17,7 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
+use skia_rust_core::gainmap_info::GainmapInfo;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::{Matrix, ScaleToFit};
 use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
@@ -571,6 +572,25 @@ pub trait CodecImpl: Send {
     fn on_get_encoded_data(&mut self, base: &mut CodecBase<'_>) -> Option<Data> {
         base.encoded_data()
     }
+
+    /// Port of the virtual `onGetGainmapInfo(SkGainmapInfo*)`: whether the image has a gainmap,
+    /// and its parameters when `info` is given. Formats without gainmaps answer false.
+    // Port of: include/codec/SkCodec.h#L848 (chrome/m156)
+    fn on_get_gainmap_info(&self, _info: Option<&mut GainmapInfo>) -> bool {
+        false
+    }
+
+    /// Port of the virtual `onGetGainmapCodec(SkGainmapInfo*, std::unique_ptr<SkCodec>*)`: whether
+    /// the image has a gainmap, its parameters, and, when `want_codec` is set, the codec of the
+    /// gainmap image. Formats without gainmaps answer `(false, None)`.
+    // Port of: include/codec/SkCodec.h#L847 (chrome/m156)
+    fn on_get_gainmap_codec(
+        &mut self,
+        _info: Option<&mut GainmapInfo>,
+        _want_codec: bool,
+    ) -> (bool, Option<Codec<'static>>) {
+        (false, None)
+    }
 }
 
 /// Port of `SkCodec::FrameInfo`: what a client needs to know about one frame of an animation.
@@ -792,6 +812,25 @@ impl<'a> Codec<'a> {
     #[must_use]
     pub fn encoded_info(&self) -> &EncodedInfo {
         &self.base.encoded_info
+    }
+
+    /// Whether the image has a gainmap, and its parameters when `info` is given
+    /// (`onGetGainmapInfo`, reached through `SkAndroidCodec::getAndroidGainmap`).
+    // Port of: include/codec/SkCodec.h#L848 (chrome/m156), the caller of the virtual hook
+    pub(crate) fn get_gainmap_info(&self, info: Option<&mut GainmapInfo>) -> bool {
+        self.imp.on_get_gainmap_info(info)
+    }
+
+    /// Whether the image has a gainmap, its parameters, and the codec of the gainmap image when
+    /// `want_codec` is set (`onGetGainmapCodec`, reached through
+    /// `SkAndroidCodec::getGainmapAndroidCodec`).
+    // Port of: include/codec/SkCodec.h#L847 (chrome/m156), the caller of the virtual hook
+    pub(crate) fn get_gainmap_codec(
+        &mut self,
+        info: Option<&mut GainmapInfo>,
+        want_codec: bool,
+    ) -> (bool, Option<Codec<'static>>) {
+        self.imp.on_get_gainmap_codec(info, want_codec)
     }
 
     /// Port of `SkCodec::getScanlineOrder`.

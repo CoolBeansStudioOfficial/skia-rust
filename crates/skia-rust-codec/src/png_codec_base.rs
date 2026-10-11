@@ -3,8 +3,9 @@
 // Port of: src/codec/SkPngCodecBase.h (chrome/m156), src/codec/SkPngCodecBase.cpp (chrome/m156)
 // Ported from: src/codec/SkPngCodecBase.{h,cpp}
 //
-// Not ported yet: `onDecodeGainmap`, `onGetGainmapInfo` and `onGetGainmapCodec` (gainmap decoding
-// waits for core's gainmap info, codecs.md C13).
+// The gainmap hooks (`onGetGainmapInfo`, `onGetGainmapCodec`) are ported here. The gainmap codec
+// is decoded with `png_codec::make_from_stream`, without the client's chunk reader (see
+// `get_gainmap_codec`).
 
 //! The state and the row transforms that the PNG decoders share: the swizzler or colour transform
 //! for each row, the palette colour table, and the storage for colour-transformed rows.
@@ -12,13 +13,16 @@
 use std::sync::{Arc, Mutex};
 
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::gainmap_info::GainmapInfo;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::rect::IRect;
+use skia_rust_core::stream::MemoryStream;
 use skia_rust_libpng::PngColor;
 use skia_rust_skcms::{IccProfile, PixelFormat};
 
-use crate::codec::{CodecBase, Options, Result, ZeroInitialized};
+use crate::codec::{Codec, CodecBase, Options, Result, ZeroInitialized};
 use crate::codec_priv::{
     pack_argb_as_bgra, pack_argb_as_rgba, premultiply_argb_as_bgra, premultiply_argb_as_rgba,
 };
@@ -63,6 +67,12 @@ pub(crate) struct PngCodecBase {
     pub(crate) dst_row_size: usize,
     pub(crate) dst_info_of_previous_color_table: Option<ImageInfo>,
     pub(crate) chunk_reader: Arc<Mutex<PngCompositeChunkReader>>,
+    /// The encoded gainmap image (the `gdAT` chunk), taken from the chunk reader when the codec
+    /// was made (`fGainmapStream`).
+    pub(crate) gainmap_stream: Option<Vec<u8>>,
+    /// The gainmap parameters (the `gmAP` chunk), taken from the chunk reader when the codec was
+    /// made (`fGainmapInfo`).
+    pub(crate) gainmap_info: Option<GainmapInfo>,
 }
 
 // Port of: src/codec/SkPngCodecBase.cpp#L17-L22 (chrome/m156) and SkCodecPriv.h (IsRGBA). The
@@ -163,7 +173,57 @@ impl PngCodecBase {
             dst_row_size: 0,
             dst_info_of_previous_color_table: None,
             chunk_reader,
+            gainmap_stream: None,
+            gainmap_info: None,
         }
+    }
+
+    // Port of: src/codec/SkPngCodecBase.cpp#L445-L454 (chrome/m156), `onGetGainmapInfo`.
+    pub(crate) fn get_gainmap_info(&self, info: Option<&mut GainmapInfo>) -> bool {
+        let Some(stored) = &self.gainmap_info else {
+            return false;
+        };
+        if let Some(info) = info {
+            *info = stored.clone();
+        }
+        true
+    }
+
+    // Port of: src/codec/SkPngCodecBase.cpp#L400-L443 (chrome/m156), `onGetGainmapCodec`.
+    //
+    // Deviation: Skia decodes the gainmap with the client's chunk reader (`fPngChunkReader`). The
+    // client's reader is a `Box`, which cannot be shared with the gainmap codec, so the gainmap
+    // codec reads its chunks without it. The gainmap's own metadata is unaffected.
+    pub(crate) fn get_gainmap_codec(
+        &self,
+        info: Option<&mut GainmapInfo>,
+        want_codec: bool,
+    ) -> (bool, Option<Codec<'static>>) {
+        let Some(stream) = &self.gainmap_stream else {
+            return (false, None);
+        };
+        if !is_png(stream) {
+            return (false, None);
+        }
+        // The gainmap information lives on the gainmap image itself, so the gainmap codec is made
+        // first, and then checked for a metadata chunk.
+        let Ok(codec) = crate::png_codec::make_from_stream(MemoryStream::make_copy(stream)) else {
+            return (false, None);
+        };
+        let mut scratch = GainmapInfo::default();
+        let info = info.unwrap_or(&mut scratch);
+        let has_info = codec.get_gainmap_info(Some(info));
+        if has_info && want_codec {
+            // The ISO gainmap payload does not contain the actual alternative image primaries,
+            // so the colour space comes from the ICC profile stored on the gainmap.
+            if info.gainmap_math_color_space.is_some()
+                && let Some(color_space) = codec.encoded_info().profile().and_then(ColorSpace::make)
+            {
+                info.gainmap_math_color_space = Some(color_space);
+            }
+            return (true, Some(codec));
+        }
+        (has_info, None)
     }
 
     // Port of: src/codec/SkPngCodecBase.cpp#L125-L136 (SkPngCodecBase::initializeXforms, the

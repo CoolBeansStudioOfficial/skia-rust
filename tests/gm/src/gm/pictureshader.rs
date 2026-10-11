@@ -273,17 +273,14 @@ impl GM for PictureShaderGm {
 
 // Port of: gm/pictureshader.cpp#L205-L207 (chrome/m156), DEF_GM registrations
 crate::def_gm!(
-    #[ignore = "565/f16 mismatch: see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"]
     PictureShaderGm_50_100 = "PictureShaderGM(50, 100)",
     PictureShaderGm::new(50.0, 100.0, false, 1.0)
 );
 crate::def_gm!(
-    #[ignore = "565/f16 mismatch: see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"]
     PictureShaderGm_50_100_true = "PictureShaderGM(50, 100, true)",
     PictureShaderGm::new(50.0, 100.0, true, 1.0)
 );
 crate::def_gm!(
-    #[ignore = "565/f16 mismatch: see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"]
     PictureShaderGm_50_100_false_025 = "PictureShaderGM(50, 100, false, 0.25f)",
     PictureShaderGm::new(50.0, 100.0, false, 0.25)
 );
@@ -327,7 +324,7 @@ crate::def_simple_gm!(tiled_picture_shader, canvas, 400, 400, {
 
 // Port of: gm/pictureshader.cpp#L239-L306 (chrome/m156), pictureshader_persp
 crate::def_simple_gm!(
-    #[ignore = "f16 mismatch: see notes/gm_pictureshader_cpp_pictureshader_persp.md"]
+    #[ignore = "f16 mismatch from host libm tanf (glibc vs UCRT): see notes/gm_pictureshader_cpp_pictureshader_persp.md"]
     pictureshader_persp,
     canvas,
     215,
