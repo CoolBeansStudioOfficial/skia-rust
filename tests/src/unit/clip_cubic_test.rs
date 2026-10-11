@@ -7,10 +7,10 @@
 
 use crate::{def_test, reporter_assert};
 use skia_rust_core::bitmap::Bitmap;
-use skia_rust_core::float_bits::bits_to_float;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::cubic_clipper::CubicClipper;
+use skia_rust_core::float_bits::bits_to_float;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
@@ -226,43 +226,43 @@ def_test!(test_fuzz_crbug_698714, |_reporter| {
     let mut paint = Paint::default();
     paint.set_anti_alias(true);
     let mut builder = PathBuilder::new();
-    builder.move_to((bits_to_float(0x00000000), bits_to_float(0x00000000))); // 0,0
-    builder.line_to((bits_to_float(0x43434343), bits_to_float(0x43430143))); //195.263f, 195.005f
-    builder.line_to((bits_to_float(0x43434343), bits_to_float(0x43434343))); //195.263f, 195.263f
-    builder.line_to((bits_to_float(0xb5434343), bits_to_float(0x434300be))); //-7.2741e-07f, 195.003f
+    builder.move_to((bits_to_float(0x0000_0000), bits_to_float(0x0000_0000))); // 0,0
+    builder.line_to((bits_to_float(0x4343_4343), bits_to_float(0x4343_0143))); //195.263f, 195.005f
+    builder.line_to((bits_to_float(0x4343_4343), bits_to_float(0x4343_4343))); //195.263f, 195.263f
+    builder.line_to((bits_to_float(0xb543_4343), bits_to_float(0x4343_00be))); //-7.2741e-07f, 195.003f
     // 195.263f, 195.263f, -1.16387e-05f, 3.58641e-38f, 3.85088e-29f,1.86082e-39f
     builder.cubic_to(
-        (bits_to_float(0x43434343), bits_to_float(0x43434341)),
-        (bits_to_float(0xb74343bd), bits_to_float(0x01434343)),
-        (bits_to_float(0x10434343), bits_to_float(0x00144332)),
+        (bits_to_float(0x4343_4343), bits_to_float(0x4343_4341)),
+        (bits_to_float(0xb743_43bd), bits_to_float(0x0143_4343)),
+        (bits_to_float(0x1043_4343), bits_to_float(0x0014_4332)),
     );
     // 4.11823e-38f, 195.263f, 195.263f, 195.263f, -7.2741e-07f, 195.263f
     builder.cubic_to(
-        (bits_to_float(0x016037c0), bits_to_float(0x43434343)),
-        (bits_to_float(0x43434343), bits_to_float(0x43434343)),
-        (bits_to_float(0xb5434343), bits_to_float(0x43434343)),
+        (bits_to_float(0x0160_37c0), bits_to_float(0x4343_4343)),
+        (bits_to_float(0x4343_4343), bits_to_float(0x4343_4343)),
+        (bits_to_float(0xb543_4343), bits_to_float(0x4343_4343)),
     );
     // 195.263f, 195.263f, -1.16387e-05f, 3.58641e-38f, 195.263f, -2
     builder.cubic_to(
-        (bits_to_float(0x43434344), bits_to_float(0x43434341)),
-        (bits_to_float(0xb74343bd), bits_to_float(0x01434343)),
-        (bits_to_float(0x43434343), bits_to_float(0xc0000014)),
+        (bits_to_float(0x4343_4344), bits_to_float(0x4343_4341)),
+        (bits_to_float(0xb743_43bd), bits_to_float(0x0143_4343)),
+        (bits_to_float(0x4343_4343), bits_to_float(0xc000_0014)),
     );
     // -5.87228e+06f, 3.7773e-07f, 3.60231e-13f, -6.64511e+06f,2.77692e-15f, 2.48803e-15f
     builder.cubic_to(
-        (bits_to_float(0xcab33535), bits_to_float(0x34cacaca)),
-        (bits_to_float(0x2acacaca), bits_to_float(0xcacacae3)),
-        (bits_to_float(0x27481927), bits_to_float(0x27334805)),
+        (bits_to_float(0xcab3_3535), bits_to_float(0x34ca_caca)),
+        (bits_to_float(0x2aca_caca), bits_to_float(0xcaca_cae3)),
+        (bits_to_float(0x2748_1927), bits_to_float(0x2733_4805)),
     );
-    builder.line_to((bits_to_float(0xb5434343), bits_to_float(0x43434343))); //-7.2741e-07f, 195.263f
+    builder.line_to((bits_to_float(0xb543_4343), bits_to_float(0x4343_4343))); //-7.2741e-07f, 195.263f
     // 195.263f, 195.263f, -1.16387e-05f, 195.212f, 195.263f, -2
     builder.cubic_to(
-        (bits_to_float(0x43434343), bits_to_float(0x43434341)),
-        (bits_to_float(0xb74343b9), bits_to_float(0x43433643)),
-        (bits_to_float(0x43434343), bits_to_float(0xc0000014)),
+        (bits_to_float(0x4343_4343), bits_to_float(0x4343_4341)),
+        (bits_to_float(0xb743_43b9), bits_to_float(0x4343_3643)),
+        (bits_to_float(0x4343_4343), bits_to_float(0xc000_0014)),
     );
-    builder.line_to((bits_to_float(0xc7004343), bits_to_float(0x27480527))); //-32835.3f, 2.77584e-15f
-    builder.line_to((bits_to_float(0x00000000), bits_to_float(0x00000000))); // 0,0
+    builder.line_to((bits_to_float(0xc700_4343), bits_to_float(0x2748_0527))); //-32835.3f, 2.77584e-15f
+    builder.line_to((bits_to_float(0x0000_0000), bits_to_float(0x0000_0000))); // 0,0
     builder.close();
     canvas.clip_rect(Rect::from_ltrb(0.0, 0.0, 65.0, 202.0), None, None);
     canvas.draw_path(&builder.detach(), &paint);
@@ -287,8 +287,14 @@ def_test!(cubic_scan_error_crbug_844457_and_845489, |_reporter| {
     // May need to define SK_RASTERIZE_EVEN_ROUNDING to trigger the need for this test
     builder.move_to((-30.0 / 64.0_f32, -31.0 / 64.0_f32 + 1.0 / 256.0_f32));
     builder.cubic_to(
-        (-31.0 / 64.0_f32 + 1.0 / 256.0_f32, -31.0 / 64.0_f32 + 1.0 / 256.0_f32),
-        (-31.0 / 64.0_f32 + 1.0 / 256.0_f32, -31.0 / 64.0_f32 + 1.0 / 256.0_f32),
+        (
+            -31.0 / 64.0_f32 + 1.0 / 256.0_f32,
+            -31.0 / 64.0_f32 + 1.0 / 256.0_f32,
+        ),
+        (
+            -31.0 / 64.0_f32 + 1.0 / 256.0_f32,
+            -31.0 / 64.0_f32 + 1.0 / 256.0_f32,
+        ),
         (-31.0 / 64.0_f32 + 1.0 / 256.0_f32, 100.0),
     );
     builder.line_to((100.0, 100.0));

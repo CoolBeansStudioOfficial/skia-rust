@@ -20,14 +20,14 @@ use crate::{def_test, errorf, reporter_assert};
 
 // Port of: tests/ImageGeneratorOrientationTest.cpp#L26-L30 (chrome/m156), nearly_equal
 fn nearly_equal(a: Color4f, b: Color4f) -> bool {
+    // Tolerance from the C++ test itself; kept as is.
+    const K_TOL: f32 = 0.02;
     let d = V3 {
         x: a.r - b.r,
         y: a.g - b.g,
         z: a.b - b.b,
     }
     .length();
-    // Tolerance from the C++ test itself; kept as is.
-    const K_TOL: f32 = 0.02;
     d <= K_TOL
 }
 
@@ -48,10 +48,9 @@ def_test!(ImageGeneratorOrientationTest, |reporter| {
         };
 
         // SkCodecImageGenerator::MakeFromEncodedCodec
-        let Some(mut generator) = CodecImageGenerator::make_from_encoded_codec(
-            Data::new_copy(&data),
-            None,
-        ) else {
+        let Some(mut generator) =
+            CodecImageGenerator::make_from_encoded_codec(Data::new_copy(&data), None)
+        else {
             reporter_assert!(reporter, false, "generator for {path}");
             continue;
         };
@@ -117,7 +116,10 @@ def_test!(ImageGeneratorOrientationTest, |reporter| {
             errorf!(
                 reporter,
                 "Bitmaps do not have the same dimentions.\n\tgenBitmap: ({}, {})\tcodecBitmap: ({}, {})",
-                c.width, c.height, g.width, g.height
+                c.width,
+                c.height,
+                g.width,
+                g.height
             );
         }
         for k in 0..codec_bitmap.width() {

@@ -29829,7 +29829,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L547-L566"
 module = "core"
 status = "todo"
-reason = "needs SkCanvasStack (SkNWayCanvas) and SkCanvas subclassing (LifeLineCanvas): not ported"
+reason = "needs SkCanvasStack (SkNWayCanvas-based) and SkCanvas subclassing (LifeLineCanvas), which are not on main"
 span_hash = "aefb78412dea48269953b9bf2d4ccdf28a24fa45a0fbba6acfc4f26c9ff6352b"
 
 [[test]]
@@ -29924,7 +29924,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L518-L544"
 module = "core"
 status = "todo"
-reason = "needs SkNWayCanvas and SkCanvas subclassing (LifeLineCanvas): not ported"
+reason = "needs SkNWayCanvas (SkCanvas subclass forwarding to a list of canvases), which is not on main"
 span_hash = "3019540f28bbff2b2a987546491216be8a010ac6eed35a24f57b3bcbbfaa7ec2"
 
 [[test]]
@@ -35989,7 +35989,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L853-L868"
 module = "core"
 status = "todo"
-reason = "its last case is create_codec_image (SkPngEncoder + DeferredFromEncodedData; codecs not ported)"
+reason = "its create_rasterproc_image case needs RasterFromPixmap to share the pixels and call the release proc when the image is destroyed; images::raster_from_pixmap copies and releases at once"
 span_hash = "dc5eb71bc1e630f40cfee1a4495f722e78aa31ada17a4c3b5e86210af5e58df0"
 
 [[test]]
@@ -36009,7 +36009,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L899-L914"
 module = "core"
 status = "todo"
-reason = "its last case is create_codec_image (SkPngEncoder + DeferredFromEncodedData; codecs not ported)"
+reason = "its create_rasterproc_image case needs RasterFromPixmap to share the pixels and call the release proc when the image is destroyed; images::raster_from_pixmap copies and releases at once"
 span_hash = "a5d92dfd786abb78d84edf4474dac23f089e27a116e1a48ecba7c7b804e5a8ff"
 
 [[test]]
@@ -36029,7 +36029,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L789-L804"
 module = "core"
 status = "todo"
-reason = "its last case is create_codec_image (SkPngEncoder + DeferredFromEncodedData; codecs not ported)"
+reason = "its create_rasterproc_image case needs RasterFromPixmap to share the pixels and call the release proc when the image is destroyed; images::raster_from_pixmap copies and releases at once"
 span_hash = "110916350685e063207ed53d7767c69fc8ebc2cf258a42fa4de60e5e32db5e28"
 
 [[test]]
@@ -36049,7 +36049,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1505-L1520"
 module = "core"
 status = "todo"
-reason = "Needs SkPngEncoder (the encoder is not ported) for the encoded-image half of the test; the raster half could run through skia_rust_raster::pixmap_draw::ImageScalePixels, but the test is one case and cannot be split."
+reason = "needs SkImage::scalePixels with its caching hint (kDisallow then kAllow); pixmap_draw::scale_pixels has no hint parameter"
 span_hash = "89a3e10417db669347142fe7447ed1c098f7b55ed27c04f53306430c8baf83ed"
 
 [[test]]
@@ -39692,7 +39692,7 @@ macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4780-L4873"
 module = "core"
 status = "todo"
-reason = "needs the ~70 static helpers that tests/PathTest.cpp calls (test_isLine, test_convexity, test_path_to_region, test_dump, ...); none is ported yet in tests/src/unit/path_test.rs"
+reason = "needs the ~70 static helpers of PathTest.cpp that the DEF_TEST calls and that path_test.rs does not have yet (test_fuzz_crbug_647922 ... test_bounds_crbug_513799, lines 62-4740); test_dump needs SkPath::dump, which is not on main"
 span_hash = "abb46f91fa83ef0918a1918563a1ce8dce2e62a52922d0a6da720fd5612aed29"
 
 [[test]]
@@ -39846,7 +39846,7 @@ macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4891-L4911"
 module = "core"
 status = "todo"
-reason = "needs SkMakeNullCanvas, which is SkNWayCanvas(0, 0) (include/utils/SkNullCanvas.h); SkNWayCanvas is not ported"
+reason = "needs SkMakeNullCanvas, which is SkNWayCanvas(0, 0) (include/utils/SkNullCanvas.h); SkNWayCanvas is not on main"
 span_hash = "fce26fa9ead1e78b9df98fb1f64f48b5457bdd0e394baccec13f90a585c32b9e"
 
 [[test]]
@@ -40036,7 +40036,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L936-L1082"
 module = "core"
 status = "todo"
-reason = "needs SkDrawable (not ported)"
+reason = "needs SkCanvas::drawDrawable (not on main: only glyph drawables draw through the canvas) and SkDrawable op recording for approximateOpCount"
 span_hash = "d1fa0e3dc6ee446e34cffe5b577d80a264b7ee43468d88011475bc145035088c"
 
 [[test]]
@@ -40064,7 +40064,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L1084-L1153"
 module = "core"
 status = "todo"
-reason = "needs SkDrawable (not ported) for its second half"
+reason = "needs SkCanvas::drawDrawable (not on main) for its second half, and SkDrawable op recording for approximateOpCount"
 span_hash = "b2b5fbc366357ad344a46298a1c6fe72265ba8585ef8bece181c1e347f7456ae"
 
 [[test]]
@@ -42585,7 +42585,7 @@ macro = "DEF_TEST"
 source = "tests/SerialProcsTest.cpp#L201-L230"
 module = "core"
 status = "todo"
-reason = "portable, not ported in sweep 3: needs the make_pic and test_pictures helpers of SerialProcsTest.cpp"
+reason = "needs the SerialProcs picture proc (fPictureProc, the PICTURE section and DRAW_PICTURE in picture serialization), SkPicture::makeShader (picture shader, not on main) and the make_pic/test_pictures helpers"
 span_hash = "84a6468ea2d37f6733878a60d8b657207610b0d0bbd4da23b5ddc384537f517a"
 
 [[test]]
@@ -42604,7 +42604,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1105-L1135"
 module = "core"
 status = "todo"
-reason = "needs SkCanvas::drawAnnotation and SkAnnotateRectWithURL, SkAnnotateNamedDestination, SkAnnotateLinkToDestination (SkAnnotation, SkAnnotationKeys), not ported; records.rs has no DrawAnnotation"
+reason = "Canvas::draw_annotation is on main, but picture serialization still returns None for DRAW_ANNOTATION (notes/picture-serialization.md)"
 span_hash = "dfa829a590c9aa506e2d6eab9e60d3a0ed0e9915fe83bc32b07a30d0185d4bcf"
 
 [[test]]
@@ -49174,7 +49174,7 @@ macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L1304-L1307"
 module = "core"
 status = "todo"
-reason = "needs SkOverdrawCanvas and SkOverdrawColorFilter: not ported"
+reason = "needs SkOverdrawCanvas, which is not on main (only the overdraw color filter is)"
 span_hash = "d52b42e066459557348cd642608266d67da889dcc2cfc9ada57b736dac94cb7d"
 
 [[test]]
@@ -49418,7 +49418,7 @@ macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L1320-L1330"
 module = "core"
 status = "todo"
-reason = "needs SkSurfaces::Null (SkNullSurface): not ported"
+reason = "needs SkSurfaces::Null (SkNullSurface), which is not on main"
 span_hash = "f9849cb9ceed7786cb68017615ac050040226f866c14fdd45fcb9b2f1b56d3a4"
 
 [[test]]

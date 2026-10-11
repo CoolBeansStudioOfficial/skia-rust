@@ -5,6 +5,8 @@
 
 #![cfg(test)]
 
+use std::fmt::Write as _;
+
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{Canvas, SaveLayerRec};
@@ -37,9 +39,9 @@ impl Drawer {
     // Port of: tests/RecordingXfermodeTest.cpp#L22-L30 (chrome/m156), Drawer::Drawer
     fn new() -> Self {
         let mut surf = surfaces::raster_n32_premul((100, 100)).expect("surface");
-        surf.canvas().clear(0xffffffffu32);
+        surf.canvas().clear(0xffff_ffff_u32);
         let mut circle_paint = Paint::default();
-        circle_paint.set_color(Color::new(0xff000000));
+        circle_paint.set_color(Color::new(0xff00_0000));
         surf.canvas()
             .draw_circle(Point::new(50.0, 50.0), 50.0, &circle_paint);
         let circle_image = surf.image_snapshot().expect("snapshot");
@@ -55,15 +57,17 @@ impl Drawer {
     }
 
     // Port of: tests/RecordingXfermodeTest.cpp#L34-L56 (chrome/m156), Drawer::draw
+    // SkIntToScalar of the image size is an int-to-float cast, exact for these sizes.
+    #[allow(clippy::cast_precision_loss)]
     fn draw(&self, canvas: &Canvas, clip_rect: &Rect, mode: BlendMode) {
         let mut green_paint = Paint::default();
-        green_paint.set_color(Color::new(0xff008000));
+        green_paint.set_color(Color::new(0xff00_8000));
         let mut black_paint = Paint::default();
-        black_paint.set_color(Color::new(0xff000000));
+        black_paint.set_color(Color::new(0xff00_0000));
         let mut white_paint = Paint::default();
-        white_paint.set_color(Color::new(0xffffffff));
+        white_paint.set_color(Color::new(0xffff_ffff));
         let mut layer_paint = Paint::default();
-        layer_paint.set_color(Color::new(0xff000000));
+        layer_paint.set_color(Color::new(0xff00_0000));
         layer_paint.set_blend_mode(mode);
         let canvas_rect = Rect::from_wh(
             self.image_info.width() as f32,
@@ -71,7 +75,7 @@ impl Drawer {
         );
 
         canvas.clip_rect(clip_rect, None, None);
-        canvas.clear(0xff000000u32);
+        canvas.clear(0xff00_0000_u32);
 
         canvas.save_layer(&SaveLayerRec::default().paint(&black_paint));
         canvas.draw_rect(canvas_rect, &green_paint);
@@ -113,7 +117,7 @@ impl RecordingStrategy for BitmapBackedCanvasStrategy {
     fn record_and_replay(&mut self, drawer: &Drawer, into_clip: &Rect, mode: BlendMode) -> &Bitmap {
         {
             let canvas = Canvas::from_bitmap(&mut self.bitmap, None).expect("canvas");
-            canvas.clear(0xffffffffu32);
+            canvas.clear(0xffff_ffff_u32);
             // Note that the scene is drawn just into the clipped region!
             canvas.clip_rect(into_clip, None, None);
             drawer.draw(&canvas, into_clip, mode); // Shouild be canvas-wide...
@@ -147,6 +151,8 @@ impl PictureStrategy {
 
 impl RecordingStrategy for PictureStrategy {
     // Port of: tests/RecordingXfermodeTest.cpp#L99-L114 (chrome/m156), recordAndReplay
+    // SkIntToScalar of the picture size is an int-to-float cast, exact for these sizes.
+    #[allow(clippy::cast_precision_loss)]
     fn record_and_replay(&mut self, drawer: &Drawer, into_clip: &Rect, mode: BlendMode) -> &Bitmap {
         let mut recorder = PictureRecorder::new();
         let canvas_rect = Rect::from_wh(self.width as f32, self.height as f32);
@@ -161,7 +167,7 @@ impl RecordingStrategy for PictureStrategy {
 
         {
             let replay_canvas = Canvas::from_bitmap(&mut self.bitmap, None).expect("canvas");
-            replay_canvas.clear(0xffffffffu32);
+            replay_canvas.clear(0xffff_ffff_u32);
             replay_canvas.clip_rect(into_clip, None, None);
             picture.playback(&replay_canvas);
         }
@@ -183,13 +189,13 @@ def_test!(SkRecordingAccuracyXfermode, |reporter| {
         let clip = Rect::from_xywh(100.0, 0.0, 100.0, 100.0);
 
         let golden_bm = golden.record_and_replay(&drawer, &clip, mode);
-        let golden_pm = golden_bm.pixmap();
-        let golden_bytes = golden_pm.addr().unwrap_or(&[]);
+        let golden_px = golden_bm.pixmap();
+        let golden_bytes = golden_px.addr().unwrap_or(&[]);
         let golden_size = golden_bm.compute_byte_size();
 
         let picture_bm = picture.record_and_replay(&drawer, &clip, mode);
-        let picture_pm = picture_bm.pixmap();
-        let picture_bytes = picture_pm.addr().unwrap_or(&[]);
+        let picture_px = picture_bm.pixmap();
+        let picture_bytes = picture_px.addr().unwrap_or(&[]);
         let picture_size = picture_bm.compute_byte_size();
 
         reporter_assert!(reporter, golden_size == picture_size);
@@ -197,11 +203,12 @@ def_test!(SkRecordingAccuracyXfermode, |reporter| {
         // The pixel arrays should match.
         if golden_bytes.get(..golden_size) != picture_bytes.get(..picture_size) {
             num_errors += 1;
-            errors.push_str(&format!(
-                "For SkBlendMode {} {}:    SkPictureRecorder bitmap is wrong\n",
+            let _ = writeln!(
+                errors,
+                "For SkBlendMode {} {}:    SkPictureRecorder bitmap is wrong",
                 mode as i32,
                 mode.name()
-            ));
+            );
         }
     }
 
