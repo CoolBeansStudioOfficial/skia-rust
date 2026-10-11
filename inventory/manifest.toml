@@ -36420,7 +36420,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L574-L611"
 module = "codec"
 status = "todo"
-reason = "needs the JPEG gainmap hooks (SkJpegCodec::onGetGainmapInfo) and SkAndroidCodec::getGainmapAndroidCodec (docs/design/codecs.md C13), not ported"
+reason = "needs the JPEG gainmap hooks (SkJpegCodec::onGetGainmapInfo, MPF and XMP gainmap lookup; docs/design/codecs.md C13), not ported"
 span_hash = "a040d2b8df3d908a1b8b02a153d23bae535b2884014ba6039c317a3c01084a9f"
 
 [[test]]
@@ -40161,8 +40161,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L71-L117"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the PNG gainmap chunks (gmAP/gdAT, SkPngCodecBase::onDecodeGainmap; docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "9990007533dc22e86f9ed929b022d6d00c0edb4a41d07b3c7ea4598cf074ddfa"
 
 [[test]]
@@ -40172,7 +40171,7 @@ macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L140-L201"
 module = "codec"
 status = "todo"
-reason = "needs the PNG gainmap chunks in the encoder (docs/design/codecs.md C16) and SkAndroidCodec::getGainmapAndroidCodec (C13), not ported"
+reason = "needs the PNG gainmap chunks in the encoder (docs/design/codecs.md C16), not ported"
 span_hash = "625d8cfd9d3c2e242c7bfb239309808e613b882fc1cad899a5adaa2a3076f747"
 
 [[test]]
@@ -40181,8 +40180,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L119-L138"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the PNG gainmap chunks (gmAP/gdAT; docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "cdcff9f6314664c0b9285b8dbbb13a2fbcb31785e4ec8b230066ae94a9c4debf"
 
 [[test]]

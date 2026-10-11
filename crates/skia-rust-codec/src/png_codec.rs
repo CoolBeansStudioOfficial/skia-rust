@@ -5,8 +5,9 @@
 // include/codec/SkPngDecoder.h (chrome/m156)
 // Ported from: src/codec/SkPngCodec.{h,cpp}, include/codec/SkPngDecoder.h
 //
-// Not ported yet: gainmap decoding (`onDecodeGainmap`, the `gdAT` stream), the HDR metadata
-// (`cLLI`, `mDCV`), the Android framework logging, and the sampled-codec entry point. Skia's
+// Gainmaps: the `gmAP` and `gdAT` chunks are read when the codec is made, and the gainmap codec is
+// decoded on request (see `png_codec_base`). Not ported yet: the HDR metadata (`cLLI`, `mDCV`), the
+// Android framework logging, and the sampled-codec entry point. Skia's
 // `SkPngCodec` has no `cICP` handling in m156, so none is ported here either.
 //
 // The control flow of Skia's decoder is libpng's longjmp: a row callback that has all the rows it
@@ -25,6 +26,7 @@ use std::sync::{Arc, Mutex};
 
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
+use skia_rust_core::gainmap_info::GainmapInfo;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::stream::Stream;
 use skia_rust_libpng::error::{PngError, PngResult};
@@ -929,6 +931,20 @@ fn read_stream(base: &mut CodecBase<'_>, buf: &mut [u8]) -> usize {
 /// Port of `SkPngCodec::MakeFromStream`'s codec construction: the header's encoded information and
 /// the libpng state become a codec over the stream.
 impl CodecImpl for PngCodec {
+    // Port of: src/codec/SkPngCodec.cpp#L1061-L1064 (chrome/m156), the gainmap hooks, which
+    // SkPngCodecBase implements (`onGetGainmapInfo`, `onGetGainmapCodec`).
+    fn on_get_gainmap_info(&self, info: Option<&mut GainmapInfo>) -> bool {
+        self.base_png.get_gainmap_info(info)
+    }
+
+    fn on_get_gainmap_codec(
+        &mut self,
+        info: Option<&mut GainmapInfo>,
+        want_codec: bool,
+    ) -> (bool, Option<Codec<'static>>) {
+        self.base_png.get_gainmap_codec(info, want_codec)
+    }
+
     // Port of: src/codec/SkPngCodecBase.cpp#L278-L290 (SkPngCodecBase::getSampler). The swizzler is
     // made on demand for a sampled decode, with the destination's width as the frame width.
     fn on_get_sampler(
@@ -1045,8 +1061,19 @@ pub fn make_from_stream_with_chunk_reader<'a>(
     let chunk_reader = Arc::new(Mutex::new(PngCompositeChunkReader::new(chunk_reader)));
     let header = read_header(&mut *stream, &chunk_reader)?;
     let src_format = to_pixel_format(&header.encoded);
+    // The gainmap chunks are taken when the codec is made, as Skia's readHeader does
+    // (`takeGainmapStream`, `getGainmapInfo`).
+    let (gainmap_stream, gainmap_info) = {
+        let mut reader = chunk_reader
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        (reader.take_gainmap_stream(), reader.gainmap_info())
+    };
+    let mut base_png = PngCodecBase::new(chunk_reader);
+    base_png.gainmap_stream = gainmap_stream;
+    base_png.gainmap_info = gainmap_info;
     let imp = PngCodec {
-        base_png: PngCodecBase::new(chunk_reader),
+        base_png,
         read: Some(Box::new(header.state)),
         idat_length: header.idat_length,
         decoded_idat: false,

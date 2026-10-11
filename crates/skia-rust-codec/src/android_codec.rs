@@ -17,6 +17,7 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color_space::{ColorSpace, named_primaries, named_transfer_fn};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
+use skia_rust_core::gainmap_info::GainmapInfo;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
@@ -137,6 +138,28 @@ impl<'a> AndroidCodec<'a> {
     #[doc(alias = "getInfo")]
     pub fn info(&self) -> ImageInfo {
         self.info.clone()
+    }
+
+    /// The gainmap parameters and, when `out` is given, the codec of the gainmap image. Returns
+    /// false when the image has no gainmap, or its gainmap cannot be decoded
+    /// (`SkAndroidCodec::getGainmapAndroidCodec`).
+    // Port of: src/codec/SkAndroidCodec.cpp#L352-L363 (chrome/m156)
+    pub fn get_gainmap_android_codec(
+        &mut self,
+        info: Option<&mut GainmapInfo>,
+        out: Option<&mut Option<AndroidCodec<'static>>>,
+    ) -> bool {
+        match out {
+            Some(out) => {
+                let (found, gainmap_codec) = self.codec.get_gainmap_codec(info, true);
+                if !found {
+                    return false;
+                }
+                *out = gainmap_codec.and_then(AndroidCodec::make_from_codec);
+                true
+            }
+            None => self.codec.get_gainmap_codec(info, false).0,
+        }
     }
 
     /// The codec this wraps. Port of `SkAndroidCodec::codec`.
