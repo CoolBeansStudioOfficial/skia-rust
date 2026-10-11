@@ -8,6 +8,8 @@
 //! skia-rust: `RasterFromCompressedTextureData` (needs `SkDecompress`) and the lazy and GPU factories
 //! are not ported. `MakeWithFilter` is `skia_rust_raster::image_filter_backend::make_with_filter`.
 
+use std::sync::{Mutex, PoisonError};
+
 use crate::bitmap::Bitmap;
 use crate::data::Data;
 use crate::image::Image;
@@ -101,18 +103,75 @@ pub fn raster_from_pixmap_copy(pixmap: &Pixmap<'_>) -> Option<Image> {
     .map(Image::from_base)
 }
 
-/// Creates a CPU-backed [`Image`] from the pixels of `pixmap`, and calls `release_proc` when
-/// the pixels are no longer needed (`RasterFromPixmap`).
+/// The pixels of [`raster_from_pixmap`]: the caller's memory, and the proc that releases it.
+// Port of: src/core/SkData.cpp#L162-L165 (chrome/m156), `SkData::MakeWithProc`
+struct SharedPixels<T> {
+    pixels: T,
+    // `fReleaseProc` with its context. A `Mutex` makes the closure `Sync`, as `Data` needs.
+    release_proc: Mutex<Option<Box<dyn FnOnce() + Send>>>,
+}
+
+impl<T: AsRef<[u8]>> AsRef<[u8]> for SharedPixels<T> {
+    fn as_ref(&self) -> &[u8] {
+        self.pixels.as_ref()
+    }
+}
+
+impl<T> Drop for SharedPixels<T> {
+    // Port of: src/core/SkData.cpp#L28-L33 (chrome/m156), `~SkData`: the release proc is called
+    // while the pixels are still there (the fields are dropped after this).
+    fn drop(&mut self) {
+        let release_proc = self
+            .release_proc
+            .get_mut()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take();
+        if let Some(release_proc) = release_proc {
+            release_proc();
+        }
+    }
+}
+
+/// Creates a CPU-backed [`Image`] that shares `pixels`, and calls `release_proc` when the image
+/// no longer refers to them (`RasterFromPixmap`). The image reads the pixels as they are in
+/// `pixels`; they must not be changed through another handle while the image lives.
 ///
-/// skia-rust: a pixmap borrows its pixels, so they are copied (as by
-/// [`raster_from_pixmap_copy`]) and `release_proc` is called right away, after the copy.
-// Port of: src/image/SkImage_RasterFactories.cpp#L141-L150 (chrome/m156)
+/// `info` and `row_bytes` describe the pixels. Returns `None`, without calling `release_proc`, if
+/// they are not valid for an image, or `pixels` is shorter than the image takes.
+///
+/// skia-rust: `SkImages::RasterFromPixmap(pixmap, proc, context)` shares the memory a pixmap
+/// points to, and the caller keeps it valid until `proc` runs. A safe `Pixmap` borrows its
+/// memory, so it cannot be kept by an image; the caller hands over an owner of the memory
+/// instead (a [`Data`], a `Vec<u8>`, an `Arc<[u8]>`, ...), and `release_proc` replaces the proc
+/// and its context (the closure owns its state). The pixels are released when the last reference
+/// to them goes away: the image, and a bitmap that shares its pixel ref (`asLegacyBitmap`),
+/// whichever comes last, as in Skia. See `docs/API_MAPPING.md`.
+// Port of: src/image/SkImage_RasterFactories.cpp#L161-L170 (chrome/m156)
 #[doc(alias = "RasterFromPixmap")]
 #[must_use]
-pub fn raster_from_pixmap(pixmap: &Pixmap<'_>, release_proc: impl FnOnce()) -> Option<Image> {
-    let image = raster_from_pixmap_copy(pixmap);
-    release_proc();
-    image
+pub fn raster_from_pixmap<T>(
+    info: &ImageInfo,
+    pixels: T,
+    row_bytes: usize,
+    release_proc: Option<impl FnOnce() + Send + 'static>,
+) -> Option<Image>
+where
+    T: AsRef<[u8]> + Send + Sync + 'static,
+{
+    let size = valid_args(info, row_bytes)?;
+    if pixels.as_ref().len() < size {
+        return None;
+    }
+
+    // SkData::MakeWithProc(pmap.addr(), size, proc, ctx)
+    let data = Data::new_with_owner(SharedPixels {
+        pixels,
+        release_proc: Mutex::new(
+            release_proc.map(|proc| Box::new(proc) as Box<dyn FnOnce() + Send>),
+        ),
+    });
+    ImageRaster::from_data(info, data, row_bytes, None, NEED_NEW_IMAGE_UNIQUE_ID)
+        .map(Image::from_base)
 }
 
 /// Creates a CPU-backed [`Image`] from `pixels`, which are shared, not copied (`RasterFromData`).
