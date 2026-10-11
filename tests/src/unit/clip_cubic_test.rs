@@ -7,15 +7,18 @@
 
 use crate::{def_test, reporter_assert};
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::float_bits::bits_to_float;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::cubic_clipper::CubicClipper;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
+use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::point::Point;
-use skia_rust_core::rect::IRect;
+use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::scalar::scalar_abs;
 use skia_rust_raster::raster_canvas::RasterCanvas;
+use skia_rust_raster::surfaces;
 
 // Currently the supersampler blitter uses int16_t for its index into an array
 // the width of the clip. Test that we don't crash/assert if we try to draw
@@ -217,9 +220,77 @@ def_test!(
 );
 
 // Port of: tests/ClipCubicTest.cpp#L175-L211 (chrome/m156)
-// skia-rust: `test_fuzz_crbug_698714` is not ported yet: it needs the real `Canvas`, a raster
-// `Surface` and antialiased `drawPath` (task D6); its manifest entry stays `todo`.
+def_test!(test_fuzz_crbug_698714, |_reporter| {
+    let mut surface = surfaces::raster_n32_premul((500, 500)).expect("surface");
+    let canvas = surface.canvas();
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    let mut builder = PathBuilder::new();
+    builder.move_to((bits_to_float(0x00000000), bits_to_float(0x00000000))); // 0,0
+    builder.line_to((bits_to_float(0x43434343), bits_to_float(0x43430143))); //195.263f, 195.005f
+    builder.line_to((bits_to_float(0x43434343), bits_to_float(0x43434343))); //195.263f, 195.263f
+    builder.line_to((bits_to_float(0xb5434343), bits_to_float(0x434300be))); //-7.2741e-07f, 195.003f
+    // 195.263f, 195.263f, -1.16387e-05f, 3.58641e-38f, 3.85088e-29f,1.86082e-39f
+    builder.cubic_to(
+        (bits_to_float(0x43434343), bits_to_float(0x43434341)),
+        (bits_to_float(0xb74343bd), bits_to_float(0x01434343)),
+        (bits_to_float(0x10434343), bits_to_float(0x00144332)),
+    );
+    // 4.11823e-38f, 195.263f, 195.263f, 195.263f, -7.2741e-07f, 195.263f
+    builder.cubic_to(
+        (bits_to_float(0x016037c0), bits_to_float(0x43434343)),
+        (bits_to_float(0x43434343), bits_to_float(0x43434343)),
+        (bits_to_float(0xb5434343), bits_to_float(0x43434343)),
+    );
+    // 195.263f, 195.263f, -1.16387e-05f, 3.58641e-38f, 195.263f, -2
+    builder.cubic_to(
+        (bits_to_float(0x43434344), bits_to_float(0x43434341)),
+        (bits_to_float(0xb74343bd), bits_to_float(0x01434343)),
+        (bits_to_float(0x43434343), bits_to_float(0xc0000014)),
+    );
+    // -5.87228e+06f, 3.7773e-07f, 3.60231e-13f, -6.64511e+06f,2.77692e-15f, 2.48803e-15f
+    builder.cubic_to(
+        (bits_to_float(0xcab33535), bits_to_float(0x34cacaca)),
+        (bits_to_float(0x2acacaca), bits_to_float(0xcacacae3)),
+        (bits_to_float(0x27481927), bits_to_float(0x27334805)),
+    );
+    builder.line_to((bits_to_float(0xb5434343), bits_to_float(0x43434343))); //-7.2741e-07f, 195.263f
+    // 195.263f, 195.263f, -1.16387e-05f, 195.212f, 195.263f, -2
+    builder.cubic_to(
+        (bits_to_float(0x43434343), bits_to_float(0x43434341)),
+        (bits_to_float(0xb74343b9), bits_to_float(0x43433643)),
+        (bits_to_float(0x43434343), bits_to_float(0xc0000014)),
+    );
+    builder.line_to((bits_to_float(0xc7004343), bits_to_float(0x27480527))); //-32835.3f, 2.77584e-15f
+    builder.line_to((bits_to_float(0x00000000), bits_to_float(0x00000000))); // 0,0
+    builder.close();
+    canvas.clip_rect(Rect::from_ltrb(0.0, 0.0, 65.0, 202.0), None, None);
+    canvas.draw_path(&builder.detach(), &paint);
+});
 
 // Port of: tests/ClipCubicTest.cpp#L213-L231 (chrome/m156)
-// skia-rust: `cubic_scan_error_crbug_844457_and_845489` is not ported yet: it needs the real
-// `Canvas`, a raster `Surface` and `drawPath` (task D6); its manifest entry stays `todo`.
+def_test!(cubic_scan_error_crbug_844457_and_845489, |_reporter| {
+    let mut surface = surfaces::raster_n32_premul((100, 100)).expect("surface");
+    let canvas = surface.canvas();
+    let paint = Paint::default();
+
+    let mut builder = PathBuilder::new();
+    builder.move_to((-30.0 / 64.0, -31.0 / 64.0));
+    builder.cubic_to(
+        (-31.0 / 64.0, -31.0 / 64.0),
+        (-31.0 / 64.0, -31.0 / 64.0),
+        (-31.0 / 64.0, 100.0),
+    );
+    builder.line_to((100.0, 100.0));
+    canvas.draw_path(&builder.detach(), &paint);
+
+    // May need to define SK_RASTERIZE_EVEN_ROUNDING to trigger the need for this test
+    builder.move_to((-30.0 / 64.0_f32, -31.0 / 64.0_f32 + 1.0 / 256.0_f32));
+    builder.cubic_to(
+        (-31.0 / 64.0_f32 + 1.0 / 256.0_f32, -31.0 / 64.0_f32 + 1.0 / 256.0_f32),
+        (-31.0 / 64.0_f32 + 1.0 / 256.0_f32, -31.0 / 64.0_f32 + 1.0 / 256.0_f32),
+        (-31.0 / 64.0_f32 + 1.0 / 256.0_f32, 100.0),
+    );
+    builder.line_to((100.0, 100.0));
+    canvas.draw_path(&builder.detach(), &paint);
+});
