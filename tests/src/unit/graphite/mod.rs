@@ -25,6 +25,7 @@ pub mod precompile;
 pub mod proxy_cache_test;
 pub mod recorder_test;
 pub mod recording_order_test;
+pub mod recording_surfaces_test;
 pub mod rect_test;
 pub mod rt_effect_test;
 pub mod shape_test;

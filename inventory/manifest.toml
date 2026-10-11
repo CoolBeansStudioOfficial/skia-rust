@@ -52621,8 +52621,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L109-L129"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "a2b9febf3e1618650f93e8c31661cde87b33a63b9d4a331a262f7e733f3af6d2"
 
 [[test]]
@@ -52631,8 +52630,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L132-L156"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "b64020236433e3b6c6ae78125351ceef5e95bc5447397bbefbf6196c6646a91e"
 
 [[test]]
@@ -52641,8 +52639,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L222-L270"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "7266c50c44b90afadf316748051344c4dafc53c54daf04cb3601c21190859571"
 
 [[test]]
@@ -52651,8 +52648,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L335-L442"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "de77450f83271214b64fdd92d0115aadea7e77c87f833eedfb24aa97ca0157ef"
 
 [[test]]
@@ -52661,8 +52657,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L444-L470"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "41b77eb21da5e4cf060fd81064d8962e34d19c6480987300bfde365b0c2dee3c"
 
 [[test]]
@@ -52671,8 +52666,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L273-L300"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "4ff470d6cdc4f7337f119aa83665dab16acea5da6d64cc8080fa1097d1200bc0"
 
 [[test]]
@@ -52681,8 +52675,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L473-L488"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "1353d545d5b18899346b1b0c5efdd5b930764ab844c3e1f8e097e2184c29160a"
 
 [[test]]
@@ -52691,8 +52684,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L492-L503"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "59952babf4a5f09fee39dfd43e376060d75a7a026ebae4fa8e5f79f7fdd5e4d9"
 
 [[test]]
@@ -52701,8 +52693,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L159-L187"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "1d21115c4a5bea955715d8c61da74b71ed2a9f0ad984e18f0c80676d522e12cd"
 
 [[test]]
@@ -52711,8 +52702,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L190-L219"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "d1774591cb1a1759252700dd615682c183300972e0113e4c9bd1e0bc1f96e677"
 
 [[test]]
@@ -52721,8 +52711,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L303-L333"
 module = "gpu"
-status = "todo"
-reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
+status = "passing"
 span_hash = "2943ede640374e442c6cd7cc5f46e3e05f43ed08b05529d1627cbee690165dfd"
 
 [[test]]
