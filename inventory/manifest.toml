@@ -42008,8 +42008,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1633-L1650"
 module = "core"
-status = "todo"
-reason = "needs the 16 helper functions that RoundRect calls (test_round_rect_basic ... test_conservative_intersection); none is ported yet in tests/src/unit/round_rect_test.rs"
+status = "passing"
 span_hash = "24ac10c9bfd7c6fcc278de24bf2cd382df3c37a300acdf8eaeb3a15a400b5478"
 
 [[test]]
