@@ -499,6 +499,8 @@ pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
 #[cfg(test)]
+pub mod svg_device_test;
+#[cfg(test)]
 pub mod swizzler_test;
 #[cfg(test)]
 pub mod test_test;
