@@ -7,6 +7,8 @@ use crate::prelude::*;
 use crate::tool_utils::{color_to_565, int_to_scalar};
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::canvas::Canvas as CoreCanvas;
+use skia_rust_core::color_priv::{get_packed_a32, get_packed_b32, get_packed_g32, get_packed_r32};
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_types::PathFillType;
@@ -46,7 +48,10 @@ fn make_paint(color: Color) -> Paint {
 }
 
 // Port of: gm/pathopsinverse.cpp#L30-L36 (chrome/m156), blend
-fn blend(one: Color, two: Color) -> Color {
+// `rgba_raw` is whether the C++ raw `*(SkColor*) pixels` read sees an RGBA-ordered pixel, i.e. an
+// `8888` canvas on a host whose N32 is RGBA (the `-rgba` oracle variants); the BGRA goldens (and
+// the 565/f16 ones, made on the BGRA oracle) see the colour itself.
+fn blend(one: Color, two: Color, rgba_raw: bool) -> Color {
     let mut temp = Bitmap::new();
     temp.alloc_n32_pixels((1, 1), None);
     {
@@ -54,16 +59,29 @@ fn blend(one: Color, two: Color) -> Color {
         canvas.draw_color(one, None);
         canvas.draw_color(two, None);
     }
-    // `*(SkColor*) pixels`: the raw native pixel read as a colour.
-    Color::from(temp.get_addr32(0, 0))
+    let pixel = temp.get_addr32(0, 0);
+    // Truncating casts: each channel is at most 255.
+    #[allow(clippy::cast_possible_truncation)]
+    let (a, r, g, b) = (
+        get_packed_a32(pixel) as u8,
+        get_packed_r32(pixel) as u8,
+        get_packed_g32(pixel) as u8,
+        get_packed_b32(pixel) as u8,
+    );
+    if rgba_raw {
+        // The RGBA bytes reinterpreted as 0xAARRGGBB swap red and blue.
+        Color::from_argb(a, b, g, r)
+    } else {
+        Color::from_argb(a, r, g, b)
+    }
 }
 
 impl PathOpsInverseGm {
     // Port of: gm/pathopsinverse.cpp#L17-L20 (chrome/m156), the paint setup of onOnceBeforeDraw
-    fn new() -> Self {
+    fn new(rgba_raw: bool) -> Self {
         let one_color = color_to_565(Color::from(0xFF80_80FF));
         let two_color = Color::from(0x807F_1F1F);
-        let blend_color = blend(one_color, two_color);
+        let blend_color = blend(one_color, two_color, rgba_raw);
 
         let mut outline_paint = make_paint(Color::from(0xFF00_0000));
         outline_paint.set_style(Style::Stroke);
@@ -94,6 +112,8 @@ impl GM for PathOpsInverseGm {
 
     // Port of: gm/pathopsinverse.cpp#L44-L72 (chrome/m156), onDraw
     fn on_draw(&mut self, canvas: &Canvas) {
+        // `onOnceBeforeDraw`, deferred so the blend can see which config is being drawn.
+        *self = PathOpsInverseGm::new(canvas.image_info().color_type() == ColorType::RGBA8888);
         let mut y_pos = 0;
         for one_fill in 0..=1 {
             let one_f = if one_fill != 0 {
@@ -140,11 +160,7 @@ impl GM for PathOpsInverseGm {
 }
 
 // Port of: gm/pathopsinverse.cpp#L146 (chrome/m156)
-crate::def_gm!(
-    #[ignore = "Union of inverse-filled rects differs from the golden in the Union column (skia-rust-pathops op result for inverse fills); diff pass done, see manifest reason"]
-    PathOpsInverseGM,
-    PathOpsInverseGm::new()
-);
+crate::def_gm!(PathOpsInverseGM, PathOpsInverseGm::new(false));
 
 // Port of: gm/pathopsinverse.cpp#L74-L103 (chrome/m156), DEF_SIMPLE_GM(pathops_skbug_10155)
 crate::def_simple_gm!(pathops_skbug_10155, canvas, 256, 256, {
