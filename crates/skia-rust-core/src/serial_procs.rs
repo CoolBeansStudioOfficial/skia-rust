@@ -92,6 +92,9 @@ pub struct DeserialProcs {
     pub image_data: Option<ImageDataDeserializer>,
     /// `fPictureProc` with its context.
     pub picture: Option<PictureDeserializer>,
+    /// The negation of `fAllowSkSL` (which defaults to true), so that `Default` allows `SkSL`: the
+    /// buffer refuses runtime effects if this is true.
+    pub disallow_sksl: bool,
 }
 
 impl fmt::Debug for DeserialProcs {
@@ -101,6 +104,7 @@ impl fmt::Debug for DeserialProcs {
             .field("image", &self.image.is_some())
             .field("image_data", &self.image_data.is_some())
             .field("picture", &self.picture.is_some())
+            .field("disallow_sksl", &self.disallow_sksl)
             .finish()
     }
 }

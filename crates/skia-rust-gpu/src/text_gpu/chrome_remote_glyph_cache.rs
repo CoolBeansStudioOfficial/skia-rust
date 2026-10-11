@@ -65,7 +65,7 @@ pub type DiscardableHandleId = u32;
 
 /// `SkStrikeServer::DiscardableHandleManager`: an interface used by the server to create handles
 /// for pinning strikes on the remote client.
-// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L33-L53 (chrome/m156)
+// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L35-L54 (chrome/m156)
 #[doc(alias = "SkStrikeServer::DiscardableHandleManager")]
 pub trait StrikeServerDiscardableHandleManager: Send + Sync {
     /// `createHandle`: creates a new *locked* handle and returns a unique id that can be used to
@@ -85,7 +85,7 @@ pub trait StrikeServerDiscardableHandleManager: Send + Sync {
 
 /// `SkStrikeClient::CacheMissType`. This enum is used in histogram reporting in Chromium. Please
 /// don't re-order the list of entries, and consider it to be append-only.
-// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L83-L96 (chrome/m156)
+// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L86-L100 (chrome/m156)
 #[doc(alias = "SkStrikeClient::CacheMissType")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(u32)]
@@ -113,7 +113,7 @@ impl CacheMissType {
 }
 
 /// `SkStrikeClient::DiscardableHandleManager::ReadFailureData`.
-// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L112-L119 (chrome/m156)
+// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L114-L121 (chrome/m156)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ReadFailureData {
     /// `memorySize`.
@@ -132,7 +132,7 @@ pub struct ReadFailureData {
 
 /// `SkStrikeClient::DiscardableHandleManager`: an interface to delete handles that may be pinned
 /// by the remote server.
-// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L98-L123 (chrome/m156)
+// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L102-L123 (chrome/m156)
 #[doc(alias = "SkStrikeClient::DiscardableHandleManager")]
 pub trait StrikeClientDiscardableHandleManager: Send + Sync {
     /// `deleteHandle`: returns true if the handle was unlocked and can be safely deleted. Once
@@ -156,6 +156,7 @@ fn lock_unpoisoned<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 // -- RemoteStrike -----------------------------------------------------------------------------
 
 /// The state of a [`RemoteStrike`] that its lock guards.
+// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L75-L154 (chrome/m156)
 struct RemoteStrikeInner {
     /// `fContext`: the context built using the descriptor. `None` until `ensureScalerContext`.
     context: Option<ScalerContext>,
@@ -179,7 +180,7 @@ struct RemoteStrikeInner {
 
 impl RemoteStrikeInner {
     /// `RemoteStrike::ensureScalerContext`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L167-L171 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L213-L217 (chrome/m156)
     fn ensure_scaler_context(&mut self) {
         if self.context.is_none() {
             self.context = Some(
@@ -192,7 +193,7 @@ impl RemoteStrikeInner {
     }
 
     /// `RemoteStrike::prepareForImage`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L88-L92 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L86-L90 (chrome/m156)
     fn prepare_for_image(context: &mut ScalerContext, glyph: &mut Glyph) -> bool {
         if !glyph.set_image_has_been_called() {
             context.get_image(glyph);
@@ -201,7 +202,7 @@ impl RemoteStrikeInner {
     }
 
     /// `RemoteStrike::prepareForPath`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L93-L97 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L91-L95 (chrome/m156)
     fn prepare_for_path(context: &mut ScalerContext, glyph: &mut Glyph) -> bool {
         if !glyph.set_path_has_been_called() {
             context.get_path(glyph);
@@ -210,7 +211,7 @@ impl RemoteStrikeInner {
     }
 
     /// `RemoteStrike::prepareForDrawable`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L98-L102 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L96-L100 (chrome/m156)
     fn prepare_for_drawable(context: &mut ScalerContext, glyph: &mut Glyph) -> bool {
         if !glyph.set_drawable_has_been_called() {
             let drawable = context.get_drawable(glyph);
@@ -220,16 +221,16 @@ impl RemoteStrikeInner {
     }
 
     /// `RemoteStrike::digestFor`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L192-L229 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L228-L261 (chrome/m156)
     fn digest_for(
         &mut self,
         action_type: ActionType,
         packed_glyph_id: PackedGlyphId,
     ) -> GlyphDigest {
-        if let Some(digest) = self.sent_glyphs.get(&packed_glyph_id) {
-            if digest.action_for(action_type) != GlyphAction::Unset {
-                return *digest;
-            }
+        if let Some(digest) = self.sent_glyphs.get(&packed_glyph_id)
+            && digest.action_for(action_type) != GlyphAction::Unset
+        {
+            return *digest;
         }
 
         self.ensure_scaler_context();
@@ -265,7 +266,7 @@ impl RemoteStrikeInner {
 
 /// The strike server's record of the glyphs a strike has used, and which of them the client
 /// has not been sent (`RemoteStrike`).
-// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L69-L229 (chrome/m156)
+// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L75-L264 (chrome/m156)
 struct RemoteStrike {
     /// `fDescriptor`.
     descriptor: AutoDescriptor,
@@ -308,18 +309,19 @@ impl RemoteStrike {
     }
 
     /// `discardableHandleId`.
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L104 (chrome/m156)
     fn discardable_handle_id(&self) -> DiscardableHandleId {
         self.discardable_handle_id
     }
 
     /// `setStrikeSpec`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L183-L185 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L224-L226 (chrome/m156)
     fn set_strike_spec(&self, strike_spec: &StrikeSpec) {
         lock_unpoisoned(&self.inner).strike_spec = Some(strike_spec.clone());
     }
 
     /// `hasPendingGlyphs`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L113-L115 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L118-L120 (chrome/m156)
     fn has_pending_glyphs(&self) -> bool {
         let inner = lock_unpoisoned(&self.inner);
         !inner.masks_to_send.is_empty()
@@ -328,7 +330,7 @@ impl RemoteStrike {
     }
 
     /// `resetScalerContext`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L178-L181 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L219-L222 (chrome/m156)
     fn reset_scaler_context(&self) {
         let mut inner = lock_unpoisoned(&self.inner);
         inner.context = None;
@@ -337,7 +339,7 @@ impl RemoteStrike {
 
     /// `writePendingGlyphs`: writes the strike's identity, its font metrics (the first time) and
     /// the glyphs the client has not got yet.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L137-L176 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L170-L211 (chrome/m156)
     fn write_pending_glyphs(&self, buffer: &mut BinaryWriteBuffer) {
         debug_assert!(self.has_pending_glyphs());
         let mut guard = lock_unpoisoned(&self.inner);
@@ -416,17 +418,17 @@ impl StrikeForGpu for RemoteStrike {
         })
     }
 
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L105-L107 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L106-L108 (chrome/m156)
     fn descriptor_for_gpu(&self) -> &Descriptor {
         self.descriptor.get_desc()
     }
 
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L109-L111 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L112-L114 (chrome/m156)
     fn rounding_spec_for_gpu(&self) -> &GlyphPositionRoundingSpec {
         &self.rounding_spec
     }
 
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L231-L233 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L263-L265 (chrome/m156)
     fn strike_promise(self: Arc<Self>) -> StrikePromise {
         let inner = lock_unpoisoned(&self.inner);
         StrikePromise::from_spec(
@@ -441,7 +443,7 @@ impl StrikeForGpu for RemoteStrike {
 // -- StrikeServerImpl -------------------------------------------------------------------------
 
 /// `SkStrikeServerImpl`.
-// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L235-L412 (chrome/m156)
+// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L269-L310 (chrome/m156)
 struct StrikeServerImpl {
     /// `fDescToRemoteStrike`.
     desc_to_remote_strike: HashMap<Descriptor, Arc<RemoteStrike>>,
@@ -460,6 +462,7 @@ struct StrikeServerImpl {
 }
 
 /// `kMaxEntriesInDescriptorMap`.
+// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L284 (chrome/m156)
 const MAX_ENTRIES_IN_DESCRIPTOR_MAP: usize = 2000;
 
 impl StrikeServerImpl {
@@ -501,7 +504,7 @@ impl StrikeServerImpl {
     }
 
     /// `writeStrikeData`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L304-L345 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L324-L368 (chrome/m156)
     fn write_strike_data(&mut self, memory: &mut Vec<u8>) {
         // We can use the default SkSerialProcs because we do not currently need to encode any
         // SkImages.
@@ -550,7 +553,7 @@ impl StrikeServerImpl {
     }
 
     /// `checkForDeletedEntries`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L360-L374 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L375-L390 (chrome/m156)
     fn check_for_deleted_entries(&mut self) {
         let keys: Vec<Descriptor> = self.desc_to_remote_strike.keys().cloned().collect();
         for key in keys {
@@ -571,7 +574,7 @@ impl StrikeServerImpl {
     }
 
     /// `getOrCreateCache`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L376-L430 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L392-L448 (chrome/m156)
     fn get_or_create_cache(&mut self, strike_spec: &StrikeSpec) -> Arc<RemoteStrike> {
         if let Some(strike) = self
             .desc_to_remote_strike
@@ -628,7 +631,7 @@ impl StrikeServerImpl {
 struct ServerStrikeCache(Arc<Mutex<StrikeServerImpl>>);
 
 impl StrikeForGpuCacheInterface for ServerStrikeCache {
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L296-L302 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L370-L373 (chrome/m156)
     fn find_or_create_scoped_strike(&self, strike_spec: &StrikeSpec) -> Arc<dyn StrikeForGpu> {
         lock_unpoisoned(&self.0).get_or_create_cache(strike_spec)
     }
@@ -638,7 +641,7 @@ impl StrikeForGpuCacheInterface for ServerStrikeCache {
 
 /// `GlyphTrackingDevice`: a device with no pixels that notes the strikes and glyphs that the
 /// text drawn on it needs.
-// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L432-L503 (chrome/m156)
+// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L451-L516 (chrome/m156)
 struct GlyphTrackingDevice {
     inner: NoPixelsDevice,
     /// `fStrikeServerImpl`.
@@ -670,7 +673,7 @@ impl GlyphTrackingDevice {
     }
 
     /// `strikeDeviceInfo`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L456-L458 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L473-L475 (chrome/m156)
     fn strike_device_info(&self) -> StrikeDeviceInfo {
         StrikeDeviceInfo {
             surface_props: *self.inner.state().surface_props(),
@@ -767,7 +770,7 @@ impl Device for GlyphTrackingDevice {
         self.inner.reset_for_next_picture(bounds)
     }
 
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L444-L454 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L462-L471 (chrome/m156)
     fn create_device(
         &mut self,
         info: &CreateInfo,
@@ -852,7 +855,7 @@ impl Device for GlyphTrackingDevice {
             .draw_image_rect(image, src, dst, sampling, paint, constraint);
     }
 
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L460-L486 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L478-L496 (chrome/m156)
     fn on_draw_glyph_run_list(&mut self, glyph_run_list: &GlyphRunList<'_>, paint: &Paint) {
         let mut draw_matrix = self.state().local_to_device().clone();
         draw_matrix.pre_translate(glyph_run_list.origin());
@@ -871,7 +874,7 @@ impl Device for GlyphTrackingDevice {
         debug_assert!(container.is_empty());
     }
 
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L488-L500 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L499-L514 (chrome/m156)
     fn convert_glyph_run_list_to_slug(
         &mut self,
         glyph_run_list: &GlyphRunList<'_>,
@@ -893,7 +896,7 @@ impl Device for GlyphTrackingDevice {
 
 /// `SkStrikeServer`: finds out which strikes and glyphs a text draw needs and serializes them
 /// for a [`StrikeClient`] in another process. This class is not thread-safe.
-// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L31-L84 (chrome/m156)
+// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L31-L80 (chrome/m156)
 #[doc(alias = "SkStrikeServer")]
 pub struct StrikeServer {
     /// `fImpl`.
@@ -920,7 +923,7 @@ impl StrikeServer {
 
     /// `makeAnalysisCanvas`: creates an analysis canvas used to populate the strike server with
     /// ops which will be serialized and rendered using the [`StrikeClient`].
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L510-L553 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L524-L559 (chrome/m156)
     #[doc(alias = "makeAnalysisCanvas")]
     #[must_use]
     pub fn make_analysis_canvas(
@@ -971,21 +974,21 @@ impl StrikeServer {
     /// [`make_analysis_canvas`](Self::make_analysis_canvas). Any handles locked using the
     /// [`StrikeServerDiscardableHandleManager`] will be assumed to be unlocked after this call.
     /// `memory` is left alone if there is nothing to send.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L555-L557 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L561-L563 (chrome/m156)
     #[doc(alias = "writeStrikeData")]
     pub fn write_strike_data(&self, memory: &mut Vec<u8>) {
         lock_unpoisoned(&self.imp).write_strike_data(memory);
     }
 
     /// `setMaxEntriesInDescriptorMapForTesting`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L561-L563 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L567-L569 (chrome/m156)
     #[doc(hidden)]
     pub fn set_max_entries_in_descriptor_map_for_testing(&self, count: usize) {
         lock_unpoisoned(&self.imp).max_entries_in_descriptor_map = count;
     }
 
     /// `remoteStrikeMapSizeForTesting`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L564-L566 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L570-L572 (chrome/m156)
     #[doc(hidden)]
     #[must_use]
     pub fn remote_strike_map_size_for_testing(&self) -> usize {
@@ -996,7 +999,7 @@ impl StrikeServer {
 // -- StrikeClient -----------------------------------------------------------------------------
 
 /// `DiscardableStrikePinner`: pins a client strike until the server lets its handle go.
-// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L568-L584 (chrome/m156)
+// Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L575-L588 (chrome/m156)
 struct DiscardableStrikePinner {
     /// `fDiscardableHandleId`.
     discardable_handle_id: DiscardableHandleId,
@@ -1016,7 +1019,7 @@ impl StrikePinner for DiscardableStrikePinner {
 
 /// `SkStrikeClient`: deserializes the strike data from a [`StrikeServer`], so that the ops the
 /// server analyzed can be rasterized.
-// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L81-L150 (chrome/m156)
+// Port of: include/private/chromium/SkChromeRemoteGlyphCache.h#L82-L146 (chrome/m156)
 #[doc(alias = "SkStrikeClient")]
 pub struct StrikeClient<'a> {
     /// `fServerTypefaceIdToTypeface`.
@@ -1059,10 +1062,10 @@ impl<'a> StrikeClient<'a> {
     /// `readStrikeData`: deserializes the strike data from a [`StrikeServer`]. All messages
     /// generated from a server when serializing the ops must be deserialized before the op is
     /// rasterized. Returns false if the data is invalid.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L608-L726 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L631-L746 (chrome/m156)
     #[doc(alias = "readStrikeData")]
     pub fn read_strike_data(&mut self, memory: &[u8]) -> bool {
-        debug_assert!(!memory.is_empty());
+        debug_assert_ne!(memory.len(), 0);
 
         // We do not need to set any SkDeserialProcs here because SkStrikeServerImpl::
         // writeStrikeData did not encode any SkImages.
@@ -1188,7 +1191,7 @@ impl<'a> StrikeClient<'a> {
     }
 
     /// `retrieveTypefaceUsingServerIDForTest`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L741-L745 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L805-L808 (chrome/m156)
     #[doc(hidden)]
     #[must_use]
     pub fn retrieve_typeface_using_server_id_for_test(
@@ -1203,7 +1206,7 @@ impl<'a> StrikeClient<'a> {
     /// `deserializeSlugForTest`: given the bytes of a slug, unflatten into a slug making sure to
     /// do the typeface id translation from renderer to GPU. Returns `None` if there was a
     /// problem.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L752-L756 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L814-L817 (chrome/m156)
     #[doc(hidden)]
     #[must_use]
     pub fn deserialize_slug_for_test(&self, data: &[u8]) -> Option<Slug> {
@@ -1211,7 +1214,7 @@ impl<'a> StrikeClient<'a> {
     }
 
     /// `SkStrikeClientImpl::addTypeface`.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L728-L739 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L778-L792 (chrome/m156)
     fn add_typeface(&mut self, typeface_proto: &TypefaceProxyPrototype) -> Typeface {
         // We already have the typeface.
         if let Some(typeface) = self
@@ -1235,7 +1238,7 @@ impl<'a> StrikeClient<'a> {
 impl TypefaceIdTranslator for StrikeClient<'_> {
     /// `translateTypefaceID`: given a descriptor re-write the rec mapping the typeface id from the
     /// renderer to the corresponding typeface id on the GPU.
-    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L685-L708 (chrome/m156)
+    // Port of: src/text/gpu/SkChromeRemoteGlyphCache.cpp#L748-L771 (chrome/m156)
     fn translate_typeface_id(&self, to_change: &mut AutoDescriptor) -> bool {
         let descriptor = to_change.get_desc_mut();
 

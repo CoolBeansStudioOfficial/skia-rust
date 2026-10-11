@@ -26,6 +26,7 @@ use crate::rect::IRect;
 use crate::rect::Rect;
 use crate::scalar::{scalar, scalar_floor_to_int};
 use crate::scaler_context::AxisAlignment;
+use crate::serial_procs::DeserialProcs;
 use crate::write_buffer::BinaryWriteBuffer;
 
 /// `SkGlyph::kMaxGlyphWidth`: glyphs at least this wide have no image in the atlas.
@@ -1133,7 +1134,14 @@ impl PictureBackedGlyphDrawable {
             buffer.validate(false);
             return None;
         };
-        let picture = Picture::from_data(data, None);
+        // Glyphs have a limited set of what they can be. We explicitly disable sksl for security
+        // purposes (see b/40064011, b/40064341). The allowed picture tags (`fAllowTagsProc`) are
+        // not a choice of the Rust picture reader, which reads only those it knows.
+        let procs = DeserialProcs {
+            disallow_sksl: true,
+            ..DeserialProcs::default()
+        };
+        let picture = Picture::from_data(data, Some(&procs));
         if !buffer.validate(picture.is_some()) {
             return None;
         }

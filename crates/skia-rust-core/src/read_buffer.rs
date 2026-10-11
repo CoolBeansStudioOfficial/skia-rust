@@ -141,7 +141,7 @@ pub struct ReadBuffer<'a> {
     /// `fFactoryArray`: the factories that an index references, by name, in order (1 is the
     /// first). Empty when the flattenables are read by name.
     factory_names: Vec<String>,
-    /// The negation of `fAllowSkSL` (which defaults to true), so that `Default` allows SkSL.
+    /// The negation of `fAllowSkSL` (which defaults to true), so that `Default` allows `SkSL`.
     sksl_disallowed: bool,
 }
 
@@ -161,6 +161,8 @@ impl<'a> ReadBuffer<'a> {
     #[must_use]
     pub fn with_deserial_procs(data: &'a [u8], deserial_procs: DeserialProcs) -> ReadBuffer<'a> {
         let mut buffer = ReadBuffer::new(data);
+        // `setAllowSkSL(procs.fAllowSkSL)` of `setDeserialProcs`.
+        buffer.set_allow_sksl(!deserial_procs.disallow_sksl);
         buffer.deserial_procs = deserial_procs;
         buffer
     }
@@ -620,10 +622,10 @@ impl ReadBuffer<'_> {
         let Some(src) = self.skip(points.len().saturating_mul(2 * size_of::<f32>())) else {
             return false;
         };
-        let (chunks, _) = src.as_chunks::<{ size_of::<f32>() }>();
-        for (point, pair) in points.iter_mut().zip(chunks.chunks_exact(2)) {
-            point.x = f32::from_ne_bytes(pair[0]);
-            point.y = f32::from_ne_bytes(pair[1]);
+        let (chunks, _) = src.as_chunks::<{ 2 * size_of::<f32>() }>();
+        for (point, chunk) in points.iter_mut().zip(chunks) {
+            point.x = f32::from_ne_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+            point.y = f32::from_ne_bytes([chunk[4], chunk[5], chunk[6], chunk[7]]);
         }
         true
     }

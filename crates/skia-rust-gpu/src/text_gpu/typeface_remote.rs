@@ -63,7 +63,7 @@ fn is_logging(base: &ScalerContextBase) -> bool {
 
 /// `SkScalerContextProxy`: a scaler context with nothing to scale. Every glyph request is a
 /// cache miss.
-// Port of: src/core/SkTypeface_remote.h#L36-L55 (chrome/m156)
+// Port of: src/core/SkTypeface_remote.h#L39-L57 (chrome/m156)
 #[doc(alias = "SkScalerContextProxy")]
 struct ScalerContextProxy {
     /// `fDiscardableManager`.
@@ -77,7 +77,7 @@ impl fmt::Debug for ScalerContextProxy {
 }
 
 impl ScalerContextImpl for ScalerContextProxy {
-    // Port of: src/core/SkTypeface_remote.cpp#L31-L45 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L33-L45 (chrome/m156)
     fn generate_metrics(&mut self, glyph: &Glyph, base: &ScalerContextBase) -> GlyphMetrics {
         if is_logging(base) {
             eprintln!(
@@ -93,7 +93,7 @@ impl ScalerContextImpl for ScalerContextProxy {
         GlyphMetrics::new(glyph.mask_format())
     }
 
-    // Port of: src/core/SkTypeface_remote.cpp#L47-L60 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L47-L59 (chrome/m156)
     fn generate_image(&mut self, glyph: &Glyph, image: &mut [u8], base: &ScalerContextBase) {
         if is_logging(base) {
             eprintln!("GlyphCacheMiss generateImage: {:?}", base.rec());
@@ -109,7 +109,7 @@ impl ScalerContextImpl for ScalerContextProxy {
         image[..size].fill(0);
     }
 
-    // Port of: src/core/SkTypeface_remote.cpp#L62-L71 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L61-L70 (chrome/m156)
     fn generate_path(&mut self, _glyph: &Glyph, base: &ScalerContextBase) -> Option<GeneratedPath> {
         if is_logging(base) {
             eprintln!("GlyphCacheMiss generatePath: {:?}", base.rec());
@@ -120,7 +120,7 @@ impl ScalerContextImpl for ScalerContextProxy {
         None
     }
 
-    // Port of: src/core/SkTypeface_remote.cpp#L73-L82 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L72-L81 (chrome/m156)
     fn generate_drawable(&mut self, _glyph: &Glyph, base: &ScalerContextBase) -> Option<Drawable> {
         if is_logging(base) {
             eprintln!("GlyphCacheMiss generateDrawable: {:?}", base.rec());
@@ -131,7 +131,7 @@ impl ScalerContextImpl for ScalerContextProxy {
         None
     }
 
-    // Port of: src/core/SkTypeface_remote.cpp#L84-L94 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L83-L94 (chrome/m156)
     fn generate_font_metrics(&mut self, base: &ScalerContextBase) -> FontMetrics {
         if is_logging(base) {
             eprintln!("GlyphCacheMiss generateFontMetrics: {:?}", base.rec());
@@ -145,7 +145,7 @@ impl ScalerContextImpl for ScalerContextProxy {
 }
 
 /// `SkTypefaceProxyPrototype`: the serialization format for [`TypefaceProxy`].
-// Port of: src/core/SkTypeface_remote.h#L57-L89 (chrome/m156)
+// Port of: src/core/SkTypeface_remote.h#L60-L88 (chrome/m156)
 #[doc(alias = "SkTypefaceProxyPrototype")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TypefaceProxyPrototype {
@@ -157,7 +157,7 @@ pub struct TypefaceProxyPrototype {
     style_value: i32,
     /// `fIsFixedPitch`.
     is_fixed_pitch: bool,
-    /// `fGlyphMaskNeedsCurrentColor`: used for COLRv0 or COLRv1 fonts that may need the 0xFFFF
+    /// `fGlyphMaskNeedsCurrentColor`: used for `COLRv0` or `COLRv1` fonts that may need the 0xFFFF
     /// special palette index to represent foreground color. This information needs to be on here
     /// to determine how this typeface can be cached.
     glyph_mask_needs_current_color: bool,
@@ -165,7 +165,7 @@ pub struct TypefaceProxyPrototype {
 
 impl TypefaceProxyPrototype {
     /// `SkTypefaceProxyPrototype(const SkTypeface&)`.
-    // Port of: src/core/SkTypeface_remote.cpp#L119-L124 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L113-L118 (chrome/m156)
     #[must_use]
     pub fn new(typeface: &Typeface) -> Self {
         Self {
@@ -179,7 +179,7 @@ impl TypefaceProxyPrototype {
 
     /// `SkTypefaceProxyPrototype(typefaceID, glyphCount, styleValue, isFixedPitch,
     /// glyphMaskNeedsCurrentColor)`.
-    // Port of: src/core/SkTypeface_remote.cpp#L126-L134 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L120-L127 (chrome/m156)
     #[must_use]
     pub fn from_parts(
         typeface_id: TypefaceId,
@@ -198,7 +198,7 @@ impl TypefaceProxyPrototype {
     }
 
     /// `MakeFromBuffer(buffer)`: `None` if the buffer is invalid.
-    // Port of: src/core/SkTypeface_remote.cpp#L101-L117 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L96-L111 (chrome/m156)
     #[doc(alias = "MakeFromBuffer")]
     #[must_use]
     pub fn make_from_buffer(buffer: &mut ReadBuffer<'_>) -> Option<Self> {
@@ -223,7 +223,7 @@ impl TypefaceProxyPrototype {
     }
 
     /// `flatten(buffer)`.
-    // Port of: src/core/SkTypeface_remote.cpp#L136-L142 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L129-L135 (chrome/m156)
     pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
         buffer.write_uint(self.server_typeface_id);
         buffer.write_int(self.glyph_count);
@@ -233,21 +233,21 @@ impl TypefaceProxyPrototype {
     }
 
     /// `serverTypefaceID()`.
-    // Port of: src/core/SkTypeface_remote.h#L76 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L68 (chrome/m156)
     #[must_use]
     pub fn server_typeface_id(&self) -> TypefaceId {
         self.server_typeface_id
     }
 
     /// `style()`.
-    // Port of: src/core/SkTypeface_remote.h#L79-L83 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L75-L79 (chrome/m156)
     fn style(&self) -> FontStyle {
         FontStyle::from_raw_value(self.style_value)
     }
 }
 
 /// `SkTypefaceProxy`: a typeface that stands for one in the strike server's process.
-// Port of: src/core/SkTypeface_remote.h#L91-L187 (chrome/m156)
+// Port of: src/core/SkTypeface_remote.h#L90-L185 (chrome/m156)
 #[doc(alias = "SkTypefaceProxy")]
 pub struct TypefaceProxy {
     core: TypefaceCore,
@@ -274,7 +274,7 @@ impl fmt::Debug for TypefaceProxy {
 
 impl TypefaceProxy {
     /// `SkTypefaceProxy(prototype, manager, isLogging)`.
-    // Port of: src/core/SkTypeface_remote.cpp#L145-L154 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.cpp#L138-L146 (chrome/m156)
     #[must_use]
     pub fn from_prototype(
         prototype: &TypefaceProxyPrototype,
@@ -315,7 +315,7 @@ impl TypefaceProxy {
     }
 
     /// `remoteTypefaceID()`: the id of the typeface in the server's process.
-    // Port of: src/core/SkTypeface_remote.h#L106 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L104 (chrome/m156)
     #[doc(alias = "remoteTypefaceID")]
     #[must_use]
     pub fn remote_typeface_id(&self) -> TypefaceId {
@@ -323,14 +323,14 @@ impl TypefaceProxy {
     }
 
     /// `glyphCount()`.
-    // Port of: src/core/SkTypeface_remote.h#L108 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L106 (chrome/m156)
     #[must_use]
     pub fn glyph_count(&self) -> i32 {
         self.glyph_count
     }
 
     /// `isLogging()`.
-    // Port of: src/core/SkTypeface_remote.h#L110 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L108 (chrome/m156)
     #[must_use]
     pub fn is_logging(&self) -> bool {
         self.is_logging
@@ -342,53 +342,53 @@ impl TypefaceBase for TypefaceProxy {
         &self.core
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L172-L174 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L154-L156 (chrome/m156)
     fn on_get_font_descriptor(&self) -> (FontDescriptor, bool) {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L116-L118 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L112-L114 (chrome/m156)
     fn on_open_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)> {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L137-L140 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L128-L131 (chrome/m156)
     fn on_get_family_name(&self) -> String {
         // Used by SkStrikeCache::DumpMemoryStatistics.
         String::new()
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L126-L129 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L121-L124 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>> {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L130-L132 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L125-L127 (chrome/m156)
     fn on_get_variation_design_parameters(&self) -> Option<Vec<Axis>> {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L115 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L111 (chrome/m156)
     fn on_get_upem(&self) -> i32 {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L141-L143 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L132-L134 (chrome/m156)
     fn on_get_postscript_name(&self) -> Option<String> {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L144-L146 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L135-L137 (chrome/m156)
     fn on_create_family_name_iterator(&self) -> Box<dyn LocalizedStrings> {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L147-L149 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L138-L140 (chrome/m156)
     fn on_get_table_tags(&self) -> Vec<FourByteTag> {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L150-L152 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L141-L143 (chrome/m156)
     fn on_get_table_data(
         &self,
         _tag: FourByteTag,
@@ -399,22 +399,22 @@ impl TypefaceBase for TypefaceProxy {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L168-L171 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L150-L153 (chrome/m156)
     fn on_filter_rec(&self, _rec: &mut ScalerContextRec) {
         // The rec filtering is already applied by the server when generating the glyphs.
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L119-L121 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L118-L120 (chrome/m156)
     fn on_glyph_mask_needs_current_color(&self) -> bool {
         self.glyph_mask_needs_current_color
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L122-L124 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L115-L117 (chrome/m156)
     fn on_make_clone(&self, _this: Typeface, _args: &FontArguments<'_, '_>) -> Typeface {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L159-L166 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L144-L149 (chrome/m156)
     fn on_create_scaler_context(
         &self,
         this: Typeface,
@@ -429,17 +429,17 @@ impl TypefaceBase for TypefaceProxy {
         })
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L178-L180 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L168-L170 (chrome/m156)
     fn on_chars_to_glyphs(&self, _unichars: &[Unichar], _glyphs: &mut [GlyphId]) {
         unreachable!("Should never be called.")
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L181-L183 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L171-L173 (chrome/m156)
     fn on_count_glyphs(&self) -> i32 {
         self.glyph_count()
     }
 
-    // Port of: src/core/SkTypeface_remote.h#L176-L177 (chrome/m156)
+    // Port of: src/core/SkTypeface_remote.h#L165-L167 (chrome/m156)
     fn on_get_advanced_metrics(&self) -> Option<AdvancedTypefaceMetrics> {
         unreachable!("Should never be called.")
     }
