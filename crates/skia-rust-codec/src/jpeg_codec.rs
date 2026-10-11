@@ -60,14 +60,14 @@ const SIGNATURE_GRAY: u32 = 0x4752_4159;
 
 /// Port of `SkCodecs::ColorProfile::DataSpace`, the three values the JPEG decoder compares.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum DataSpace {
+pub(crate) enum DataSpace {
     Rgb,
     Gray,
     Cmyk,
 }
 
 // Port of: src/codec/SkCodecColorProfile.cpp#L128-L140 (ColorProfile::dataSpace)
-fn data_space(profile: &IccProfile) -> DataSpace {
+pub(crate) fn data_space(profile: &IccProfile) -> DataSpace {
     match profile.data_color_space {
         SIGNATURE_CMYK => DataSpace::Cmyk,
         SIGNATURE_GRAY => DataSpace::Gray,
