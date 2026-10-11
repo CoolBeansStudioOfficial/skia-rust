@@ -12,6 +12,7 @@ use skia_rust_core::rect::IRect;
 
 use crate::gpu::gpu_types::{CallbackResult, GpuStats, GpuStatsFlags};
 use crate::graphite::recording::Recording;
+use crate::graphite::surface_graphite::Surface;
 
 /// Is a lazy proxy fulfilled once or on every insertion.
 // Port of: include/gpu/graphite/GraphiteTypes.h#L216-L219 (chrome/m156)
@@ -271,15 +272,18 @@ impl std::fmt::Debug for SubmitInfo {
 ///
 /// The recording is borrowed, as in Skia: the caller keeps owning it, and a failed insert leaves
 /// it reinsertable (`RecorderOrderingTest` inserts one again). `None` is Skia's default `nullptr`,
-/// which fails with [`InsertStatus::InvalidRecording`]. Skia's `fTargetSurface`,
-/// `fTargetTextureState` and the backend semaphores are not ported: the target surface comes with
-/// `Surface` (G10d), and wgpu has no semaphores.
+/// which fails with [`InsertStatus::InvalidRecording`]. `target_surface` is the surface a recording
+/// from a deferred canvas is replayed onto; it must be given iff the recording has a deferred
+/// target. Skia's `fTargetTextureState` and the backend semaphores are not ported: wgpu has no
+/// semaphores, and the texture state is a Vulkan/Dawn-only concept.
 // Port of: include/gpu/graphite/GraphiteTypes.h#L125-L163 (chrome/m156)
 #[doc(alias = "skgpu::graphite::InsertRecordingInfo")]
 #[derive(Default)]
 pub struct InsertRecordingInfo<'a> {
     /// `fRecording`.
     pub recording: Option<&'a mut Recording>,
+    /// `fTargetSurface`: the surface a deferred canvas's recording is replayed onto.
+    pub target_surface: Option<&'a Surface>,
     /// `fTargetTranslation`.
     pub target_translation: IPoint,
     /// `fTargetClip`.
@@ -310,6 +314,7 @@ impl std::fmt::Debug for InsertRecordingInfo<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("InsertRecordingInfo")
             .field("recording", &self.recording.is_some())
+            .field("target_surface", &self.target_surface.is_some())
             .field("target_translation", &self.target_translation)
             .field("target_clip", &self.target_clip)
             .field("gpu_stats_flags", &self.gpu_stats_flags)

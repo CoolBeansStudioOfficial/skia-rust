@@ -20,9 +20,8 @@
 //! # Not yet ported
 //!
 //! The members that need other ports are left out and noted where they were: the `KeyAndDataBuilder` pool (G5a),
-//! `makeDeferredCanvas()` and the target proxy device (G10a), the backend texture calls
-//! (`BackendTexture`, G11a), `ImageProvider` (G10d), the capture manager and
-//! `dumpMemoryStatistics()`.
+//! the backend texture calls (`BackendTexture`, G11a), `ImageProvider` (G10d), the capture manager
+//! and `dumpMemoryStatistics()`.
 
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
@@ -31,20 +30,24 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
+use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Protected, StdSteadyClockTimePoint};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
-use crate::gpu::sk_log::skia_log_e;
+use crate::gpu::sk_log::{skia_log_e, skia_log_w};
 use crate::gpu::token::TokenTracker;
 use crate::graphite::atlas_provider::AtlasProvider;
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer_manager::{DrawBufferManager, DrawBufferManagerOptions};
 use crate::graphite::caps::Caps;
 use crate::graphite::context_priv::SharedResourceProvider;
+use crate::graphite::device::Device;
 use crate::graphite::graphics_pipeline_desc::PipelineHandleFactory;
 use crate::graphite::graphite_types::InsertFinishInfo;
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
@@ -54,6 +57,7 @@ use crate::graphite::recording::{LazyProxyData, Recording};
 use crate::graphite::renderer_provider::PathRendererStrategy as RendererProviderStrategy;
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
+use crate::graphite::resource_types::LoadOp;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResourceManager};
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
@@ -276,10 +280,23 @@ impl std::fmt::Debug for RecorderInner {
     }
 }
 
+/// The canvas of `makeDeferredCanvas()` (`fTargetProxyCanvas`), which owns the deferred target
+/// device (`fTargetProxyDevice`).
+struct DeferredCanvas(Canvas);
+
+impl std::fmt::Debug for DeferredCanvas {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DeferredCanvas").finish_non_exhaustive()
+    }
+}
+
 /// Records the GPU work of the devices that draw through it. See the module docs.
 #[doc(alias = "skgpu::graphite::Recorder")]
 #[derive(Debug)]
 pub struct Recorder {
+    // Declared first so that it is dropped while the recorder's state is still alive: dropping
+    // the device makes it immutable, which flushes its pending work to the recorder.
+    target_proxy_canvas: Option<DeferredCanvas>,
     inner: Rc<RecorderInner>,
 }
 
@@ -331,6 +348,7 @@ impl Recorder {
         let atlas_provider = AtlasProvider::new(&*caps, raster_path_strategy);
 
         Self {
+            target_proxy_canvas: None,
             inner: Rc::new(RecorderInner {
                 shared_context,
                 caps,
@@ -367,7 +385,10 @@ impl Recorder {
     /// handle only drops that reference: it does not end the recorder.
     #[must_use]
     pub fn from_inner(inner: Rc<RecorderInner>) -> Self {
-        Self { inner }
+        Self {
+            target_proxy_canvas: None,
+            inner,
+        }
     }
 
     /// A shared handle to the recorder's state, for the objects that borrow it while the recorder
@@ -389,14 +410,55 @@ impl Recorder {
         self.inner.shared_context.backend()
     }
 
+    /// `makeDeferredCanvas(imageInfo, textureInfo)`: a canvas whose draws are recorded onto a
+    /// proxy of a texture with `texture_info`, which is instantiated when the recording is
+    /// replayed onto a surface (`InsertRecordingInfo::target_surface`). Only one deferred canvas
+    /// may exist before the next `snap()`: `None` is returned if one does, and if the device could
+    /// not be made.
+    // Port of: src/gpu/graphite/Recorder.cpp#L294-L314 (chrome/m156)
+    #[doc(alias = "makeDeferredCanvas")]
+    pub fn make_deferred_canvas(
+        &mut self,
+        image_info: &ImageInfo,
+        texture_info: &TextureInfo,
+    ) -> Option<&Canvas> {
+        if self.target_proxy_canvas.is_some() {
+            // Require snapping before requesting another canvas.
+            skia_log_w!("Requested a new deferred canvas before snapping the previous one");
+            return None;
+        }
+
+        let dimensions = image_info.dimensions();
+        let target_data = LazyProxyData::new(&**self.priv_().caps(), dimensions, texture_info);
+        let target_proxy = target_data.ref_lazy_proxy();
+        *self.inner.target_proxy_data.borrow_mut() = Some(target_data);
+        // Use kLoad for the initial load op since the purpose of a deferred canvas is to draw on
+        // top of an existing, late-bound texture.
+        let device = Device::make(
+            self,
+            target_proxy,
+            dimensions,
+            image_info.color_info(),
+            &SurfaceProps::default(),
+            LoadOp::Load,
+            true,
+            false,
+        )?;
+        self.target_proxy_canvas = Some(DeferredCanvas(Canvas::from_device(Box::new(device))));
+        self.target_proxy_canvas.as_ref().map(|canvas| &canvas.0)
+    }
+
     /// `snap()`: finishes recording and creates a `Recording` that can be inserted into a
     /// `Context`, or `None` if recording failed.
     // Port of: src/gpu/graphite/Recorder.cpp#L195-L296 (chrome/m156)
     pub fn snap(&mut self) -> Option<Recording> {
-        let inner = &*self.inner;
+        // Normally devices are marked immutable when their owning Surface goes away, but the
+        // deferred canvas and its device do not have a surface, so mimic that operation: dropping
+        // the device makes it immutable (`Device::drop`). Do this before flushing all other
+        // tracked devices to avoid a redundant flush.
+        self.target_proxy_canvas = None;
 
-        // The target proxy device of a deferred canvas (G10a) would be made immutable and
-        // released here.
+        let inner = &*self.inner;
 
         // Collect all pending tasks on the deferred recording canvas and any other tracked
         // device.
