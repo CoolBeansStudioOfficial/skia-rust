@@ -656,6 +656,14 @@ impl<'a> Context<'a> {
         self.backend.clone()
     }
 
+    /// Records the evaluation's counters into `stats` from now on (`FilterResultTestAccess::TrackStats`
+    /// sets `ctx->fStats`). Test-only: hidden from the public docs.
+    // Port of: tests/FilterResultTest.cpp#L93-L95 (chrome/m156)
+    #[doc(hidden)]
+    pub fn track_stats(&mut self, stats: &'a Stats) {
+        self.stats = Some(stats);
+    }
+
     /// The mapping of this evaluation (`mapping`).
     #[must_use]
     pub fn mapping(&self) -> &Mapping {
