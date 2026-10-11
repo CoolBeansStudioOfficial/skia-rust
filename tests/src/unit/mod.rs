@@ -349,6 +349,8 @@ pub mod pixel_ref_test;
 #[cfg(test)]
 pub mod pixels_rec_test;
 #[cfg(test)]
+pub mod png_gainmap_test;
+#[cfg(test)]
 pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
