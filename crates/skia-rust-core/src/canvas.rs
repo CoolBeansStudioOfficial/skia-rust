@@ -64,6 +64,7 @@ use crate::image_filter_types::{
     round_out,
 };
 use crate::image_info::{ColorInfo, ImageInfo};
+use crate::image_raster::CopyPixelsMode;
 use crate::lattice_iter::LatticeIter;
 use crate::m44::M44;
 use crate::mask_filter::MaskFilterType;
@@ -548,6 +549,38 @@ pub enum ContentChangeMode {
     Retain,
 }
 
+/// What kind of surface a [`SurfaceBase`] belongs to, which decides how it makes its snapshot
+/// (`SkSurface_Base::onNewImageSnapshot`).
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum SnapshotKind {
+    /// A surface whose snapshots are not made here (the GPU surfaces): no image.
+    #[default]
+    Unsupported,
+    /// A raster surface (`SkSurface_Raster`). The snapshot shares the pixels when the surface
+    /// owns them, and copies them when they belong to the caller (`owns_pixels` is false).
+    Raster { owns_pixels: bool },
+    /// `SkNullSurface`: no pixels, so no image.
+    Null,
+}
+
+/// The surface that owns a canvas, as `SkCanvas::getSurface` returns it (`SkSurface*`). The
+/// surface owns its canvas, so this is a handle that borrows the canvas instead of an owner.
+#[doc(alias = "SkSurface")]
+#[derive(Debug)]
+pub struct CanvasSurface<'a> {
+    canvas: &'a Canvas,
+    base: Rc<SurfaceBase>,
+}
+
+impl CanvasSurface<'_> {
+    /// `makeImageSnapshot()`: an image of the surface's current pixels, which do not change when
+    /// the surface is drawn to later. `None` if the surface has no pixels.
+    #[doc(alias = "makeImageSnapshot")]
+    pub fn image_snapshot(&mut self) -> Option<Image> {
+        self.base.image_snapshot(self.canvas)
+    }
+}
+
 /// The part of `SkSurface_Base` a canvas talks to: the generation ID that changes whenever the
 /// canvas is about to draw. Shared between a surface and its canvas.
 ///
@@ -561,6 +594,7 @@ pub enum ContentChangeMode {
 pub struct SurfaceBase {
     generation_id: Cell<u32>,
     cached_image: RefCell<Option<Image>>,
+    snapshot: Cell<SnapshotKind>,
 }
 
 impl SurfaceBase {
@@ -611,6 +645,67 @@ impl SurfaceBase {
     #[must_use]
     pub fn cached_image(&self) -> Option<Image> {
         self.cached_image.borrow().clone()
+    }
+
+    /// Records what kind of surface this base belongs to (see [`SnapshotKind`]).
+    pub fn set_snapshot_kind(&self, kind: SnapshotKind) {
+        self.snapshot.set(kind);
+    }
+
+    /// `SkSurface::makeImageSnapshot()` of the surface that owns `canvas`: the same image is
+    /// returned until the next draw (`refCachedImage`).
+    // Port of: src/image/SkSurface.cpp#L90-L92 (chrome/m156)
+    pub fn image_snapshot(&self, canvas: &Canvas) -> Option<Image> {
+        if let Some(cached) = self.cached_image() {
+            return Some(cached);
+        }
+        let cached = self.new_image_snapshot(canvas, None)?;
+        self.set_cached_image(cached.clone());
+        Some(cached)
+    }
+
+    /// The image of `subset` of the surface's current pixels (`makeImageSnapshot(bounds)` for a
+    /// `subset` smaller than the surface, which the caller intersects first).
+    // Port of: src/image/SkSurface.cpp#L94-L106 (chrome/m156)
+    pub fn image_snapshot_subset(&self, canvas: &Canvas, subset: &IRect) -> Option<Image> {
+        self.new_image_snapshot(canvas, Some(subset))
+    }
+
+    /// `SkSurface_Raster::onNewImageSnapshot`, for the kind this base was given.
+    // Port of: src/image/SkSurface_Raster.cpp#L112-L136 (chrome/m156)
+    fn new_image_snapshot(&self, canvas: &Canvas, subset: Option<&IRect>) -> Option<Image> {
+        let owns_pixels = match self.snapshot.get() {
+            SnapshotKind::Unsupported | SnapshotKind::Null => return None,
+            SnapshotKind::Raster { owns_pixels } => owns_pixels,
+        };
+        canvas
+            .with_root_bitmap(|bitmap| {
+                if let Some(subset) = subset {
+                    debug_assert!(IRect::from_wh(bitmap.width(), bitmap.height()).contains(subset));
+                    let mut dst = Bitmap::new();
+                    if !dst
+                        .try_alloc_pixels_info(&bitmap.info().with_dimensions(subset.size()), None)
+                    {
+                        return None;
+                    }
+                    let read = dst.peek_pixels_mut().is_some_and(|mut pm| {
+                        bitmap.read_pixels_to_pixmap(&mut pm, (subset.left, subset.top))
+                    });
+                    debug_assert!(read);
+                    dst.set_immutable(); // key, so MakeFromBitmap doesn't make a copy of the buffer
+                    return dst.as_image();
+                }
+
+                // The snapshot shares the pixel ref (a clone of the handle); the next write to the
+                // surface's bitmap copies it first. Pixels we do not own are always copied.
+                let cpm = if owns_pixels {
+                    CopyPixelsMode::Never
+                } else {
+                    CopyPixelsMode::Always
+                };
+                crate::images::make_image_from_raster_bitmap(bitmap, cpm)
+            })
+            .flatten()
     }
 
     /// Caches `image` as the snapshot of the surface until its next draw.
@@ -3539,6 +3634,15 @@ impl Canvas {
     /// Ties the canvas to the surface that owns it (`setSurfaceBase`).
     pub fn set_surface_base(&self, surface: Option<Rc<SurfaceBase>>) {
         self.state.borrow_mut().surface = surface;
+    }
+
+    /// The surface that owns this canvas (`getSurface`), `None` for a canvas that no surface
+    /// made. The surface owns the canvas, so the handle borrows it.
+    // Port of: src/core/SkCanvas.cpp#L365-L367 (chrome/m156)
+    #[doc(alias = "getSurface")]
+    pub fn get_surface(&self) -> Option<CanvasSurface<'_>> {
+        let base = self.state.borrow().surface.clone()?;
+        Some(CanvasSurface { canvas: self, base })
     }
 
     /// Restores every save, discarding (not drawing) the layers still open, as `~SkCanvas` does.
