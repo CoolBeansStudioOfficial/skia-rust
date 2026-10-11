@@ -17,6 +17,7 @@ use skia_rust_core::blur_mask_filter_impl::blur_create_proc;
 use skia_rust_core::color_filters::{blend_create_proc, legacy_gamma_only_create_proc};
 use skia_rust_core::color_space_xform_color_filter::color_space_xform_create_proc;
 use skia_rust_core::compose_color_filter::compose_create_proc as color_filter_compose;
+use skia_rust_core::flattenable::ImageFilterFactory;
 use skia_rust_core::flattenable::{
     BlenderFactory, ColorFilterFactory, FlattenableRegistry, MaskFilterFactory, PathEffectFactory,
     ShaderFactory,
@@ -84,6 +85,27 @@ const SHADERS: &[(&str, ShaderFactory)] = &[
     ("SkColorFilterShader", color_filter_shader),
     ("SkWorkingColorSpaceShader", working_color_space_shader),
     ("SkPictureShader", picture_shader),
+    (
+        "SkImageShader",
+        skia_rust_core::shaders::image_shader::create_proc,
+    ),
+    (
+        "SkPerlinNoiseShader",
+        crate::perlin_noise_shader::create_proc,
+    ),
+    (
+        "SkPerlinNoiseShaderImpl",
+        crate::perlin_noise_shader::create_proc,
+    ),
+    ("SkLinearGradient", crate::linear_gradient::create_proc),
+    ("SkRadialGradient", crate::radial_gradient::create_proc),
+    ("SkSweepGradient", crate::sweep_gradient::create_proc),
+    ("SkConicalGradient", crate::conical_gradient::create_proc),
+    // The legacy name of the two point conical gradient.
+    (
+        "SkTwoPointConicalGradient",
+        crate::conical_gradient::create_proc,
+    ),
 ];
 
 /// The color filters registered by Skia, by name (`SkFlattenable::Register`), the ones that are
@@ -98,11 +120,167 @@ const COLOR_FILTERS: &[(&str, ColorFilterFactory)] = &[
     // The legacy name of the gamma-only color space filters.
     ("SkSRGBGammaColorFilter", legacy_gamma_only_create_proc),
     ("SkTable_ColorFilter", table_create_proc),
+    (
+        "SkRuntimeColorFilter",
+        skia_rust_core::runtime_color_filter::create_proc,
+    ),
 ];
 
 /// The blenders registered by Skia, by name (`SkFlattenable::Register`), the ones that are ported.
 // Port of: src/ports/SkGlobalInitialization_default.cpp#L59-L60 (chrome/m156)
 const BLENDERS: &[(&str, BlenderFactory)] = &[("SkBlendModeBlender", blend_mode_blender)];
+
+/// The image filters registered by Skia, by name (`SkFlattenable::Register`), the ones that are
+/// ported. The runtime image filter, the legacy drop shadow and the legacy lighting filters
+/// (`SkDiffuseLightingImageFilter`, `SkSpecularLightingImageFilter`) are not ported.
+// Port of: src/ports/SkGlobalInitialization_default.cpp (chrome/m156), and the
+// `SkRegister*ImageFilterFlattenable` functions of `src/effects/imagefilters/`
+const IMAGE_FILTERS: &[(&str, ImageFilterFactory)] = &[
+    (
+        "SkBlendImageFilter",
+        crate::image_filters::blend_filter::create_proc,
+    ),
+    (
+        "SkXfermodeImageFilter_Base",
+        crate::image_filters::blend_filter::create_proc,
+    ),
+    (
+        "SkXfermodeImageFilterImpl",
+        crate::image_filters::blend_filter::create_proc,
+    ),
+    (
+        "ArithmeticImageFilterImpl",
+        crate::image_filters::blend_filter::legacy_arithmetic_create_proc,
+    ),
+    (
+        "SkArithmeticImageFilter",
+        crate::image_filters::blend_filter::legacy_arithmetic_create_proc,
+    ),
+    (
+        "SkBlurImageFilter",
+        crate::image_filters::blur_filter::create_proc,
+    ),
+    (
+        "SkBlurImageFilterImpl",
+        crate::image_filters::blur_filter::create_proc,
+    ),
+    (
+        "SkColorFilterImageFilter",
+        crate::image_filters::color_filter_filter::create_proc,
+    ),
+    (
+        "SkColorFilterImageFilterImpl",
+        crate::image_filters::color_filter_filter::create_proc,
+    ),
+    (
+        "SkComposeImageFilter",
+        crate::image_filters::compose_filter::create_proc,
+    ),
+    (
+        "SkComposeImageFilterImpl",
+        crate::image_filters::compose_filter::create_proc,
+    ),
+    (
+        "SkCropImageFilter",
+        crate::image_filters::crop_filter::create_proc,
+    ),
+    (
+        "SkTileImageFilter",
+        crate::image_filters::crop_filter::legacy_tile_create_proc,
+    ),
+    (
+        "SkTileImageFilterImpl",
+        crate::image_filters::crop_filter::legacy_tile_create_proc,
+    ),
+    (
+        "SkDisplacementMapImageFilter",
+        crate::image_filters::displacement_map_filter::create_proc,
+    ),
+    (
+        "SkDisplacementMapEffect",
+        crate::image_filters::displacement_map_filter::create_proc,
+    ),
+    (
+        "SkDisplacementMapEffectImpl",
+        crate::image_filters::displacement_map_filter::create_proc,
+    ),
+    (
+        "SkImageImageFilter",
+        crate::image_filters::image_source_filter::create_proc,
+    ),
+    (
+        "SkImageSourceImpl",
+        crate::image_filters::image_source_filter::create_proc,
+    ),
+    (
+        "SkLightingImageFilter",
+        crate::image_filters::lighting_filter::create_proc,
+    ),
+    (
+        "SkMagnifierImageFilter",
+        crate::image_filters::magnifier_filter::create_proc,
+    ),
+    (
+        "SkMatrixConvolutionImageFilter",
+        crate::image_filters::matrix_convolution_filter::create_proc,
+    ),
+    (
+        "SkMatrixConvolutionImageFilterImpl",
+        crate::image_filters::matrix_convolution_filter::create_proc,
+    ),
+    (
+        "SkMatrixTransformImageFilter",
+        crate::image_filters::matrix_transform_filter::create_proc,
+    ),
+    (
+        "SkMatrixImageFilter",
+        crate::image_filters::matrix_transform_filter::create_proc,
+    ),
+    (
+        "SkOffsetImageFilter",
+        crate::image_filters::matrix_transform_filter::legacy_offset_create_proc,
+    ),
+    (
+        "SkOffsetImageFilterImpl",
+        crate::image_filters::matrix_transform_filter::legacy_offset_create_proc,
+    ),
+    (
+        "SkMergeImageFilter",
+        crate::image_filters::merge_filter::create_proc,
+    ),
+    (
+        "SkMergeImageFilterImpl",
+        crate::image_filters::merge_filter::create_proc,
+    ),
+    (
+        "SkMorphologyImageFilter",
+        crate::image_filters::morphology_filter::create_proc,
+    ),
+    (
+        "SkMorphologyImageFilterImpl",
+        crate::image_filters::morphology_filter::create_proc,
+    ),
+    (
+        "SkPictureImageFilter",
+        crate::image_filters::picture_filter::create_proc,
+    ),
+    (
+        "SkPictureImageFilterImpl",
+        crate::image_filters::picture_filter::create_proc,
+    ),
+    (
+        "SkShaderImageFilter",
+        crate::image_filters::shader_filter::create_proc,
+    ),
+    (
+        "SkPaintImageFilter",
+        crate::image_filters::shader_filter::create_proc,
+    ),
+    (
+        "SkPaintImageFilterImpl",
+        crate::image_filters::shader_filter::create_proc,
+    ),
+];
 
 /// The flattenables of the effects, for `ReadBuffer::read_path_effect`, `read_mask_filter`,
 /// `read_shader`, `read_color_filter` and `read_blender`.
@@ -113,4 +291,5 @@ pub const REGISTRY: FlattenableRegistry = FlattenableRegistry {
     shaders: SHADERS,
     color_filters: COLOR_FILTERS,
     blenders: BLENDERS,
+    image_filters: IMAGE_FILTERS,
 };

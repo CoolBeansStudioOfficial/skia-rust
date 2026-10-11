@@ -5,16 +5,21 @@
 
 //! `SkLinearGradient`: a gradient along a line.
 
+use crate::gradient::Colors;
+use crate::gradient::Gradient;
+use crate::gradient_base_shader::unflatten_gradient;
 use skia_rust_core::color::Color4f;
 use skia_rust_core::effect_priv::StageRec;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scalar::{Scalar, scalar_invert};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::{GradientInfo, GradientType, MatrixRec, ShaderBase, ShaderType};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
-use crate::gradient::Gradient;
 use crate::gradient_base_shader::{DEGENERATE_THRESHOLD, GradientBaseShader};
 
 /// `pts_to_unit_matrix`.
@@ -75,6 +80,17 @@ impl LinearGradient {
 }
 
 impl ShaderBase for LinearGradient {
+    // Port of: src/shaders/gradients/SkLinearGradient.cpp#L110 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkLinearGradient"
+    }
+
+    // Port of: src/shaders/gradients/SkLinearGradient.cpp#L64-L68 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        self.base.flatten_gradient(buffer);
+        buffer.write_point(self.start);
+        buffer.write_point(self.end);
+    }
     fn is_opaque(&self) -> bool {
         self.base.is_opaque()
     }
@@ -137,4 +153,21 @@ pub(crate) fn linear_gradient(
 
     let s = Shader::from_base(LinearGradient::new(pts, grad));
     Some(s.with_local_matrix(lm.unwrap_or_else(|| Matrix::i())))
+}
+
+/// `SkLinearGradient::CreateProc`.
+// Port of: src/shaders/gradients/SkLinearGradient.cpp#L48-L62 (chrome/m156)
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, _registry: &FlattenableRegistry) -> Option<Shader> {
+    let grad = unflatten_gradient(buffer)?;
+    let lm = (!grad.legacy_local_matrix.is_identity()).then_some(grad.legacy_local_matrix);
+    let p0 = buffer.read_point();
+    let p1 = buffer.read_point();
+    let colors = Colors::new(
+        &grad.colors,
+        grad.positions.as_deref(),
+        grad.tile_mode,
+        grad.color_space,
+    );
+    let gradient = Gradient::new(colors, grad.interpolation);
+    linear_gradient(&[p0, p1], &gradient, lm.as_ref())
 }

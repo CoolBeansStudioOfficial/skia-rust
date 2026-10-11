@@ -4,7 +4,7 @@ Status: implemented for the first slice (2026-10-11). Pin: `chrome/m156`. Audien
 porting a file from Skia's `fuzz/` (`DEF_FUZZ`), and whoever sets up the nightly fuzz job.
 
 The manifest has 32 `kind = "fuzz"` entries, one per `DEF_FUZZ` registration in `fuzz/*.cpp`.
-The first slice made 13 `passing`. The FuzzCanvas slice makes four more, so 17 pass, 9 are excluded and 6 are `todo` with reasons (§6).
+The first slice made 13 `passing`. The FuzzCanvas slice made four more, and the fourth slice (SVGCanvas, PNGRustEncoder, SerializedImageFilter) three more, so 20 pass, 1 fails (a Skia bug, section 6), 9 are excluded and 2 are `todo` with reasons (section 6).
 
 ## 1. What `passing` means for a fuzz entry
 
@@ -137,11 +137,11 @@ bugs come with the input) is handled like this:
 
 | Status | Entries |
 |---|---|
-| passing (17) | `CubicRoots`, `QuadRoots`, `ParsePath`, `PathMeasure`, `RegionOp`, `PolyUtils`, `Pathop`, `LegacyChromiumPathop`, `Gradients`, `DrawFunctions`, `PNGEncoder`, `JPEGEncoder`, `WEBPEncoder`, and from the FuzzCanvas slice `NullCanvas`, `RasterN32Canvas`, `ImageFilter`, `PDFCanvas` |
+| passing (20) | `CubicRoots`, `QuadRoots`, `ParsePath`, `PathMeasure`, `RegionOp`, `PolyUtils`, `Pathop`, `LegacyChromiumPathop`, `Gradients`, `DrawFunctions`, `PNGEncoder`, `JPEGEncoder`, `WEBPEncoder`, and from the FuzzCanvas slice `NullCanvas`, `RasterN32Canvas`, `ImageFilter`, `PDFCanvas`, and from the fourth slice `SVGCanvas`, `PNGRustEncoder`, `SerializedImageFilter` |
 | excluded: Ganesh (6) | `MockGPUCanvas`, `NativeGLCanvas`, `CreateDDL`, `DDLThreadingGL`, `GrStyledShape`, `Triangulation` (`GrTriangulator` and `GrCpuVertexAllocator` are CPU code, but only Ganesh's path renderers use them) |
 | excluded: not fuzzers (2) | `_DumpCanvas` (prints a `DebugCanvas` as JSON), `_MakeEncoderCorpus` (writes corpus files; §2 reuses its format) |
 | excluded: compiled out (1) | `PolyUtils#2`, the empty body built with `SK_ENABLE_OPTIMIZE_SIZE` |
-| todo: FuzzCanvas (3) | `RasterN32CanvasViaSerialization` (needs `SkPicturePriv::MakeFromBuffer`, the buffer reader of a serialized picture, not ported; Skia may signal a bug on every input there, needs an oracle check), `SerializedImageFilter` (needs `SkImageFilter::serialize` and `Deserialize`, not ported), `SVGCanvas` (M16: `SkSVGCanvas` is not ported) |
+| failing (1) | `RasterN32CanvasViaSerialization`: Skia signals a bug on every input, because `SkPicture::serialize` writes the stream form that `SkPicturePriv::MakeFromBuffer` rejects. The replay is `#[ignore]`d and the reason is in the manifest (section 5) |
 
 Some calls in the FuzzCanvas port are unported. Such a call keeps the reads that Skia makes for it, and only the drawing is left out, so the reader stays in step with Skia's. `SkPicture::makeShader` is ported (`PictureShaderExt::to_shader`, `make_fuzz_shader`'s picture case). `FuzzCreateValidInputsForRuntimeEffect` is not used by the FuzzCanvas fuzzers, so it is not ported. `SkMakeNullCanvas` is `SkNWayCanvas(0, 0)`, ported as a no-pixel canvas with the null canvas's hooks, since `SkNWayCanvas` itself is not ported.
-| todo: other (3) | `Precompile` (Graphite precompile on a mock `Context`), `SkParagraph` (needs M10), `PNGRustEncoder` (needs codec wave C-R) |
+| todo: other (2) | `Precompile` (Graphite precompile on a mock `Context`), `SkParagraph` (needs M10) |

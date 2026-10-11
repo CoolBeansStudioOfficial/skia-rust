@@ -6,16 +6,20 @@
 //! `SkConicalGradient`: a two-point conical gradient (see <https://skia.org/dev/design/conical>
 //! for how the shader works).
 
+use crate::gradient_base_shader::unflatten_gradient;
 use skia_rust_core::color::Color4f;
 use skia_rust_core::effect_priv::StageRec;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
 use skia_rust_core::raster_pipeline::Stage;
 use skia_rust_core::raster_pipeline::contexts::Conical2PtCtx;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scalar::{Scalar, scalar};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::{GradientInfo, GradientType, MatrixRec, ShaderBase, ShaderType};
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::gradient::{Colors, Gradient};
 use crate::gradient_base_shader::{DEGENERATE_THRESHOLD, GradientBaseShader};
@@ -316,6 +320,19 @@ fn std_max(a: scalar, b: scalar) -> scalar {
 }
 
 impl ShaderBase for ConicalGradient {
+    // Port of: src/shaders/gradients/SkConicalGradient.cpp#L312 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkConicalGradient"
+    }
+
+    // Port of: src/shaders/gradients/SkConicalGradient.cpp#L182-L188 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        self.base.flatten_gradient(buffer);
+        buffer.write_point(self.center1);
+        buffer.write_point(self.center2);
+        buffer.write_scalar(self.radius1);
+        buffer.write_scalar(self.radius2);
+    }
     // Because areas outside the cone are left untouched, we cannot treat the
     // shader as opaque even if the gradient itself is opaque.
     // TODO(junov): Compute whether the cone fills the plane crbug.com/222380
@@ -496,4 +513,26 @@ pub(crate) fn two_point_conical_gradient(
         &Gradient::new(new_colors, *interp),
         lm,
     )
+}
+
+/// `SkConicalGradient::CreateProc`.
+// Port of: src/shaders/gradients/SkConicalGradient.cpp#L161-L180 (chrome/m156)
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, _registry: &FlattenableRegistry) -> Option<Shader> {
+    let grad = unflatten_gradient(buffer)?;
+    let lm = (!grad.legacy_local_matrix.is_identity()).then_some(grad.legacy_local_matrix);
+    let c1 = buffer.read_point();
+    let c2 = buffer.read_point();
+    let r1 = buffer.read_scalar();
+    let r2 = buffer.read_scalar();
+    if !buffer.is_valid() {
+        return None;
+    }
+    let colors = Colors::new(
+        &grad.colors,
+        grad.positions.as_deref(),
+        grad.tile_mode,
+        grad.color_space,
+    );
+    let gradient = Gradient::new(colors, grad.interpolation);
+    two_point_conical_gradient(c1, r1, c2, r2, &gradient, lm.as_ref())
 }

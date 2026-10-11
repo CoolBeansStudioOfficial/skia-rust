@@ -7,13 +7,19 @@
 //! and `Tile` are crops.
 
 #![allow(clippy::collapsible_if)] // Keeps the C++ control flow for review.
+use skia_rust_core::flattenable::FlattenableRegistry;
+use skia_rust_core::image_filter::is_valid_rect;
 use skia_rust_core::image_filter::{
     ImageFilter, ImageFilterBase, ImageFilterCommon, round_out_layer,
 };
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, relevant_subset, round_in};
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect, rect_priv};
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 /// The crop filter (`SkCropImageFilter`).
 // Port of: src/effects/imagefilters/SkCropImageFilter.cpp#L16-L51 (chrome/m156)
@@ -59,6 +65,18 @@ impl CropImageFilter {
 impl ImageFilterBase for CropImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkCropImageFilter.cpp#L48 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkCropImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkCropImageFilter.cpp#L135-L139 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_rect(&self.crop_rect);
+        buffer.write_int(self.tile_mode as i32);
     }
 
     // Port of: src/effects/imagefilters/SkCropImageFilter.cpp#L33-L35 (chrome/m156)
@@ -162,4 +180,37 @@ pub fn empty() -> ImageFilter {
 pub fn tile(src: &Rect, dst: &Rect, input: Option<ImageFilter>) -> Option<ImageFilter> {
     let filter = crop(src, TileMode::Repeat, input);
     crop(dst, TileMode::Decal, filter)
+}
+
+/// `SkCropImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkCropImageFilter.cpp#L168-L186 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, _) = unflatten_common(buffer, 1, registry)?;
+    let crop_rect = buffer.read_rect();
+    if !buffer.is_valid() || !buffer.validate(is_valid_rect(&crop_rect)) {
+        return None;
+    }
+
+    let mut tile_mode = TileMode::Decal;
+    if !buffer.is_version_lt(picture_priv::VERSION_CROP_IMAGE_FILTER_SUPPORTS_TILING) {
+        tile_mode = TileMode::from_i32(buffer.read32_le(TileMode::Decal as u32).cast_signed())
+            .unwrap_or_default();
+    }
+
+    crop(&crop_rect, tile_mode, input_at(&inputs, 0))
+}
+
+/// `SkCropImageFilter::LegacyTileCreateProc`: the tile filter of the old names.
+// Port of: src/effects/imagefilters/SkCropImageFilter.cpp#L154-L161 (chrome/m156)
+pub fn legacy_tile_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, _) = unflatten_common(buffer, 1, registry)?;
+    let src = buffer.read_rect();
+    let dst = buffer.read_rect();
+    tile(&src, &dst, input_at(&inputs, 0))
 }

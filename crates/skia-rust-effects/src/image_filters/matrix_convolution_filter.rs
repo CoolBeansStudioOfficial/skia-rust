@@ -10,13 +10,17 @@
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags, default_sampling};
 use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::known_runtime_effects::{StableKey, get_known_runtime_effect};
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::picture_priv;
 use skia_rust_core::point::IPoint;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect, rect_priv};
 use skia_rust_core::runtime_effect::{ChildPtr, RuntimeShaderBuilder};
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
@@ -24,6 +28,7 @@ use skia_rust_core::scalar::{SCALAR_NEARLY_ZERO, scalar_round_to_int};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::ISize;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 
@@ -271,6 +276,24 @@ impl ImageFilterBase for MatrixConvolutionImageFilter {
         &self.common
     }
 
+    // Port of: src/effects/imagefilters/SkMatrixConvolutionImageFilter.cpp#L92 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkMatrixConvolutionImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkMatrixConvolutionImageFilter.cpp#L301-L312 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_int(self.kernel_size.width);
+        buffer.write_int(self.kernel_size.height);
+        buffer.write_scalar_array(&self.kernel);
+        buffer.write_scalar(self.gain);
+        buffer.write_scalar(self.bias);
+        buffer.write_int(self.kernel_offset.x);
+        buffer.write_int(self.kernel_offset.y);
+        buffer.write_bool(self.convolve_alpha);
+    }
+
     // Port of: src/effects/imagefilters/SkMatrixConvolutionImageFilter.cpp#L110-L123 (chrome/m156)
     //
     // affectsTransparentBlack() is conflated with "canComputeFastBounds" and MatrixConvolution is
@@ -422,4 +445,52 @@ pub fn matrix_convolution(
         filter = crop(&rect, TileMode::Decal, filter);
     }
     filter
+}
+
+/// `SkMatrixConvolutionImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkMatrixConvolutionImageFilter.cpp#L314-L352 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 1, registry)?;
+    let kernel_size = ISize::new(buffer.read_int(), buffer.read_int());
+    let count = buffer.get_array_count();
+    let kernel_area = i64::from(kernel_size.width) * i64::from(kernel_size.height);
+    if !buffer.validate(kernel_area == i64::from(count)) {
+        return None;
+    }
+    let Ok(count) = usize::try_from(count) else {
+        return None;
+    };
+    if !buffer.validate_can_read_n(count, 4) {
+        return None;
+    }
+    let mut kernel = vec![0.0; count];
+    if !buffer.read_scalar_array(&mut kernel) {
+        return None;
+    }
+    let gain = buffer.read_scalar();
+    let bias = buffer.read_scalar();
+    let kernel_offset = IPoint::new(buffer.read_int(), buffer.read_int());
+    let mut tile_mode = TileMode::Decal;
+    if buffer.is_version_lt(picture_priv::VERSION_CONVOLUTION_IMAGE_FILTER_TILING_UPDATE) {
+        tile_mode = TileMode::from_i32(buffer.read32_le(TileMode::Decal as u32).cast_signed())
+            .unwrap_or_default();
+    }
+    let convolve_alpha = buffer.read_bool();
+    if !buffer.is_valid() {
+        return None;
+    }
+    matrix_convolution(
+        kernel_size,
+        &kernel,
+        gain,
+        bias,
+        kernel_offset,
+        tile_mode,
+        convolve_alpha,
+        input_at(&inputs, 0),
+        crop_rect,
+    )
 }

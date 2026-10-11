@@ -88,6 +88,34 @@ doc = false
 bench = false
 
 [[bin]]
+name = "PNGRustEncoder"
+path = "fuzz_targets/PNGRustEncoder.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "RasterN32CanvasViaSerialization"
+path = "fuzz_targets/RasterN32CanvasViaSerialization.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "SVGCanvas"
+path = "fuzz_targets/SVGCanvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "SerializedImageFilter"
+path = "fuzz_targets/SerializedImageFilter.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "ParsePath"
 path = "fuzz_targets/ParsePath.rs"
 test = false

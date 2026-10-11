@@ -21,3 +21,18 @@ pub enum TileMode {
     /// Transparent black outside (`kDecal`).
     Decal,
 }
+
+impl TileMode {
+    /// The mode with the value `value`, as a `SkTileMode` is read from a buffer (`read32LE`), or
+    /// `None` past the last mode.
+    #[must_use]
+    pub fn from_i32(value: i32) -> Option<TileMode> {
+        match value {
+            0 => Some(TileMode::Clamp),
+            1 => Some(TileMode::Repeat),
+            2 => Some(TileMode::Mirror),
+            3 => Some(TileMode::Decal),
+            _ => None,
+        }
+    }
+}

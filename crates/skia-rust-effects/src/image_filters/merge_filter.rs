@@ -5,9 +5,12 @@
 
 //! `SkMergeImageFilter`: source-over merges any number of inputs.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
+use skia_rust_core::image_filter::unflatten_common;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
 use skia_rust_core::image_filter_result::{Builder, FilterResult};
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect};
 
 use crate::image_filters::crop_filter::crop;
@@ -36,6 +39,11 @@ pub struct MergeImageFilter {
 impl ImageFilterBase for MergeImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkMergeImageFilter.cpp#L37 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkMergeImageFilter"
     }
 
     // Port of: src/effects/imagefilters/SkMergeImageFilter.cpp#L22 (chrome/m156)
@@ -112,4 +120,17 @@ pub fn merge(inputs: &[Option<ImageFilter>], crop_rect: Option<Rect>) -> Option<
         ),
         None => Some(filter),
     }
+}
+
+/// `SkMergeImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkMergeImageFilter.cpp#L86-L93 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, -1, registry)?;
+    if !buffer.is_valid() {
+        return None;
+    }
+    merge(&inputs, crop_rect)
 }
