@@ -21933,8 +21933,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L290-L332"
 module = "effects"
-status = "todo"
-reason = "Not ported: it saves a layer with a FilterSpan of two image filters (SkCanvas::FilterSpan / SaveLayerRec filters, applied in order by SkCanvas::internalSaveLayer), and it uses SkCanvasPriv::ScaledBackdropLayer. SaveLayerRec has no filters field, so a layer takes one image filter."
+status = "passing"
 span_hash = "e80d8f4eb0f2cc31a21237713adbd056c1b6e2cb39306b77324528582d518e17"
 
 [[test]]
