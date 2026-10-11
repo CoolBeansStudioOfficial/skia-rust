@@ -21724,8 +21724,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/image.cpp#L596-L613"
 module = "raster"
-status = "todo"
-reason = "needs SkImage serialization (serial_deserial), not checked against the image port"
+status = "passing"
 span_hash = "7d90f328e5486d76530aa64bb558c8ade550fee472a4a957f854e06da4ca5d28"
 
 [[test]]
