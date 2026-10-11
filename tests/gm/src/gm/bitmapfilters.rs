@@ -135,8 +135,7 @@ fn draw_set(canvas: &Canvas, img: &Image, mut x: f32, p: &mut Paint) -> f32 {
     )
 }
 
-// `ToolUtils::colortype_name` for the color types this GM draws. N32 is `BGRA_8888` on the oracle
-// (Windows) and `RGBA_8888` on an RGBA host, as in Skia.
+// `ToolUtils::colortype_name` for the color types this GM draws.
 // Port of: tools/ToolUtils.cpp#L62-L95 (chrome/m156), colortype_name (the types this GM names)
 fn colortype_name(color_type: ColorType) -> &'static str {
     match color_type {
@@ -156,7 +155,14 @@ fn draw_row(canvas: &Canvas, img: &Image) -> f32 {
     let mut x: f32 = 0.0;
     let scale: f32 = 32.0;
     let font = default_portable_font();
-    let name = colortype_name(img.color_type());
+    // The image's `kN32_SkColorType` is named as the oracle build's N32 (BGRA on the Windows
+    // oracle, RGBA for the `-rgba` variants).
+    let color_type = if img.color_type() == ColorType::N32 {
+        skia_rust_raster::oracle_n32::testing::oracle_n32()
+    } else {
+        img.color_type()
+    };
+    let name = colortype_name(color_type);
     canvas.draw_str(
         name,
         (x, int_to_scalar(img.height()) * scale * 5.0 / 8.0),
@@ -235,8 +241,4 @@ impl GM for FilterGm {
 }
 
 // Port of: gm/bitmapfilters.cpp#L114 (chrome/m156), DEF_GM( return new FilterGM; )
-crate::def_gm!(
-    #[ignore = "see notes/gm_bitmapfilters_cpp_FilterGM.md"]
-    FilterGM_ = "FilterGM",
-    FilterGm::new()
-);
+crate::def_gm!(FilterGM_ = "FilterGM", FilterGm::new());

@@ -16827,8 +16827,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmapfilters.cpp#L114-L114"
 module = "effects"
-status = "failing"
-reason = "ported; pixels match except the N32 row label: ToolUtils::colortype_name(kN32) is BGRA_8888 on the Windows oracle and RGBA_8888 on this RGBA host (157 px in the label row). See notes/gm_bitmapfilters_cpp_FilterGM.md"
+status = "passing"
 span_hash = "4a54a347805cb06f730a513d432ca1b641b0529564ec49481cd55f1e95f63600"
 
 [[test]]
