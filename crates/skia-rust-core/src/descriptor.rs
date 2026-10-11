@@ -23,7 +23,9 @@ use std::fmt;
 
 use crate::checksum::hash32;
 use crate::font_types::set_four_byte_tag;
+use crate::read_buffer::ReadBuffer;
 use crate::scaler_context::SCALER_CONTEXT_REC_SIZE;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// `kRec_SkDescriptorTag`: the entry holding a [`ScalerContextRec`](crate::scaler_context::ScalerContextRec).
 // Port of: src/core/SkScalerContext.h#L483 (chrome/m156)
@@ -248,6 +250,12 @@ impl Descriptor {
         }
     }
 
+    /// `SkDescriptor::flatten`: writes the bytes in use, padded to 4 bytes.
+    // Port of: src/core/SkDescriptor.cpp#L31-L33 (chrome/m156)
+    pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_pad32(&self.bytes[..self.length() as usize]);
+    }
+
     /// Byte range of the data of the first entry with `tag`.
     // Port of: src/core/SkDescriptor.cpp#L56-L70 (chrome/m156), the walk of findEntry
     fn entry_data_range(&self, tag: u32) -> Option<std::ops::Range<usize>> {
@@ -325,6 +333,49 @@ pub struct AutoDescriptor {
 }
 
 impl AutoDescriptor {
+    /// `SkAutoDescriptor::MakeFromBuffer`: reads a descriptor written by [`Descriptor::flatten`].
+    /// Returns `None` for a header whose length does not fit the data, a checksum that does not
+    /// match, or a body that is not valid.
+    // Port of: src/core/SkDescriptor.cpp#L176-L209 (chrome/m156)
+    #[doc(alias = "MakeFromBuffer")]
+    #[must_use]
+    pub fn make_from_buffer(buffer: &mut ReadBuffer<'_>) -> Option<Self> {
+        let mut header = [0u8; HEADER_SIZE];
+        if !buffer.read_pad32(&mut header) {
+            return None;
+        }
+        let length = u32::from_ne_bytes([header[4], header[5], header[6], header[7]]) as usize;
+
+        // Basic bounds check on header length to make sure that bodyLength calculation does not
+        // underflow. Also ensure alignment.
+        if length < HEADER_SIZE || !is_align4(length) {
+            return None;
+        }
+        let body_length = length - HEADER_SIZE;
+
+        // Make sure the fLength makes sense with respect to the incoming data.
+        if body_length > buffer.available() {
+            return None;
+        }
+
+        let mut bytes = vec![0u8; length];
+        bytes[..HEADER_SIZE].copy_from_slice(&header);
+        if !buffer.read_pad32(&mut bytes[HEADER_SIZE..]) {
+            return None;
+        }
+        let desc = Descriptor { bytes };
+
+        // C++ checks the checksum in every build except the fuzzer one (`SK_BUILD_FOR_FUZZER`).
+        if desc.compute_checksum_value() != desc.read_u32_at(0)? {
+            return None;
+        }
+        if !desc.is_valid() {
+            return None;
+        }
+
+        Some(Self { desc: Some(desc) })
+    }
+
     /// `SkAutoDescriptor()`: holds no descriptor until it is reset.
     // Port of: src/core/SkDescriptor.cpp#L145 (chrome/m156)
     #[must_use]

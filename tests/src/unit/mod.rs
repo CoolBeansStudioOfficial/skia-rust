@@ -528,6 +528,8 @@ pub mod time;
 #[cfg(test)]
 pub mod typeface_test;
 #[cfg(test)]
+pub mod unicode_test;
+#[cfg(test)]
 pub mod utils_test;
 #[cfg(test)]
 pub mod vertices_test;

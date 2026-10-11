@@ -11,16 +11,21 @@ use std::sync::{Arc, Mutex, PoisonError};
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::data::Data;
+use skia_rust_core::font::Font;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::sampling_options::FilterMode;
 use skia_rust_core::serial_procs::{DeserialProcs, SerialProcs};
+use skia_rust_core::stream::MemoryStream;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::typeface::Typeface;
 use skia_rust_effects::flattenable::REGISTRY;
 use skia_rust_raster::picture_shader::PictureShaderExt;
+use skia_rust_tools::font_tool_utils::create_typeface_from_resource;
 
+use crate::resources::get_resource_as_data;
 use crate::{Reporter, def_test, reporter_assert};
 
 // Port of: tests/SerialProcsTest.cpp#L132-L136 (chrome/m156)
@@ -122,4 +127,59 @@ def_test!(serial_procs_picture, |reporter| {
         c.draw_color(Color::BLUE, None);
     });
     test_pictures(reporter, &p0, 1, true);
+});
+
+// Port of: tests/SerialProcsTest.cpp#L232-L242 (chrome/m156), make_picture
+fn make_typeface_picture(tf0: &Typeface, tf1: &Typeface) -> Picture {
+    let mut rec = PictureRecorder::new();
+    let canvas = rec.begin_recording(Rect::from_wh(100.0, 100.0), false);
+    let paint = Paint::default();
+    let mut font = Font::default();
+    font.set_typeface(Some(tf0.clone()));
+    canvas.draw_str("hello", (0.0, 0.0), &font, &paint);
+    font.set_typeface(Some(tf1.clone()));
+    canvas.draw_str("hello", (0.0, 0.0), &font, &paint);
+    font.set_typeface(Some(tf0.clone()));
+    canvas.draw_str("hello", (0.0, 0.0), &font, &paint);
+    font.set_typeface(Some(tf1.clone()));
+    canvas.draw_str("hello", (0.0, 0.0), &font, &paint);
+    rec.finish_recording_as_picture(None).expect("picture")
+}
+
+/// `ToolUtils::CreateTypefaceFromResource(path)` (`None` in the portable configuration).
+fn create_typeface_from_resource_path(path: &str) -> Option<Typeface> {
+    let data = get_resource_as_data(path)?;
+    create_typeface_from_resource(Some(MemoryStream::make_copy(&data)), 0)
+}
+
+// Port of: tests/SerialProcsTest.cpp#L244-L265 (chrome/m156), serial_typeface
+def_test!(serial_typeface, |reporter| {
+    let tf0 = create_typeface_from_resource_path("fonts/hintgasp.ttf");
+    let tf1 = create_typeface_from_resource_path("fonts/Roboto2-Regular_NoEmbed.ttf");
+    let (Some(tf0), Some(tf1)) = (tf0, tf1) else {
+        return; // need two different typefaces for this test to make sense.
+    };
+    if tf0.unique_id() == tf1.unique_id() {
+        return; // need two different typefaces for this test to make sense.
+    }
+
+    let pic = make_typeface_picture(&tf0, &tf1);
+
+    let counter = Arc::new(Mutex::new(0));
+    let ctx = Arc::clone(&counter);
+    let procs = SerialProcs {
+        typeface: Some(Arc::new(move |_tf: &Typeface| {
+            *ctx.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+            None
+        })),
+        ..SerialProcs::default()
+    };
+    let _data = pic.serialize(Some(&procs));
+
+    // The picture has 2 references to each typeface, but we want the serialized picture to
+    // only have written the data 1 time per typeface.
+    reporter_assert!(
+        reporter,
+        *counter.lock().unwrap_or_else(PoisonError::into_inner) == 2
+    );
 });
