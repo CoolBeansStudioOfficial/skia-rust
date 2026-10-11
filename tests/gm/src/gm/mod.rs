@@ -116,6 +116,7 @@ pub mod crbug_1174354;
 pub mod crbug_1177833;
 pub mod crbug_1257515;
 pub mod crbug_1313579;
+pub mod crbug_224618;
 pub mod crbug_691386;
 pub mod crbug_788500;
 pub mod crbug_847759;
