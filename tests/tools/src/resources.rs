@@ -34,11 +34,18 @@ pub fn resource_dir() -> Option<PathBuf> {
 /// directory, using `/` separators), or `None` if it cannot be read.
 #[must_use]
 pub fn get_resource_as_stream(path: &str) -> Option<Box<dyn StreamAsset>> {
+    let bytes = get_resource_bytes(path)?;
+    let stream: Box<dyn StreamAsset> = MemoryStream::make_copy(&bytes);
+    Some(stream)
+}
+
+/// The whole file at `path` (relative to Skia's `resources` directory, using `/` separators): what
+/// a GM reads with `SkFILEStream(GetResourcePath(path))`, or `None` if it cannot be read.
+#[must_use]
+pub fn get_resource_bytes(path: &str) -> Option<Vec<u8>> {
     let mut full = resource_dir()?;
     for component in path.split('/') {
         full.push(component);
     }
-    let bytes = std::fs::read(full).ok()?;
-    let stream: Box<dyn StreamAsset> = MemoryStream::make_copy(&bytes);
-    Some(stream)
+    std::fs::read(full).ok()
 }
