@@ -19887,8 +19887,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/dropshadowimagefilter.cpp#L85-L127"
 module = "effects"
-status = "todo"
-reason = "needs SkColorSpace::makeColorSpin (not ported) for the DropShadow overload that takes a colour space"
+status = "passing"
 span_hash = "14564fc8f4648e343f9278188f7471b3861a7851ec0c1d7f0ba97f1582c7b718"
 
 [[test]]

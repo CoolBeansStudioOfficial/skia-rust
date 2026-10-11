@@ -746,6 +746,22 @@ impl ColorSpace {
         Some(Self::new_unchecked(*tf, *to_xyz))
     }
 
+    /// Returns a color space with the same transfer function and gamut as `self`, but with the
+    /// primaries cyclically permuted (red to green to blue), so the result differs in colour from
+    /// `self` (`SkColorSpace::makeColorSpin`).
+    // Port of: src/core/SkColorSpace.cpp#L286-L296 (chrome/m156)
+    #[doc(alias = "makeColorSpin")]
+    #[must_use]
+    pub fn make_color_spin(&self) -> ColorSpace {
+        let spin = Matrix3x3 {
+            vals: [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+        };
+
+        let spun_to_xyz = self.0.to_xyzd50.concat(&spin);
+
+        ColorSpace::new_unchecked(self.0.transfer_fn, spun_to_xyz)
+    }
+
     /// Creates a [`ColorSpace`] from code points specified in Rec. ITU-T H.273. Returns `None`
     /// for an invalid or unsupported combination of code points.
     ///
