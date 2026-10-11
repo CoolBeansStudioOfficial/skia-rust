@@ -4,12 +4,12 @@
 // Port of: tests/ImageTest.cpp (chrome/m156)
 //
 // Not ported (what the Rust port does not have, or cannot express):
-// * `ImageScalePixels`, `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: each of them
-//   makes `create_codec_image()` (SkPngEncoder + DeferredFromEncodedData) in its last case, and
-//   the rest of the test has not been ported yet.
-// * `Image_ColorSpace`, `Image_nonfinite_dst`: decode image resources
-//   (png, jpg, webp) or make a lazy picture image (`DeferredFromPicture`), and the last two need
-//   `ToolUtils::PixelIter`/`any_image_will_do` helpers that are not ported yet.
+// * `ImageScalePixels`: needs `SkImage::scalePixels` with its caching hint (`kDisallow` and
+//   `kAllow` in turn); the raster `pixmap_draw::scale_pixels` takes no hint.
+// * `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: their `create_rasterproc_image` case
+//   needs `RasterFromPixmap` to share the pixels and call the release proc when the image is
+//   destroyed; the port copies and releases at once (`images::raster_from_pixmap`).
+// * `Image_ColorSpace`: not ported yet.
 // The Ganesh tests are excluded.
 
 #![cfg(test)]
@@ -39,12 +39,13 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::serial_procs::SerialProcs;
 use skia_rust_core::shaders::image_shader::ImageShader;
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_raster::surfaces;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::resources::{get_resource_as_data, get_resource_as_image};
-use crate::tools::tool_utils::equal_pixels_image;
+use crate::tools::tool_utils::{PixelIter, equal_pixels_image};
 use crate::{Reporter, def_test, def_tier_test, errorf, reporter_assert, skip_missing_resource};
 
 // Port of: tests/ImageTest.cpp#L702-L705 (chrome/m156)
@@ -735,4 +736,49 @@ def_test!(image_subset_encode_skbug_7752, |reporter| {
         return;
     };
     check_roundtrip(reporter, &linear);
+});
+
+// Port of: tests/ImageTest.cpp#L1550-L1552 (chrome/m156), any_image_will_do
+fn any_image_will_do() -> Option<Image> {
+    get_resource_as_image("images/mandrill_32.png")
+}
+
+// Port of: tests/ImageTest.cpp#L1543-L1568 (chrome/m156), Image_nonfinite_dst
+def_test!(Image_nonfinite_dst, |reporter| {
+    let mut surf = surfaces::raster_n32_premul((10, 10)).expect("surface");
+    let img = any_image_will_do().expect("image");
+
+    for bad in [f32::INFINITY, f32::NAN] {
+        for bits in 1..=15 {
+            let mut dst = Rect::new(0.0, 0.0, 10.0, 10.0);
+            if bits & 1 != 0 {
+                dst.left = bad;
+            }
+            if bits & 2 != 0 {
+                dst.top = bad;
+            }
+            if bits & 4 != 0 {
+                dst.right = bad;
+            }
+            if bits & 8 != 0 {
+                dst.bottom = bad;
+            }
+
+            surf.canvas().draw_image_rect_with_sampling_options(
+                &img,
+                None,
+                dst,
+                SamplingOptions::default(),
+                &Paint::default(),
+            );
+
+            // we should draw nothing
+            let peeked = surf.peek_pixels().expect("pixels");
+            let pm = peeked.pixmap();
+            let mut iter = PixelIter::new(&pm);
+            while let Some(p) = iter.next() {
+                reporter_assert!(reporter, pm.addr32(p.x, p.y) == 0);
+            }
+        }
+    }
 });
