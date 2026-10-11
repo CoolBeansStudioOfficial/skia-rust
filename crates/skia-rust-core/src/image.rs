@@ -84,6 +84,21 @@ pub struct RequiredProperties {
 #[derive(Clone)]
 pub struct Image(Arc<dyn ImageBase>);
 
+/// Whether Skia may cache the bitmap it makes by decoding an image (`SkImage::CachingHint`).
+///
+/// Choose [`Disallow`](Self::Disallow) if the pixels are to be used only once, or to reduce memory
+/// pressure. Choosing [`Allow`](Self::Allow) does not ensure that the pixels will be cached.
+// Port of: include/core/SkImage.h#L461-L464 (chrome/m156)
+#[doc(alias = "SkImage::CachingHint")]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, Default)]
+pub enum CachingHint {
+    /// Allows internally caching decoded and copied pixels (`kAllow_CachingHint`).
+    #[default]
+    Allow,
+    /// Disallows internally caching decoded and copied pixels (`kDisallow_CachingHint`).
+    Disallow,
+}
+
 impl Image {
     /// Wraps an image implementation.
     #[must_use]
@@ -351,6 +366,39 @@ impl Image {
             .on_read_pixels(dst_info, dst_pixels, dst_row_bytes, x, y)
     }
 
+    /// [`read_pixels`](Self::read_pixels) with a caching hint: with [`CachingHint::Disallow`], the
+    /// pixels an encoded image decodes are not added to the cache (`readPixels(..., chint)`).
+    // Port of: src/image/SkImage.cpp#L46-L50 (chrome/m156)
+    #[doc(alias = "readPixels")]
+    pub fn read_pixels_with_hint(
+        &self,
+        dst_info: &ImageInfo,
+        dst_pixels: &mut [u8],
+        dst_row_bytes: usize,
+        src: impl Into<IPoint>,
+        caching_hint: CachingHint,
+    ) -> bool {
+        let IPoint { x, y } = src.into();
+        self.0
+            .on_read_pixels_with_hint(dst_info, dst_pixels, dst_row_bytes, x, y, caching_hint)
+    }
+
+    /// [`read_pixels_with_hint`](Self::read_pixels_with_hint) into a pixmap.
+    #[doc(alias = "readPixels")]
+    pub fn read_pixels_to_pixmap_with_hint(
+        &self,
+        dst: &mut Pixmap<'_>,
+        src: impl Into<IPoint>,
+        caching_hint: CachingHint,
+    ) -> bool {
+        let info = dst.info().clone();
+        let row_bytes = dst.row_bytes();
+        let Some(pixels) = dst.writable_addr() else {
+            return false;
+        };
+        self.read_pixels_with_hint(&info, pixels, row_bytes, src, caching_hint)
+    }
+
     /// [`read_pixels`](Self::read_pixels) into a pixmap (`readPixels(dContext, pmap, ...)`).
     // Port of: src/image/SkImage.cpp#L228-L232 (chrome/m156)
     #[doc(alias = "readPixels")]
@@ -369,6 +417,13 @@ impl Image {
     #[must_use]
     pub fn get_ro_pixels(&self) -> Option<Bitmap> {
         self.0.get_ro_pixels()
+    }
+
+    /// [`get_ro_pixels`](Self::get_ro_pixels) with a caching hint (`getROPixels(..., chint)`).
+    #[doc(alias = "getROPixels")]
+    #[must_use]
+    pub fn get_ro_pixels_with_hint(&self, caching_hint: CachingHint) -> Option<Bitmap> {
+        self.0.get_ro_pixels_with_hint(caching_hint)
     }
 
     /// A bitmap with the image's pixels, an N32 copy in no color space unless the pixels can be

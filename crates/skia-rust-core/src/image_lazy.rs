@@ -24,7 +24,7 @@ use crate::bitmap_cache::{self, BitmapCacheDesc};
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::data::Data;
-use crate::image::{Image, RequiredProperties};
+use crate::image::{CachingHint, Image, RequiredProperties};
 use crate::image_base::{ImageBase, ImageType};
 use crate::image_generator::ImageGenerator;
 use crate::image_info::ImageInfo;
@@ -165,27 +165,50 @@ impl ImageLazy {
 
     /// The pixels of the image, decoded on the first request and kept in the bitmap cache for the
     /// next ones (`SkImage_Lazy::getROPixels` with `kAllow_CachingHint`).
+    fn get_ro_pixels_cached(&self) -> Option<Bitmap> {
+        self.get_ro_pixels_hinted(CachingHint::Allow)
+    }
+
+    /// The pixels of the image: found in the bitmap cache, or decoded and, if `chint` allows it,
+    /// kept in the cache for the next requests (`SkImage_Lazy::getROPixels`).
     // Port of: src/image/SkImage_Lazy.cpp#L114-L143 (chrome/m156)
     #[doc(alias = "getROPixels")]
-    fn get_ro_pixels_cached(&self) -> Option<Bitmap> {
+    fn get_ro_pixels_hinted(&self, chint: CachingHint) -> Option<Bitmap> {
         let desc =
             BitmapCacheDesc::for_image(self.unique_id, self.info.width(), self.info.height());
         let mut bitmap = Bitmap::new();
         if bitmap_cache::find(&desc, &mut bitmap) {
             return Some(bitmap);
         }
-        let mut rec = bitmap_cache::alloc(&desc, &self.info)?;
-        // readPixelsProxy (the GPU fallback) is not ported.
-        let decoded = rec.with_pixmap_mut(|pixmap| {
-            let mut generator = lock(&self.shared.generator);
-            generator.get_pixels_into(pixmap)
-        })?;
-        if !decoded {
-            return None;
+        if chint == CachingHint::Allow {
+            let mut rec = bitmap_cache::alloc(&desc, &self.info)?;
+            // readPixelsProxy (the GPU fallback) is not ported.
+            let decoded = rec.with_pixmap_mut(|pixmap| {
+                let mut generator = lock(&self.shared.generator);
+                generator.get_pixels_into(pixmap)
+            })?;
+            if !decoded {
+                return None;
+            }
+            bitmap_cache::add(rec, &mut bitmap);
+            self.added_to_raster_cache.store(true, Ordering::Relaxed);
+            Some(bitmap)
+        } else {
+            let mut tmp_bitmap = Bitmap::new();
+            if !tmp_bitmap.try_alloc_pixels_info(&self.info, None) {
+                return None;
+            }
+            let decoded = {
+                let mut pixmap = tmp_bitmap.peek_pixels_mut()?;
+                let mut generator = lock(&self.shared.generator);
+                generator.get_pixels_into(&mut pixmap)
+            };
+            if !decoded {
+                return None;
+            }
+            tmp_bitmap.set_immutable();
+            Some(tmp_bitmap)
         }
-        bitmap_cache::add(rec, &mut bitmap);
-        self.added_to_raster_cache.store(true, Ordering::Relaxed);
-        Some(bitmap)
     }
 
     /// `SkImage::makeRasterImage` for a lazy image: a raster copy of the pixels, which is the
@@ -257,7 +280,27 @@ impl ImageBase for ImageLazy {
         src_x: i32,
         src_y: i32,
     ) -> bool {
-        match self.get_ro_pixels_cached() {
+        self.on_read_pixels_with_hint(
+            dst_info,
+            dst_pixels,
+            dst_row_bytes,
+            src_x,
+            src_y,
+            CachingHint::Allow,
+        )
+    }
+
+    // Port of: src/image/SkImage_Lazy.cpp#L186-L199 (chrome/m156)
+    fn on_read_pixels_with_hint(
+        &self,
+        dst_info: &ImageInfo,
+        dst_pixels: &mut [u8],
+        dst_row_bytes: usize,
+        src_x: i32,
+        src_y: i32,
+        caching_hint: CachingHint,
+    ) -> bool {
+        match self.get_ro_pixels_hinted(caching_hint) {
             Some(bitmap) => bitmap.read_pixels(dst_info, dst_pixels, dst_row_bytes, src_x, src_y),
             None => false,
         }
@@ -276,6 +319,11 @@ impl ImageBase for ImageLazy {
     // Port of: src/image/SkImage_Lazy.cpp#L65-L68 (chrome/m156) and SkImage_Lazy::getROPixels
     fn get_ro_pixels(&self) -> Option<Bitmap> {
         self.get_ro_pixels_cached()
+    }
+
+    // Port of: src/image/SkImage_Lazy.cpp#L114-L143 (chrome/m156)
+    fn get_ro_pixels_with_hint(&self, caching_hint: CachingHint) -> Option<Bitmap> {
+        self.get_ro_pixels_hinted(caching_hint)
     }
 
     // Port of: src/image/SkImage_Lazy.cpp#L201-L212 (chrome/m156)
