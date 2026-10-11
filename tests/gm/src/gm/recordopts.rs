@@ -35,7 +35,12 @@ fn make_detector_color_filter() -> Option<skia_rust_core::color_filter::ColorFil
     let table_b = [0_u8; 256];
     table_a[255] = 255;
     table_g[usize::from(DETECTOR_GREEN_VALUE)] = 255;
-    table_argb(Some(&table_a), Some(&table_r), Some(&table_g), Some(&table_b))
+    table_argb(
+        Some(&table_a),
+        Some(&table_r),
+        Some(&table_g),
+        Some(&table_b),
+    )
 }
 
 // Port of: gm/recordopts.cpp#L47-L50 (chrome/m156), install_detector_color_filter
@@ -77,7 +82,7 @@ fn draw_save_layer_draw_rect_restore_sequence(
     let mut draw_paint = Paint::default();
     draw_paint.set_color(shape_color);
     install_detector(&mut draw_paint);
-    canvas.draw_rect(&target_rect, &draw_paint);
+    canvas.draw_rect(target_rect, &draw_paint);
     canvas.restore();
 }
 
@@ -98,7 +103,7 @@ fn draw_save_layer_draw_bitmap_restore_sequence(
             let mut p = Paint::default();
             p.set_color(Color::WHITE);
             debug_assert_ne!(shape_color, Color::WHITE);
-            bitmap_canvas.draw_rect(&Rect::from_wh(7.0, 7.0), &p);
+            bitmap_canvas.draw_rect(Rect::from_wh(7.0, 7.0), &p);
         }
     }
 
@@ -145,7 +150,7 @@ fn draw_svg_opacity_and_filter_layer_sequence(
         );
         let mut shape_paint = Paint::default();
         shape_paint.set_color(shape_color);
-        record_canvas.draw_rect(&target_rect, &shape_paint);
+        record_canvas.draw_rect(target_rect, &shape_paint);
         recorder.finish_recording_as_picture(None)
     };
 
@@ -210,10 +215,7 @@ crate::def_simple_gm!(
                 let mut recorder = PictureRecorder::new();
                 draw_test_sequence(
                     recorder.begin_recording(
-                        Rect::from_wh(
-                            int_to_scalar(TEST_RECT_SIZE),
-                            int_to_scalar(TEST_RECT_SIZE),
-                        ),
+                        Rect::from_wh(int_to_scalar(TEST_RECT_SIZE), int_to_scalar(TEST_RECT_SIZE)),
                         false,
                     ),
                     shape_color,

@@ -41,12 +41,12 @@ crate::def_simple_gm_bg!(overdraw_canvas, canvas, WIDTH, HEIGHT, Color::WHITE, {
 
     let overdraw_canvas = OverdrawCanvas::new(c);
 
-    overdraw_canvas.draw_rect(&Rect::new(10.0, 10.0, 200.0, 200.0), &Paint::default());
-    overdraw_canvas.draw_rect(&Rect::new(20.0, 20.0, 190.0, 190.0), &Paint::default());
-    overdraw_canvas.draw_rect(&Rect::new(30.0, 30.0, 180.0, 180.0), &Paint::default());
-    overdraw_canvas.draw_rect(&Rect::new(40.0, 40.0, 170.0, 170.0), &Paint::default());
-    overdraw_canvas.draw_rect(&Rect::new(50.0, 50.0, 160.0, 160.0), &Paint::default());
-    overdraw_canvas.draw_rect(&Rect::new(60.0, 60.0, 150.0, 150.0), &Paint::default());
+    overdraw_canvas.draw_rect(Rect::new(10.0, 10.0, 200.0, 200.0), &Paint::default());
+    overdraw_canvas.draw_rect(Rect::new(20.0, 20.0, 190.0, 190.0), &Paint::default());
+    overdraw_canvas.draw_rect(Rect::new(30.0, 30.0, 180.0, 180.0), &Paint::default());
+    overdraw_canvas.draw_rect(Rect::new(40.0, 40.0, 170.0, 170.0), &Paint::default());
+    overdraw_canvas.draw_rect(Rect::new(50.0, 50.0, 160.0, 160.0), &Paint::default());
+    overdraw_canvas.draw_rect(Rect::new(60.0, 60.0, 150.0, 150.0), &Paint::default());
 
     let text = b"Ae_p";
     overdraw_canvas.draw_simple_text(

@@ -42,10 +42,7 @@ impl GM for CrBug224618Gm {
 
     // Port of: gm/crbug_224618.cpp#L35-L49 (chrome/m156), onOnceBeforeDraw
     fn on_once_before_draw(&mut self) {
-        let conv = ColorConverter::new(&[
-            Color::TRANSPARENT,
-            Color::from_argb(128, 255, 255, 255),
-        ]);
+        let conv = ColorConverter::new(&[Color::TRANSPARENT, Color::from_argb(128, 255, 255, 255)]);
         let gradient = Gradient::new(
             Colors::new(conv.colors4f(), None, TileMode::Mirror, None),
             Interpolation {
@@ -66,21 +63,32 @@ impl GM for CrBug224618Gm {
 
     // Port of: gm/crbug_224618.cpp#L51-L107 (chrome/m156), onDraw
     fn on_draw(&mut self, canvas: &Canvas) {
-        let viewport_width = scalar_mod(TIME, 10.0) / 10.0
-            * int_to_scalar(K_MAX_VW - K_MIN_VW)
+        let viewport_width = scalar_mod(TIME, 10.0) / 10.0 * int_to_scalar(K_MAX_VW - K_MIN_VW)
             + int_to_scalar(K_MIN_VW);
         let radius = viewport_width / 2.0; // round?
 
         // See https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/perspective
         let proj = M44::new(
-            1.0, 0.0, 0.0, 0.0, //
-            0.0, 1.0, 0.0, 0.0, //
-            0.0, 0.0, 1.0, 0.0, //
-            0.0, 0.0, -1.0 / radius, 1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0, //
+            0.0,
+            1.0,
+            0.0,
+            0.0, //
+            0.0,
+            0.0,
+            1.0,
+            0.0, //
+            0.0,
+            0.0,
+            -1.0 / radius,
+            1.0,
         );
         let zoom = M44::translate(0.0, 0.0, radius);
         let post_zoom = M44::translate(0.0, 0.0, -radius - 1.0);
-        let rotate_horizontal = M44::rotate(V3::new(0.0, 1.0, 0.0), 2.356_194_490_192_345_f32);
+        let rotate_horizontal = M44::rotate(V3::new(0.0, 1.0, 0.0), 2.356_194_5_f32);
 
         // w in degrees will need to be converted to radians
         let axis_angles = [
@@ -131,10 +139,7 @@ impl GM for CrBug224618Gm {
             fill_paint.set_anti_alias(true);
             fill_paint.set_color(face_colors[i]);
             // Leverages FillRectOp on GPU backend
-            canvas.draw_rect(
-                Rect::from_wh(viewport_width, viewport_width),
-                &fill_paint,
-            );
+            canvas.draw_rect(Rect::from_wh(viewport_width, viewport_width), &fill_paint);
 
             // Leverages TextureOp on GPU backend, to ensure sure both quad paths handle clipping
             if let Some(cube) = self.cube_image.as_ref() {
@@ -155,7 +160,5 @@ impl GM for CrBug224618Gm {
 // Port of: gm/crbug_224618.cpp#L116 (chrome/m156), DEF_GM(return new CrBug224618GM();)
 crate::def_gm!(
     CrBug224618GM_ = "CrBug224618GM()",
-    CrBug224618Gm {
-        cube_image: None
-    }
+    CrBug224618Gm { cube_image: None }
 );

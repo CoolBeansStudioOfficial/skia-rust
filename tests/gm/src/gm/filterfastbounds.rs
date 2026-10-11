@@ -50,7 +50,7 @@ fn draw_rrect(canvas: &Canvas, r: &Rect, p: &Paint) {
     let x_rad = r.width() / 4.0;
     let y_rad = r.height() / 4.0;
     let rr = RRect::new_rect_xy(r, x_rad, y_rad);
-    canvas.draw_rrect(&rr, p);
+    canvas.draw_rrect(rr, p);
 }
 
 // Port of: gm/filterfastbounds.cpp#L58-L67 (chrome/m156), draw_drrect
@@ -60,7 +60,7 @@ fn draw_drrect(canvas: &Canvas, r: &Rect, p: &Paint) {
     let outer = RRect::new_rect_xy(r, x_rad, y_rad);
     let mut inner = outer;
     inner.inset((x_rad, y_rad));
-    canvas.draw_drrect(&outer, &inner, p);
+    canvas.draw_drrect(outer, inner, p);
 }
 
 // Port of: gm/filterfastbounds.cpp#L69-L75 (chrome/m156), draw_path
@@ -168,7 +168,10 @@ fn create_paints(paints: &mut Vec<Paint>, source: Option<ImageFilter>) {
         );
         add_paint(paints, dsif);
     }
-    add_paint(paints, blur(3.0, 3.0, TileMode::Decal, source.clone(), None));
+    add_paint(
+        paints,
+        blur(3.0, 3.0, TileMode::Decal, source.clone(), None),
+    );
     add_paint(paints, offset((15.0, 15.0), source, None));
 }
 
@@ -191,8 +194,8 @@ fn draw_geom_with_paint(draw: DrawMth, off: (i32, i32), canvas: &Canvas, p: &Pai
     canvas.clip_rect(fast_bound, ClipOp::Intersect, false);
     draw(canvas, &r, p);
     canvas.restore();
-    canvas.draw_rect(&r, &red_stroked);
-    canvas.draw_rect(&fast_bound, &blue_stroked);
+    canvas.draw_rect(r, &red_stroked);
+    canvas.draw_rect(fast_bound, &blue_stroked);
     canvas.restore();
 }
 
@@ -217,8 +220,8 @@ fn draw_savelayer_with_paint(off: (i32, i32), canvas: &Canvas, p: &Paint) {
         .paint(p);
     canvas.save_layer(&rec);
     canvas.restore();
-    canvas.draw_rect(&bounds, &red_stroked);
-    canvas.draw_rect(&fast_bound, &blue_stroked);
+    canvas.draw_rect(bounds, &red_stroked);
+    canvas.draw_rect(fast_bound, &blue_stroked);
     canvas.restore();
 }
 
@@ -257,7 +260,7 @@ impl GM for ImageFilterFastBoundGm {
         let pic: Option<Picture> = {
             let mut rec = PictureRecorder::new();
             let c = rec.begin_recording(Rect::from_wh(10.0, 10.0), false);
-            c.draw_rect(&Rect::from_wh(10.0, 10.0), &black_fill);
+            c.draw_rect(Rect::from_wh(10.0, 10.0), &black_fill);
             rec.finish_recording_as_picture(None)
         };
         let mut pif_paints = Vec::new();
@@ -272,16 +275,14 @@ impl GM for ImageFilterFastBoundGm {
                     let mut p = Paint::default();
                     temp.clear(Color::YELLOW);
                     p.set_color(Color::BLUE);
-                    temp.draw_rect(&Rect::from_ltrb(5.0, 5.0, 10.0, 10.0), &p);
+                    temp.draw_rect(Rect::from_ltrb(5.0, 5.0, 10.0, 10.0), &p);
                     p.set_color(Color::GREEN);
-                    temp.draw_rect(&Rect::from_ltrb(5.0, 0.0, 10.0, 5.0), &p);
+                    temp.draw_rect(Rect::from_ltrb(5.0, 0.0, 10.0, 5.0), &p);
                 }
                 let image: Option<Image> = surface.image_snapshot();
                 image.map(|image| {
-                    let bounds = Rect::from_wh(
-                        int_to_scalar(image.width()),
-                        int_to_scalar(image.height()),
-                    );
+                    let bounds =
+                        Rect::from_wh(int_to_scalar(image.width()), int_to_scalar(image.height()));
                     image_filter_from(image, bounds)
                 })
             }
@@ -323,11 +324,7 @@ impl GM for ImageFilterFastBoundGm {
 
         // A column of saveLayers with PictureImageFilters
         for (i, p) in pif_paints.iter().enumerate() {
-            draw_savelayer_with_paint(
-                (0, i32::try_from(i).unwrap_or(0) * TILE_HEIGHT),
-                canvas,
-                p,
-            );
+            draw_savelayer_with_paint((0, i32::try_from(i).unwrap_or(0) * TILE_HEIGHT), canvas, p);
         }
 
         // A column of saveLayers with BitmapSources

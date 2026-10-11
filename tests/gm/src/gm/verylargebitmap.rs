@@ -26,7 +26,10 @@ use skia_rust_raster::surfaces;
 fn draw(canvas: &Canvas, width: i32, height: i32, colors: [Color; 2]) {
     let center = Point::new(int_to_scalar(width) / 2.0, int_to_scalar(height) / 2.0);
     let radius: f32 = 40.0;
-    let c4 = [Color4f::from_color(colors[0]), Color4f::from_color(colors[1])];
+    let c4 = [
+        Color4f::from_color(colors[0]),
+        Color4f::from_color(colors[1]),
+    ];
     let gradient = Gradient::new(
         Colors::new(&c4, None, TileMode::Mirror, None),
         Interpolation::default(),
@@ -52,7 +55,12 @@ fn make_raster_image(width: i32, height: i32, colors: [Color; 2]) -> Option<Imag
 fn make_picture_image(width: i32, height: i32, colors: [Color; 2]) -> Option<Image> {
     let mut recorder = PictureRecorder::new();
     let bounds = Rect::from_iwh(width, height);
-    draw(recorder.begin_recording(bounds, false), width, height, colors);
+    draw(
+        recorder.begin_recording(bounds, false),
+        width,
+        height,
+        colors,
+    );
     let picture = recorder.finish_recording_as_picture(None)?;
     deferred_from_picture(
         picture,
@@ -116,7 +124,7 @@ fn show_image(
         canvas.draw_image(&image, (0.0, 0.0), None);
     }
     canvas.restore();
-    canvas.draw_rect(&dst_rect, &border_paint);
+    canvas.draw_rect(dst_rect, &border_paint);
 
     dst_rect.offset((150.0, 0.0));
     let hw = width / 2;
@@ -141,12 +149,12 @@ fn show_image(
         canvas.draw_image_rect_with_sampling_options(
             &image,
             Some((&subset, SrcRectConstraint::Strict)),
-            &dst_rect,
+            dst_rect,
             SamplingOptions::default(),
             &Paint::default(),
         );
     }
-    canvas.draw_rect(&dst_rect, &border_paint);
+    canvas.draw_rect(dst_rect, &border_paint);
 
     dst_rect.offset((150.0, 0.0));
     if manually_tile {
@@ -155,12 +163,12 @@ fn show_image(
         canvas.draw_image_rect_with_sampling_options(
             &image,
             None,
-            &dst_rect,
+            dst_rect,
             SamplingOptions::default(),
             &Paint::default(),
         );
     }
-    canvas.draw_rect(&dst_rect, &border_paint);
+    canvas.draw_rect(dst_rect, &border_paint);
 }
 
 // Port of: gm/verylargebitmap.cpp#L107-L161 (chrome/m156), VeryLargeBitmapGM
@@ -245,11 +253,13 @@ impl GM for VeryLargeBitmapGm {
 
 // Port of: gm/verylargebitmap.cpp#L163-L170 (chrome/m156), DEF_GM registrations
 crate::def_gm!(
-    VeryLargeBitmapGM_raster_false = "VeryLargeBitmapGM(make_raster_image, \"verylargebitmap\", /* manuallyTile= */ false)",
+    VeryLargeBitmapGM_raster_false =
+        "VeryLargeBitmapGM(make_raster_image, \"verylargebitmap\", /* manuallyTile= */ false)",
     VeryLargeBitmapGm::new(make_raster_image, "verylargebitmap", false)
 );
 crate::def_gm!(
-    VeryLargeBitmapGM_raster_true = "VeryLargeBitmapGM(make_raster_image, \"verylargebitmap\", /* manuallyTile= */ true)",
+    VeryLargeBitmapGM_raster_true =
+        "VeryLargeBitmapGM(make_raster_image, \"verylargebitmap\", /* manuallyTile= */ true)",
     VeryLargeBitmapGm::new(make_raster_image, "verylargebitmap", true)
 );
 crate::def_gm!(
