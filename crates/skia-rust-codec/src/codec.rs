@@ -819,6 +819,14 @@ impl<'a> Codec<'a> {
         self.imp.on_get_encoded_format()
     }
 
+    /// Port of `SkCodec::hasHighBitDepthEncodedData`: whether the encoded data has 16 bits or more
+    /// per component. The bits per component may mislead, so it is not returned.
+    // Port of: include/codec/SkCodec.h#L256-L261 (chrome/m156)
+    #[must_use]
+    pub fn has_high_bit_depth_encoded_data(&self) -> bool {
+        self.encoded_info().bits_per_component() >= 16
+    }
+
     /// Port of `SkCodec::getEncodedInfo`.
     #[must_use]
     pub fn encoded_info(&self) -> &EncodedInfo {
