@@ -9,8 +9,8 @@
 //! skia-rust: `ParameterSpace<T>`, `DeviceSpace<T>` and `LayerSpace<T>` are not wrapper types
 //! here. Each space is documented at the call site and the geometry is the plain `Rect`/`IRect`/
 //! `Point`/`Matrix` (`LayerSpace<SkIRect>` is an `IRect`, and so on). `FilterResult` lives in
-//! [`crate::image_filter_result`]. The shared `SkBlurEngine` and the image filter cache are not
-//! ported yet, so [`Backend::blur_engine`] is absent and `Backend::cache` does not exist.
+//! [`crate::image_filter_result`], and the image filter cache is [`crate::image_filter_cache`].
+//! The shared `SkBlurEngine` is not ported yet, so [`Backend::blur_engine`] is absent by default.
 
 #![allow(
     // The float casts and exact float comparisons mirror the C++ arithmetic of the Skia source
@@ -30,12 +30,15 @@ use std::cell::Cell;
 use std::fmt;
 use std::sync::Arc;
 
+use std::rc::Rc;
+
 use crate::bitmap::Bitmap;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::device::Device;
 use crate::floating_point::double_saturate2int;
 use crate::image::Image;
+use crate::image_filter_cache::ImageFilterCache;
 use crate::image_filter_result::FilterResult;
 use crate::m44::M44;
 use crate::matrix::Matrix;
@@ -591,6 +594,12 @@ pub trait Backend {
     /// The color type of devices of this backend (`colorType`).
     #[doc(alias = "colorType")]
     fn color_type(&self) -> ColorType;
+
+    /// The image filter cache of this backend (`cache()`); `None` if it has none, in which case
+    /// filters are always evaluated.
+    fn cache(&self) -> Option<Rc<ImageFilterCache>> {
+        None
+    }
 
     /// The blur engine of this backend (`getBlurEngine`); `None` if it has none.
     #[doc(alias = "getBlurEngine")]
