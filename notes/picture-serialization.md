@@ -57,10 +57,9 @@ clipRegion, drawRegion (part 4).
 
 ## Not ported yet (each one makes `serialize` return `None`)
 
-- Ops: `DRAW_PICTURE` / `DRAW_PICTURE_MATRIX_PAINT` (nested pictures: the `PICTURE` section and the
-  recursion limit), `DRAW_IMAGE*` lattices (`DRAW_IMAGE_LATTICE2`), `DRAW_VERTICES_OBJECT`,
+- Ops: `DRAW_IMAGE*` lattices (`DRAW_IMAGE_LATTICE2`), `DRAW_VERTICES_OBJECT`,
   `DRAW_PATCH`, `DRAW_ATLAS`, `DRAW_DRAWABLE*` (the `DRAWABLE` section), `DRAW_SLUG`,
-  `DRAW_ANNOTATION` (`Canvas::draw_annotation` is not ported at all), `DRAW_EDGEAA_*`,
+  `DRAW_EDGEAA_*`,
   `DRAW_SHADOW_REC`, `SAVE_BEHIND`, `CLIP_SHADER_IN_PAINT`.
 - Save layer fields: backdrop filter (`SAVELAYERREC_HAS_BACKDROP`), backdrop scale, several
   filters (`fFilters` is not in our `SaveLayerRec`), and the obsolete clip mask and matrix.
@@ -71,9 +70,8 @@ clipRegion, drawRegion (part 4).
   shaders, `SkCoordClampShader`, `SkWorkingColorSpaceShader`.
 - Color filters not flattenable yet: `SkWorkingFormatColorFilter`, `SkGaussianColorFilter`,
   `SkRuntimeColorFilter`, lighting (`SkColorMatrixFilter` in m156, not a separate flattenable).
-- Sections: `PICTURE`, `DRAWABLE`, `IMAGE` for mipmaps, `VERTICES`, the slug data. The reader
+- Sections: `DRAWABLE`, `IMAGE` for mipmaps, `VERTICES`, the slug data. The reader
   rejects any of these unless the section is empty.
-- `SkSerialProcs::fPictureProc` and the custom picture format (`kCustom_TrailingStreamByte...`).
 - The glyph drawable's `SkDeserialProcs` tag filter (`fAllowTagsProc`) is not ported, so a
   glyph picture with an unexpected section is accepted here (Skia rejects it).
 
@@ -208,3 +206,19 @@ Not done, with the reason for each:
 4. Regions and clip shaders, vertices, patches, atlases, annotations, the remaining ops.
 5. Corrupt-data behaviour: return the partial picture as `Forwardport` does, where a test observes
    it.
+
+## Nested pictures, the picture proc and annotations (port/core-canvas-features)
+
+- `DRAW_PICTURE` / `DRAW_PICTURE_MATRIX_PAINT` are written (`PictureRecordState::add_picture`, by
+  unique id) and played; the `PICTURE` section is written with the two passes of
+  `SkPictureData::serialize` (the first fills the typeface set of the top-level picture, with no
+  procs; the second writes each sub-picture, with the picture proc) and read with the recursion
+  limit of `MakeFromStreamPriv`. The typeface set is a `Vec<Typeface>` passed down the recursion.
+- `SerialProcs::picture` / `DeserialProcs::picture` and the custom picture format
+  (`kCustom_TrailingStreamByteAfterPictInfo`, `kFailure_...`), for a picture and for a picture
+  flattened into a buffer (`Picture::flatten`, `Picture::make_from_buffer`:
+  `SkPicturePriv::Flatten` / `MakeFromBuffer`). The picture shader flattens its picture that way
+  and is registered as `SkPictureShader` in the effects registry.
+- `DRAW_ANNOTATION` is written and played; recording records `DrawAnnotation`.
+- Not done: the buffer's recursion limit (`downLevel`/`upLevel`), `DRAW_DRAWABLE*` and the
+  `DRAWABLE` section (a picture that draws a drawable is not serialized).

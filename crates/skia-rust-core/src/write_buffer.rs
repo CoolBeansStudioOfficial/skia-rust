@@ -411,6 +411,33 @@ impl BinaryWriteBuffer {
         self.typeface_recorder = Some(Vec::new());
     }
 
+    /// Marks the buffer as holding something that cannot be read back (a nested object that could
+    /// not be written), so the picture writer refuses the paint or picture that holds it.
+    pub fn mark_flatten_failed(&mut self) {
+        self.flatten_failed = true;
+    }
+
+    /// `setTypefaceRecorder` with a set that already has typefaces, which keep their indices: the
+    /// set shared by a picture and its sub-pictures (`SkRefCntSet* typefaceSet`).
+    #[doc(alias = "setTypefaceRecorder")]
+    pub fn set_typeface_recorder_from(&mut self, typefaces: Vec<Typeface>) {
+        self.typeface_recorder = Some(typefaces);
+    }
+
+    /// Takes the typefaces of the recorder, leaving no recorder (the set that
+    /// [`set_typeface_recorder_from`](Self::set_typeface_recorder_from) was given, with the
+    /// typefaces added since).
+    pub fn take_typeface_recorder(&mut self) -> Vec<Typeface> {
+        self.typeface_recorder.take().unwrap_or_default()
+    }
+
+    /// The procs the buffer writes with (`serialProcs`).
+    #[doc(alias = "serialProcs")]
+    #[must_use]
+    pub fn serial_procs(&self) -> &SerialProcs {
+        &self.serial_procs
+    }
+
     /// The typefaces of the recorder, in index order (index 1 is the first). `None` if no
     /// recorder is set.
     #[must_use]

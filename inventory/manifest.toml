@@ -42579,8 +42579,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerialProcsTest.cpp#L201-L230"
 module = "core"
-status = "todo"
-reason = "needs the SerialProcs picture proc (fPictureProc, the PICTURE section and DRAW_PICTURE in picture serialization), SkPicture::makeShader (picture shader, not on main) and the make_pic/test_pictures helpers"
+status = "passing"
 span_hash = "84a6468ea2d37f6733878a60d8b657207610b0d0bbd4da23b5ddc384537f517a"
 
 [[test]]
@@ -42598,8 +42597,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1105-L1135"
 module = "core"
-status = "todo"
-reason = "Canvas::draw_annotation is on main, but picture serialization still returns None for DRAW_ANNOTATION (notes/picture-serialization.md)"
+status = "passing"
 span_hash = "dfa829a590c9aa506e2d6eab9e60d3a0ed0e9915fe83bc32b07a30d0185d4bcf"
 
 [[test]]

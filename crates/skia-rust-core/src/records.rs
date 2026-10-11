@@ -11,7 +11,7 @@
 //! skia-rust: only the calls of the features that are ported have a record type. Missing are
 //! `SaveBehind`, `DrawBehind`,
 //! `DrawPatch`, `DrawSlug`, `DrawAtlas`, `DrawVertices`, `DrawMesh`,
-//! `DrawShadowRec`, `DrawAnnotation`, `DrawEdgeAAQuad` and `DrawEdgeAAImageSet`, whose types
+//! `DrawShadowRec`, `DrawEdgeAAQuad` and `DrawEdgeAAImageSet`, whose types
 //! (`SkDrawable`, `SkSlug`, ...) are not ported. `SkTypedMatrix` is a plain
 //! [`Matrix`] (it only precomputes the matrix type for thread safety, and a `Matrix` is
 //! immutable data here). `Optional<T>` is `Option<T>` and `PODArray<T>` a `Vec<T>`.
@@ -19,6 +19,7 @@
 use crate::canvas::{PointMode, SaveLayerFlags, SrcRectConstraint, lattice::RectType};
 use crate::clip_op::ClipOp;
 use crate::color::Color;
+use crate::data::Data;
 use crate::image::Image;
 use crate::image_filter::ImageFilter;
 use crate::m44::M44;
@@ -300,6 +301,14 @@ pub struct DrawDrawable {
     pub index: i32,
 }
 
+/// `SkRecords::DrawAnnotation`.
+#[derive(Clone, Debug)]
+pub struct DrawAnnotation {
+    pub rect: Rect,
+    pub key: String,
+    pub value: Option<Data>,
+}
+
 /// `SkRecords::DrawPaint`.
 #[derive(Clone, Debug, Default)]
 pub struct DrawPaint {
@@ -461,6 +470,7 @@ record_types! {
     ClipShader => 0,
     ResetClip => 0,
     DrawArc => DRAW_WITH_PAINT,
+    DrawAnnotation => 0,
     DrawImage => DRAW_WITH_PAINT | tags::HAS_IMAGE,
     DrawImageLattice => DRAW_WITH_PAINT | tags::HAS_IMAGE,
     DrawImageRect => DRAW_WITH_PAINT | tags::HAS_IMAGE,

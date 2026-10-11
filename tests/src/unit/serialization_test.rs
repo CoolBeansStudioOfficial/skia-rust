@@ -3,8 +3,12 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/SerializationTest.cpp (chrome/m156)
 
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
+use skia_rust_core::annotation::AnnotationKeys;
+use skia_rust_core::canvas::{Canvas, CanvasHooks};
 use skia_rust_core::color::Color;
 use skia_rust_core::data::Data;
 use skia_rust_core::font::Font;
@@ -483,4 +487,111 @@ def_test!(ReadBuffer_empty, |reporter| {
     let data = reader.read_byte_array_as_data();
     reporter_assert!(reporter, data.is_some_and(|data| data.size() == 0));
     reporter_assert!(reporter, reader.read_int() == 321);
+});
+
+// Port of: tests/SerializationTest.cpp#L1059-L1064 (chrome/m156)
+fn copy_picture_via_serialization(src: &Picture) -> Option<Picture> {
+    let mut wstream = DynamicMemoryWStream::new();
+    src.serialize_into(&mut wstream, None); // default is fine, no SkImages to encode
+    let mut rstream = wstream.detach_as_stream();
+    Picture::from_stream(&mut *rstream, None)
+}
+
+// Port of: tests/SerializationTest.cpp#L1066-L1070 (chrome/m156)
+struct AnnotationRec {
+    rect: Rect,
+    key: &'static str,
+    value: Data,
+}
+
+// What the `TestAnnotationCanvas` of the C++ asserts, one flag for each `REPORTER_ASSERT`.
+//
+// skia-rust: a canvas cannot be subclassed and a hook cannot hold the reporter, so the canvas
+// has hooks that record the outcome of each assertion, and the test reports them afterwards, in
+// the same order; the destructor's assertion is reported after the canvas is dropped.
+// Port of: tests/SerializationTest.cpp#L1072-L1099 (chrome/m156), TestAnnotationCanvas
+struct TestAnnotationHooks {
+    rec: Vec<AnnotationRec>,
+    outcomes: Rc<RefCell<Vec<bool>>>,
+    curr_index: Rc<Cell<usize>>,
+}
+
+impl CanvasHooks for TestAnnotationHooks {
+    fn on_draw_annotation(&mut self, rect: &Rect, key: &str, value: Option<&Data>) -> bool {
+        let curr_index = self.curr_index.get();
+        let mut outcomes = self.outcomes.borrow_mut();
+        outcomes.push(curr_index < self.rec.len());
+        if let Some(rec) = self.rec.get(curr_index) {
+            outcomes.push(*rect == rec.rect);
+            outcomes.push(key == rec.key);
+            outcomes.push(value.is_some_and(|value| value.equals(Some(&rec.value))));
+        }
+        self.curr_index.set(curr_index + 1);
+        true
+    }
+}
+
+/*
+ *  Test the 3 annotation types by recording them into a picture, serializing, and then playing
+ *  them back into another canvas.
+ */
+// Port of: tests/SerializationTest.cpp#L1105-L1135 (chrome/m156)
+def_test!(Annotations, |reporter| {
+    let mut recorder = PictureRecorder::new();
+    let recording_canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+
+    let str0 = c"rect-with-url";
+    let r0 = Rect::from_wh(10.0, 10.0);
+    let d0 = Data::new_with_cstring(Some(str0));
+    recording_canvas.draw_url_annotation(r0, &d0);
+
+    let str1 = c"named-destination";
+    let r1 = Rect::from_xywh(5.0, 5.0, 0.0, 0.0); // collapsed to a point
+    let d1 = Data::new_with_cstring(Some(str1));
+    recording_canvas.draw_named_destination_annotation((r1.x(), r1.y()), &d1);
+
+    let str2 = c"link-to-destination";
+    let r2 = Rect::from_xywh(20.0, 20.0, 5.0, 6.0);
+    let d2 = Data::new_with_cstring(Some(str2));
+    recording_canvas.draw_link_destination_annotation(r2, &d2);
+
+    let recs = vec![
+        AnnotationRec {
+            rect: r0,
+            key: AnnotationKeys::url_key(),
+            value: d0,
+        },
+        AnnotationRec {
+            rect: r1,
+            key: AnnotationKeys::define_named_dest_key(),
+            value: d1,
+        },
+        AnnotationRec {
+            rect: r2,
+            key: AnnotationKeys::link_named_dest_key(),
+            value: d2,
+        },
+    ];
+    let count = recs.len();
+
+    let pict0 = recorder.finish_recording_as_picture(None).expect("picture");
+    let pict1 = copy_picture_via_serialization(&pict0).expect("copy");
+
+    let outcomes = Rc::new(RefCell::new(Vec::new()));
+    let curr_index = Rc::new(Cell::new(0));
+    {
+        // TestAnnotationCanvas canvas(reporter, recs, std::size(recs)), a SkCanvas(100, 100)
+        let canvas = Canvas::new_no_pixels((100, 100), None).expect("canvas");
+        canvas.set_hooks(Some(Box::new(TestAnnotationHooks {
+            rec: recs,
+            outcomes: Rc::clone(&outcomes),
+            curr_index: Rc::clone(&curr_index),
+        })));
+        canvas.draw_picture(&pict1, None, None);
+    }
+    for outcome in outcomes.borrow().iter() {
+        reporter_assert!(reporter, *outcome);
+    }
+    // ~TestAnnotationCanvas
+    reporter_assert!(reporter, count == curr_index.get());
 });

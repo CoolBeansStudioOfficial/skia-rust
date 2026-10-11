@@ -424,6 +424,8 @@ pub mod scalar_test;
 #[cfg(test)]
 pub mod scale_to_sides_test;
 #[cfg(test)]
+pub mod serial_procs_test;
+#[cfg(test)]
 pub mod serialization_test;
 #[cfg(test)]
 pub mod shader_image_filter_test;

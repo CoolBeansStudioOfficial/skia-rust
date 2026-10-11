@@ -111,6 +111,20 @@ fn get_text_blob<'a>(reader: &mut ReadBuffer<'_>, data: &'a PictureData) -> Opti
     }
 }
 
+/// The picture an op uses: its 1-based index in the pictures, which must be there
+/// (`getPicture`).
+// Port of: src/core/SkPictureData.h#L127-L129 (chrome/m156), getPicture
+fn get_picture<'a>(reader: &mut ReadBuffer<'_>, data: &'a PictureData) -> Option<&'a Picture> {
+    let index = reader.read_int();
+    let index = usize::try_from(index).ok().filter(|&i| i >= 1);
+    let picture = index.and_then(|i| data.pictures().get(i - 1));
+    if reader.validate(picture.is_some()) {
+        picture
+    } else {
+        None
+    }
+}
+
 /// The paint an op may use: its 1-based index in the paints, or none for index 0 (`optionalPaint`).
 /// An index that is not there makes the reader invalid.
 // Port of: src/core/SkPictureData.cpp#L608-L615 (chrome/m156), optionalPaint
@@ -333,6 +347,39 @@ fn handle_draw_op(
     data: &PictureData,
 ) -> bool {
     match op {
+        draw_type::DRAW_ANNOTATION => {
+            // Port of: src/core/SkPicturePlayback.cpp#L247-L257 (chrome/m156), DRAW_ANNOTATION
+            let rect = reader.read_rect();
+            let key = reader.read_string();
+            let value = reader.read_byte_array_as_data();
+            if !reader.is_valid() {
+                return false;
+            }
+            let (Some(key), Some(value)) = (key, value) else {
+                return false;
+            };
+            canvas.draw_annotation(rect, &key, Some(&value));
+            true
+        }
+        draw_type::DRAW_PICTURE => {
+            // Port of: src/core/SkPicturePlayback.cpp#L571-L576 (chrome/m156), DRAW_PICTURE
+            let Some(pic) = get_picture(reader, data) else {
+                return false;
+            };
+            canvas.draw_picture(pic, None, None);
+            reader.is_valid()
+        }
+        draw_type::DRAW_PICTURE_MATRIX_PAINT => {
+            // Port of: src/core/SkPicturePlayback.cpp#L577-L585 (chrome/m156)
+            let paint = optional_paint(reader, data);
+            let matrix = reader.read_matrix();
+            let pic = get_picture(reader, data);
+            let (true, Some(pic)) = (reader.is_valid(), pic) else {
+                return false;
+            };
+            canvas.draw_picture(pic, Some(&matrix), paint);
+            true
+        }
         draw_type::DRAW_PAINT => {
             let Some(paint) = required_paint(reader, data) else {
                 return false;

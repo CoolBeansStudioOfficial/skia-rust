@@ -11,9 +11,8 @@
 //! constructor is the [`PictureShaderExt::to_shader`] extension method (core cannot name the
 //! raster device).
 //!
-//! skia-rust: flattening is not ported (`SkPicturePriv::Flatten` needs the nested `PICTURE`
-//! section of the picture format, which the picture serializer does not write yet), so the
-//! shader has no type name and cannot be serialized.
+//! The shader flattens its picture with `SkPicturePriv::Flatten` ([`PictureShader::flatten`]) and
+//! [`create_proc`] reads it back; register [`create_proc`] under `SkPictureShader`.
 
 use std::any::Any;
 use std::mem::size_of;
@@ -23,6 +22,7 @@ use skia_rust_core::arena_alloc::ArenaAlloc;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::effect_priv::StageRec;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
@@ -31,6 +31,7 @@ use skia_rust_core::matrix::Matrix;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_priv;
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::resource_cache::{Key, Rec, ResourceCache};
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
@@ -41,6 +42,7 @@ use skia_rust_core::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
 use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::oracle_n32::ExplicitColorType;
 use crate::surfaces;
@@ -305,6 +307,20 @@ impl PictureShader {
 }
 
 impl ShaderBase for PictureShader {
+    // Port of: src/shaders/SkPictureShader.h#L56 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkPictureShader"
+    }
+
+    // Port of: src/shaders/SkPictureShader.cpp#L168-L174 (chrome/m156), `flatten`
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_int(self.tmx as i32);
+        buffer.write_int(self.tmy as i32);
+        buffer.write_rect(&self.tile);
+        buffer.write_int(self.filter as i32);
+        picture_priv::flatten(&self.picture, buffer);
+    }
+
     // Port of: src/shaders/SkPictureShader.h#L47 (chrome/m156), `type`
     fn shader_type(&self) -> ShaderType {
         ShaderType::Picture
@@ -375,4 +391,51 @@ impl PictureShaderExt for Picture {
             None => shader,
         })
     }
+}
+
+// The tile mode of a word read by `read32LE(SkTileMode::kLastTileMode)`.
+fn tile_mode_of(value: u32) -> TileMode {
+    match value {
+        1 => TileMode::Repeat,
+        2 => TileMode::Mirror,
+        3 => TileMode::Decal,
+        _ => TileMode::Clamp,
+    }
+}
+
+/// Reads a picture shader written by `flatten` (`SkPictureShader::CreateProc`).
+///
+/// skia-rust: the versions before `kPictureShaderFilterParam_Version` (82) are not readable at all
+/// (`kMin_Version`), so their branch is not here.
+// Port of: src/shaders/SkPictureShader.cpp#L136-L166 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, registry: &FlattenableRegistry) -> Option<Shader> {
+    // kNoShaderLocalMatrix
+    let mut lm = Matrix::new_identity();
+    if buffer.is_version_lt(94) {
+        lm = buffer.read_matrix();
+    }
+    let tmx = tile_mode_of(buffer.read32_le(3));
+    let tmy = tile_mode_of(buffer.read32_le(3));
+    let tile = buffer.read_rect();
+
+    let mut filter = FilterMode::Nearest;
+    // kNoFilterQualityShaders_Version
+    let picture = if buffer.is_version_lt(85) {
+        let legacy_filter = buffer.read32();
+        if legacy_filter == 1 {
+            filter = FilterMode::Linear;
+        }
+        Picture::make_from_buffer(buffer, registry)
+    } else {
+        if buffer.read32_le(1) == 1 {
+            filter = FilterMode::Linear;
+        }
+        Picture::make_from_buffer(buffer, registry)
+    };
+    let Some(picture) = picture else {
+        return Some(shaders::empty());
+    };
+    picture.to_shader((tmx, tmy), filter, &lm, &tile)
 }

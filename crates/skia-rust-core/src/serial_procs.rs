@@ -15,6 +15,7 @@ use std::sync::Arc;
 use crate::alpha_type::AlphaType;
 use crate::data::Data;
 use crate::image::Image;
+use crate::picture::Picture;
 use crate::stream::Stream;
 use crate::typeface::Typeface;
 
@@ -44,6 +45,17 @@ pub type ImageDeserializer = Arc<dyn Fn(&[u8], Option<AlphaType>) -> Option<Imag
 pub type ImageDataDeserializer =
     Arc<dyn Fn(Data, Option<AlphaType>) -> Option<Image> + Send + Sync>;
 
+/// `SkSerialProcs::fPictureProc`: the custom bytes for a picture, or `None` to write the picture
+/// in the default format. Returning data of 0 or 1 bytes writes a failure marker (Skia returns
+/// `SkData::MakeEmpty()` for them).
+#[doc(alias = "SkSerialPictureProc")]
+pub type PictureSerializer = Arc<dyn Fn(&Picture) -> Option<Data> + Send + Sync>;
+
+/// `SkDeserialProcs::fPictureProc`: makes a picture from the bytes that [`PictureSerializer`]
+/// wrote.
+#[doc(alias = "SkDeserialPictureProc")]
+pub type PictureDeserializer = Arc<dyn Fn(&[u8]) -> Option<Picture> + Send + Sync>;
+
 /// `SkSerialProcs`: how to write the objects of a buffer. The default has no procedures.
 // Port of: include/core/SkSerialProcs.h#L20-L40 (chrome/m156), the typeface and image procedures
 #[doc(alias = "SkSerialProcs")]
@@ -53,6 +65,8 @@ pub struct SerialProcs {
     pub typeface: Option<TypefaceSerializer>,
     /// `fImageProc` with its context.
     pub image: Option<ImageSerializer>,
+    /// `fPictureProc` with its context.
+    pub picture: Option<PictureSerializer>,
 }
 
 impl fmt::Debug for SerialProcs {
@@ -60,6 +74,7 @@ impl fmt::Debug for SerialProcs {
         f.debug_struct("SerialProcs")
             .field("typeface", &self.typeface.is_some())
             .field("image", &self.image.is_some())
+            .field("picture", &self.picture.is_some())
             .finish()
     }
 }
@@ -75,6 +90,8 @@ pub struct DeserialProcs {
     pub image: Option<ImageDeserializer>,
     /// `fImageDataProc` with its context.
     pub image_data: Option<ImageDataDeserializer>,
+    /// `fPictureProc` with its context.
+    pub picture: Option<PictureDeserializer>,
 }
 
 impl fmt::Debug for DeserialProcs {
@@ -83,6 +100,7 @@ impl fmt::Debug for DeserialProcs {
             .field("typeface", &self.typeface.is_some())
             .field("image", &self.image.is_some())
             .field("image_data", &self.image_data.is_some())
+            .field("picture", &self.picture.is_some())
             .finish()
     }
 }
