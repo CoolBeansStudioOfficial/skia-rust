@@ -53357,8 +53357,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/UpdateBackendTextureTest.cpp#L252-L310"
 module = "gpu"
-status = "todo"
-reason = "portable now (SkImages::WrapTexture, SkSurfaces::RenderTarget and Recorder::update_backend_texture exist); not ported in this sweep (310 C++ lines)"
+status = "passing"
 span_hash = "2d6e0ba71eee51a95b3dccd5515e28bac006f5547612ce72305192518c04a344"
 
 [[test]]
@@ -53367,8 +53366,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/UpdateBackendTextureTest.cpp#L195-L250"
 module = "gpu"
-status = "todo"
-reason = "portable now (SkImages::WrapTexture, SkSurfaces::RenderTarget and Recorder::update_backend_texture exist); not ported in this sweep (310 C++ lines)"
+status = "passing"
 span_hash = "11e58475b27bd59ca9c457bd3c3ca542a00b41c4752eef51eaf5927debaef3c1"
 
 [[test]]
