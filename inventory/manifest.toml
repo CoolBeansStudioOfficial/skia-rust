@@ -35986,8 +35986,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L853-L868"
 module = "core"
-status = "todo"
-reason = "its create_rasterproc_image case needs RasterFromPixmap to share the pixels and call the release proc when the image is destroyed; images::raster_from_pixmap copies and releases at once"
+status = "passing"
 span_hash = "dc5eb71bc1e630f40cfee1a4495f722e78aa31ada17a4c3b5e86210af5e58df0"
 
 [[test]]
@@ -36006,8 +36005,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L899-L914"
 module = "core"
-status = "todo"
-reason = "its create_rasterproc_image case needs RasterFromPixmap to share the pixels and call the release proc when the image is destroyed; images::raster_from_pixmap copies and releases at once"
+status = "passing"
 span_hash = "a5d92dfd786abb78d84edf4474dac23f089e27a116e1a48ecba7c7b804e5a8ff"
 
 [[test]]
@@ -36026,8 +36024,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L789-L804"
 module = "core"
-status = "todo"
-reason = "its create_rasterproc_image case needs RasterFromPixmap to share the pixels and call the release proc when the image is destroyed; images::raster_from_pixmap copies and releases at once"
+status = "passing"
 span_hash = "110916350685e063207ed53d7767c69fc8ebc2cf258a42fa4de60e5e32db5e28"
 
 [[test]]
