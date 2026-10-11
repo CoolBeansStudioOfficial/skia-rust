@@ -15744,6 +15744,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L88-L101"
 module = "effects"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "15f6918a93263665e207f33d47ceb1482da8731b1f5b7cb762c47bd4dc4dbad8"
 
 [[test]]
@@ -15752,7 +15753,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L180-L183"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); draws through a Ganesh mock GrDirectContext"
 span_hash = "a53709fcba7dda47263dc044d38d74d51ab2c3433b5cb5f077b9ccac2e50d00e"
 
 [[test]]
@@ -15761,7 +15763,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L201-L211"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); draws through a Ganesh GL GrDirectContext"
 span_hash = "7ef203989d2788427f3bcf9ff37506055015e9e941ee1596c56b2363cc6c99d6"
 
 [[test]]
@@ -15771,6 +15774,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L47-L49"
 module = "core"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "c61376d2f97a328c9dc1a444cdbbb3b13f44d5c1ef928f030e6288b1f36ead56"
 
 [[test]]
@@ -15780,7 +15784,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L214-L219"
 module = "pdf"
 status = "todo"
-reason = "the fuzz harness is not ported (M27); the PDF canvas itself exists (M25)"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "690b3cd731e6c353430dce3f46520e8a47b00797a75432a59d0ff6f6458f5be6"
 
 [[test]]
@@ -15790,6 +15794,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L53-L58"
 module = "core"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "8950aed9b32a880fc3d5c6e6df0b7971cb0b873dd02a74a0030d2193b0c5cee4"
 
 [[test]]
@@ -15799,6 +15804,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
@@ -15808,6 +15814,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -15817,6 +15824,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L107-L167"
 module = "effects"
 status = "todo"
+reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
 span_hash = "856b16a4f26126f72b3e99aff969d63f6cce7cd0b33b56825981db99d64ce6d2"
 
 [[test]]
@@ -15825,7 +15833,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L222-L235"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "debug helper, not a fuzzer: replays an input into a DebugCanvas and prints its JSON"
 span_hash = "2e75ae89aee52e68b7ef8b20fe42f574eb723492b01adba6091dceef7f2e4ff8"
 
 [[test]]
@@ -15834,7 +15843,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCreateDDL.cpp#L212-L241"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes Ganesh deferred display lists"
 span_hash = "a77443409be3185f2e2fa32e742d5beb17630cf5577756fb1ef48ef36f906ccb"
 
 [[test]]
@@ -15843,7 +15853,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCubicRoots.cpp#L76-L92"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5488fc44d0a915d8cd8c6902a9cb8027c98fd08a752f062013364035a1547519"
 
 [[test]]
@@ -15852,7 +15862,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzDDLThreading.cpp#L303-L305"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes Ganesh DDL threading on GL"
 span_hash = "48848edeee705b4479755070973f588c3ff15e67f5536fe14ace5c3cab68f611"
 
 [[test]]
@@ -15861,7 +15872,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzDrawFunctions.cpp#L293-L333"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "156d377dea4e91a85ff250cc2456d73844094cc96a11f168811fa47eb419eb1a"
 
 [[test]]
@@ -15870,7 +15881,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L79-L86"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e5a447afbe35d5f8901fa5ec04766e0faece8f38e1c83bba81514133d194f121"
 
 [[test]]
@@ -15879,7 +15890,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L46-L53"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e589fa49a1abdbc7f16be5e9be6dd1193716944d56dd9892fb7d55fa271a5a74"
 
 [[test]]
@@ -15889,6 +15900,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L57-L76"
 module = "codec"
 status = "todo"
+reason = "needs codec wave C-R (SkPngRustEncoder; registered only with SK_CODEC_ENCODES_PNG_WITH_RUST)"
 span_hash = "543b7e8452e854872c285d411fdb70b0a56eafb38de0e430abb3e04a00cf9a52"
 
 [[test]]
@@ -15897,7 +15909,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L88-L102"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e3a56ae9393a5600b2ad022de0530265e451d1a2fe3dff5fbc423cbd6ae465ca"
 
 [[test]]
@@ -15906,7 +15918,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L106-L146"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "corpus-writing helper, not a fuzzer; skia_rust_fuzz::seeds builds the encoder seeds in its format (docs/design/fuzz.md §2)"
 span_hash = "664aabf3fc9000257ba630bf6ead0494b9081dec9250fa1779ae11729f84649c"
 
 [[test]]
@@ -15915,7 +15928,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzGrStyledShape.cpp#L17-L89"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes GrStyledShape"
 span_hash = "aae1265149015410ed5d34cc566232e7c870eb96ce85fe1eb22f988504725ad2"
 
 [[test]]
@@ -15924,7 +15938,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzGradients.cpp#L254-L275"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ade74d0c93bc20242a7f2b30ee996aa15e75df89c2ba5be55eb7331c3bcb52b3"
 
 [[test]]
@@ -15933,7 +15947,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzParsePath.cpp#L121-L132"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1f9c0f4dca07251e62fe55f94284090bc23a8e617d35c6beb076ac8740c8a86e"
 
 [[test]]
@@ -15942,7 +15956,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathMeasure.cpp#L17-L40"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "72720a14776fd46f285af5c48400e07c2931a4cb9a6c0cc333b47fdb3c889c3c"
 
 [[test]]
@@ -15951,8 +15965,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L181-L197"
 module = "pathops"
-status = "todo"
-reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
+status = "passing"
 span_hash = "6b6fe5290d6ecba05b6fde31cf3a5e954c97a2531291143bec1053ceacfd42ab"
 
 [[test]]
@@ -15961,8 +15974,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L19-L106"
 module = "pathops"
-status = "todo"
-reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
+status = "passing"
 span_hash = "ccda0ca5379db92b0be4cf59eef4260bc3c6d69a1e295ff6586526b5ffca84c5"
 
 [[test]]
@@ -15971,7 +15983,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPolyUtils.cpp#L28-L63"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "857c9daf3a47fca885c5d71f6150a1d30e03210dfd49825d8e58ca0654ff3758"
 
 [[test]]
@@ -15980,7 +15992,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzPolyUtils.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "the empty PolyUtils of SK_ENABLE_OPTIMIZE_SIZE builds; skia-rust ports the full one (PolyUtils)"
 span_hash = "bc424c8f7cc79cefd7e228f4f849d35d2c89ff1f30e033267ea3d191783bd044"
 
 [[test]]
@@ -15990,6 +16003,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzPrecompile.cpp#L433-L452"
 module = "core"
 status = "todo"
+reason = "Graphite precompile on a mock Context: a later fuzz slice (docs/design/fuzz.md §6)"
 span_hash = "27c728e42c9bd3d4345a1996cd92e32663a10a0554e4c0fb37a3e044ea8a900f"
 
 [[test]]
@@ -15998,7 +16012,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzQuadRoots.cpp#L36-L48"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0ceddd79c301ee3329bc352a0d60b0ec154691301aa240da3aaf24f402ba7eec"
 
 [[test]]
@@ -16007,7 +16021,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzRegionOp.cpp#L11-L19"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5a55285715b9ccf14f415aa01ca93b926e9b9c46612797d01cf962a2d926861e"
 
 [[test]]
@@ -16017,6 +16031,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzSkParagraph.cpp#L262-L288"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules.md M10)"
 span_hash = "a871566365cd66d25552b4f1380950664ab8ab49d06ef30da358ccb586cce942"
 
 [[test]]
@@ -16025,7 +16040,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzTriangulation.cpp#L16-L36"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh is out of scope (docs/PLAN.md); fuzzes GrTriangulator with GrCpuVertexAllocator (src/gpu/ganesh/geometry), which only Ganesh's path renderers use"
 span_hash = "71b8224b5658715137e75c353265edfddb957ebda2434a1b8138ab650060e373"
 
 [[test]]
