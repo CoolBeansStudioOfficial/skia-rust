@@ -7,8 +7,10 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::color::Color4f;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image::Image;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
 
@@ -50,6 +52,91 @@ pub fn equal_pixels_image(a: &Image, b: &Image) -> bool {
         return false;
     };
     equal_pixels(&pm0, &pm1)
+}
+
+/// Port of `ToolUtils::DecodeDataToBitmap` (tools/DecodeUtils.cpp): decodes `data` into a bitmap
+/// allocated with the generator's info, or `None` if no generator or no pixels.
+// Port of: tools/DecodeUtils.cpp#L23-L28 (chrome/m156)
+#[must_use]
+pub fn decode_data_to_bitmap(data: Option<skia_rust_core::data::Data>) -> Option<Bitmap> {
+    let mut generator =
+        skia_rust_codec::image_generator_from_encoded::make_from_encoded(data, None)?;
+    let gen_info = generator.info().clone();
+    let row_bytes = gen_info.min_row_bytes();
+    let mut pixels = vec![0u8; gen_info.compute_byte_size(row_bytes)];
+    // `gen->getInfo().makeColorSpace(nullptr)`: the pixels are read without a colour space.
+    if !generator.get_pixels(&gen_info.with_color_space(None), &mut pixels, row_bytes) {
+        return None;
+    }
+    let mut bm = Bitmap::new();
+    bm.install_pixels(&gen_info, pixels, row_bytes)
+        .then_some(bm)
+}
+
+/// Port of `ToolUtils::GetResourceAsBitmap` (tools/DecodeUtils.h): the bitmap decoded from the
+/// resource at `resource`, or `None` if the resource is missing or cannot be decoded.
+// Port of: tools/DecodeUtils.h#L23-L25 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_bitmap(resource: &str) -> Option<Bitmap> {
+    let data = crate::resources::get_resource_as_data(resource)?;
+    decode_data_to_bitmap(Some(skia_rust_core::data::Data::new_from_vec(data)))
+}
+
+/// One mip level made by [`make_pixmaps`]: its info, row bytes and pixels. Each level owns its
+/// pixels (Skia makes them one allocation, which nothing observes).
+#[derive(Debug, Clone)]
+pub struct PixmapLevel {
+    pub info: ImageInfo,
+    pub row_bytes: usize,
+    pub pixels: Vec<u8>,
+}
+
+impl PixmapLevel {
+    /// The level as a read-only pixmap.
+    ///
+    /// # Panics
+    /// If the pixels do not hold the info (they always do for a level of [`make_pixmaps`]).
+    #[must_use]
+    pub fn pixmap(&self) -> Pixmap<'_> {
+        Pixmap::new_readonly(&self.info, &self.pixels, self.row_bytes)
+            .expect("a level's pixels hold its info")
+    }
+}
+
+/// `ToolUtils::make_pixmaps`: makes the (up to six) mip levels of a `ct` texture, each filled
+/// with its entry of `colors`. Levels with an even index get row bytes that are not tight, so
+/// the tests exercise row bytes that differ from the minimum.
+// Port of: tools/ToolUtils.cpp#L184-L214 (chrome/m156)
+#[must_use]
+pub fn make_pixmaps(
+    ct: ColorType,
+    at: AlphaType,
+    with_mips: bool,
+    colors: &[Color4f; 6],
+) -> Vec<PixmapLevel> {
+    let mut level_size: i32 = 32;
+    let num_mip_levels: usize = if with_mips { 6 } else { 1 };
+    let mut levels = Vec::with_capacity(num_mip_levels);
+    for (level, color) in colors.iter().enumerate().take(num_mip_levels) {
+        let info = ImageInfo::new((level_size, level_size), ct, at, None);
+        let mut row_bytes = info.min_row_bytes();
+        // Make sure we test row bytes that aren't tight.
+        if level % 2 == 0 {
+            row_bytes += (level + 1) * ct.bytes_per_pixel();
+        }
+        #[allow(clippy::cast_sign_loss)] // level_size is a positive level dimension
+        let mut pixels = vec![0u8; row_bytes * level_size as usize];
+        if let Some(mut pixmap) = Pixmap::new(&info, &mut pixels, row_bytes) {
+            pixmap.erase_4f(color, None);
+        }
+        levels.push(PixmapLevel {
+            info,
+            row_bytes,
+            pixels,
+        });
+        level_size /= 2;
+    }
+    levels
 }
 
 /// `ToolUtils::alphatype_name`.

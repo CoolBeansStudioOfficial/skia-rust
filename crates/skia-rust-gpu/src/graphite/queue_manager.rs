@@ -12,7 +12,7 @@
 //! and `Surface`).
 
 use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
+use std::sync::{Arc, PoisonError};
 
 use crate::gpu::gpu_types::Protected;
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
@@ -29,7 +29,9 @@ use crate::graphite::graphite_types::{
 };
 use crate::graphite::recording::Recording;
 use crate::graphite::resource::ResourceRef;
+use crate::graphite::surface_graphite::Surface;
 use crate::graphite::task::{ReplayTargetData, Status, Task};
+use crate::graphite::texture_proxy::AutoDeinstantiateTextureProxy;
 use crate::graphite::upload_buffer_manager::UploadBufferManager;
 
 /// `SK_InvalidGenID`: a recorder that does not require ordered recordings.
@@ -253,6 +255,7 @@ impl QueueManager {
                 .map(|proc| RefCntedCallback::make(CallbackProc::Result(proc)))
         };
         let simulated = info.simulated_status;
+        let target_surface = info.target_surface;
 
         let Some(recording) = info.recording.take() else {
             return fail_insert(
@@ -266,6 +269,7 @@ impl QueueManager {
             &mut *recording,
             info.target_translation,
             info.target_clip,
+            target_surface,
             simulated,
             context,
         ) {
@@ -295,6 +299,7 @@ impl QueueManager {
         recording: &mut Recording,
         target_translation: IVector,
         target_clip: IRect,
+        target_surface: Option<&Surface>,
         simulated: InsertStatus,
         context: &mut dyn ContextPriv,
     ) -> Result<(), InsertFailure> {
@@ -310,6 +315,48 @@ impl QueueManager {
             ));
         }
 
+        // This must happen before instantiating the lazy proxies, because the target for draws in
+        // this recording may itself be a lazy proxy whose instantiation must be handled specially
+        // here. We must also make sure the lazy proxies are instantiated successfully before we
+        // make any modifications to the current command buffer, so we can't just do all this work
+        // in `Recording::add_commands` below.
+        let deferred_target_proxy = recording.priv_().deferred_target_proxy().cloned();
+        // Deinstantiates the deferred target when the insert ends, on failure too.
+        let _auto_deinstantiate_target =
+            AutoDeinstantiateTextureProxy::new(deferred_target_proxy.clone());
+        let replay_target = if deferred_target_proxy.is_some() {
+            let Some(surface) = target_surface else {
+                return Err(failure(
+                    InsertStatus::PromiseImageInstantiationFailed,
+                    "No surface provided to instantiate deferred replay target",
+                ));
+            };
+            let surface_texture = surface.target().proxy().cloned();
+            let replay_target = match surface_texture {
+                Some(surface_texture) => {
+                    let mut provider = resource_provider
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner);
+                    recording.priv_().setup_deferred_target(
+                        &mut provider,
+                        &surface_texture,
+                        target_translation,
+                        target_clip,
+                    )
+                }
+                None => None,
+            };
+            if replay_target.is_none() {
+                return Err(failure(
+                    InsertStatus::PromiseImageInstantiationFailed,
+                    "Failed to set up deferred replay target",
+                ));
+            }
+            replay_target
+        } else {
+            None
+        };
+
         instantiate_lazy_proxies(recording, &resource_provider, simulated)?;
 
         let Some(command_buffer) = self.current_command_buffer.as_deref_mut() else {
@@ -321,7 +368,7 @@ impl QueueManager {
         if recording.priv_().add_commands(
             context,
             command_buffer,
-            None,
+            replay_target,
             target_translation,
             target_clip,
         ) {
@@ -386,15 +433,6 @@ impl QueueManager {
             }
             // Note the new Recording ID.
             self.last_added_recording_ids.insert(recorder_id, unique_id);
-        }
-
-        // `fTargetSurface` is not ported (`Surface` is G10d), so a deferred replay target can never
-        // be set up here: this is the failure Skia reports when no surface is provided.
-        if recording.priv_().deferred_target_proxy().is_some() {
-            return Err(failure(
-                InsertStatus::PromiseImageInstantiationFailed,
-                "No surface provided to instantiate deferred replay target",
-            ));
         }
 
         simulated_failure(simulated, InsertStatus::InvalidRecording)

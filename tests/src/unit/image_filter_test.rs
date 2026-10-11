@@ -6,12 +6,12 @@
 // Only the tests whose filters are ported are here: the Offset, Merge, Blend, Image, DropShadow,
 // Morphology (Dilate/Erode), MatrixConvolution and DisplacementMap filters and the raster backend.
 // The lighting, magnifier, arithmetic and runtime-image filters, the Ganesh variants
-// and the image-filter-cache tests are not ported yet.
+// and the GPU image-filter-cache tests are not ported (see image_filter_cache_test.rs).
 
 // Only the tests whose filters are ported are here: the Offset, Merge, Blend (with the arithmetic
 // blender), Image, DropShadow, Lighting and Magnifier filters and the raster backend. The
 // morphology, displacement and matrix-convolution filters, the Ganesh variants, the
-// blur-dependent bounds tests and the image-filter-cache tests are not ported yet.
+// blur-dependent bounds tests and the GPU image-filter-cache tests are not ported yet.
 
 #![cfg(test)]
 

@@ -764,3 +764,15 @@ If a future caller needs exact expat parity beyond this surface (error positions
 | `skia_safe::svg::Canvas::new(bounds, flags)`, `end()` | `canvas::Canvas::new`, `end() -> Data` | same shape; collects the output in a `DynamicMemoryWStream` |
 | `SkSVGDevice::Make(size, unique_ptr<SkXMLWriter>, Options)` | `device::SvgDevice::make(ISize, Box<dyn XmlWriter>, Options) -> Box<dyn Device>` | `XmlStreamWriter::new_owned` and `XmlParserWriter::new_owned` make writers that own their sink, and `Dom::begin_parsing_shared` hands out a parser that a writer can own (`SkDOM::beginParsing` returns a pointer) |
 | `SkClipStackDevice` | `skia_rust_raster::clip_stack_device::ClipStackDevice` (re-exported by `skia_rust_pdf::clip_stack_device`) | moved from the PDF crate so that the SVG device shares it |
+## Graphite deferred canvas and async read-back (ReadWritePixels, RecordingSurfaces)
+
+| C++ | skia-rust | Deviation |
+|---|---|---|
+| `Recorder::makeDeferredCanvas(imageInfo, textureInfo)` | `Recorder::make_deferred_canvas(&mut self, &ImageInfo, &TextureInfo) -> Option<&Canvas>` | as skia-safe. The canvas is owned by the user-facing `Recorder` value, and `snap()` releases it, which makes the target device immutable |
+| `InsertRecordingInfo::fTargetSurface` | `InsertRecordingInfo::target_surface: Option<&Surface>` | no skia-safe equivalent; a public field next to `recording`. `fTargetTextureState` and the semaphores stay unported |
+| `Context::asyncRescaleAndReadPixels(const SkImage*, ...)` | `WgpuContext::async_rescale_and_read_pixels(&CoreImage, ...)` | `callback` is `ReadPixelsCallback` (`Box<dyn FnOnce(Option<AsyncReadResult>) + Send>`) |
+| `Context::asyncRescaleAndReadPixels(const SkSurface*, ...)` | `WgpuContext::async_rescale_and_read_pixels_surface(&Surface, ...)` | the overload has a `_surface` suffix. The surface image is always present (`Surface::new` fails for a target that cannot be sampled), so Skia's direct readback of a non-texturable surface has no caller |
+| `Context::asyncRescaleAndReadPixelsYUV420` / `YUVA420` (SkImage and SkSurface) | `async_rescale_and_read_pixels_yuv420`, `..._yuva420`, and the `_surface` variants | the same suffix rule. The destination is `RGBA8888` opaque (YUV420) or premultiplied (YUVA420), as in Skia |
+| `SkImage::RescaleGamma`, `SkImage::RescaleMode` | `skia_rust_core::image::{RescaleGamma, RescaleMode}` | enum variants keep Skia names (`Src`, `Linear`, `Nearest`, `RepeatedLinear`, `RepeatedCubic`) |
+| `SkImages::GenerateMipmapsFromBase` | `image_factories::GenerateMipmapsFromBase` (`No`, `Yes`) | |
+| `SkImages::WrapTexture(..., genMipmaps, releaseP, releaseC)` | `image_factories::wrap_texture_for_alpha_type_with_mipmaps`, `wrap_texture_with_release` | the release callback is an `Option<CallbackProc>`; the existing six-argument functions delegate with `genMipmaps` = No |

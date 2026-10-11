@@ -4,8 +4,9 @@
 // Port of: tests/WritePixelsTest.cpp (chrome/m156)
 //
 // Not ported: the Ganesh tests (`WritePixels_Gpu`, `WritePixelsMSAA_Gpu`,
-// `WritePixelsNonTexture_Gpu`, `WritePixelsNonTextureMSAA_Gpu`, `WritePixelsPendingIO`) and
-// `WritePixels_Graphite` (Graphite recorder; GPU).
+// `WritePixelsNonTexture_Gpu`, `WritePixelsNonTextureMSAA_Gpu`, `WritePixelsPendingIO`). The
+// Graphite variant (`WritePixels_Graphite`) runs the same body on a Graphite surface, through
+// `TestSurface`.
 
 #![cfg(test)]
 // Mirrors the C++ (single-letter channel names; one switch arm per case value).
@@ -27,10 +28,13 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::{Contains, IRect};
 use skia_rust_core::safe32::abs32;
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
 
-use crate::{Reporter, def_tier_test, errorf, reporter_assert};
+use crate::tools::test_surface::{GraphiteTestSurface, TestSurface};
+use crate::{Reporter, def_graphite_adapter_test, def_tier_test, errorf, reporter_assert};
 
 const DEV_W: i32 = 100;
 const DEV_H: i32 = 100;
@@ -93,7 +97,7 @@ fn get_bitmap_color(x: i32, y: i32, w: i32, ct: ColorType, at: AlphaType) -> u32
 }
 
 // Port of: tests/WritePixelsTest.cpp#L150-L158 (chrome/m156)
-fn fill_surface(surface: &mut Surface<'_>) {
+fn fill_surface(surface: &mut dyn TestSurface) {
     let mut bmp = Bitmap::new();
     bmp.alloc_n32_pixels((DEV_W, DEV_H), None);
     for y in 0..DEV_H {
@@ -101,7 +105,7 @@ fn fill_surface(surface: &mut Surface<'_>) {
             bmp.set_addr32(x, y, get_canvas_color(x, y));
         }
     }
-    surface.write_pixels_from_bitmap(&bmp, (0, 0));
+    surface.write_pixels(&bmp, 0, 0);
 }
 
 /// Lucky for us, alpha is always in the same spot (`SK_A32_SHIFT`), for both RGBA and BGRA.
@@ -182,7 +186,7 @@ fn write_should_succeed(dst_info: &ImageInfo, src_info: &ImageInfo, is_gpu: bool
 // Port of: tests/WritePixelsTest.cpp#L238-L316 (chrome/m156)
 fn check_write(
     reporter: &mut Reporter,
-    surf: &mut Surface<'_>,
+    surf: &mut dyn TestSurface,
     surface_alpha_type: AlphaType,
     bitmap: &Bitmap,
     write_x: i32,
@@ -192,8 +196,9 @@ fn check_write(
     // At some point this will be unsupported, as we won't allow accessBitmap() to magically call
     // readPixels for the client.
     let mut secret_dev_bitmap = Bitmap::new();
-    secret_dev_bitmap.alloc_n32_pixels((surf.width(), surf.height()), None);
-    if !surf.read_pixels_to_bitmap(&mut secret_dev_bitmap, (0, 0)) {
+    let dims = surf.image_info().dimensions();
+    secret_dev_bitmap.alloc_n32_pixels(dims, None);
+    if !surf.read_pixels(&mut secret_dev_bitmap) {
         return false;
     }
 
@@ -206,7 +211,7 @@ fn check_write(
         return false;
     };
 
-    if surf.width() != DEV_W || surf.height() != DEV_H {
+    if dims.width != DEV_W || dims.height != DEV_H {
         return false;
     }
 
@@ -345,7 +350,11 @@ def_tier_test!(WritePixelsSurfaceGenID, |reporter| {
 });
 
 // Port of: tests/WritePixelsTest.cpp#L362-L447 (chrome/m156)
-fn test_write_pixels(reporter: &mut Reporter, surface: &mut Surface<'_>, surface_info: &ImageInfo) {
+fn test_write_pixels(
+    reporter: &mut Reporter,
+    surface: &mut dyn TestSurface,
+    surface_info: &ImageInfo,
+) {
     let test_rects = [
         // entire thing
         IRect::from_xywh(0, 0, DEV_W, DEV_H),
@@ -405,7 +414,7 @@ fn test_write_pixels(reporter: &mut Reporter, surface: &mut Surface<'_>, surface
             for &(ct, at) in &g_src_configs {
                 // `canvas->recordingContext()` and `canvas->recorder()` are null for a raster
                 // canvas.
-                let is_gpu = false;
+                let is_gpu = surface.is_gpu();
                 fill_surface(surface);
                 let mut bmp = Bitmap::new();
                 reporter_assert!(
@@ -421,7 +430,7 @@ fn test_write_pixels(reporter: &mut Reporter, surface: &mut Surface<'_>, surface
                 );
                 let id_before = surface.generation_id();
 
-                surface.write_pixels_from_bitmap(&bmp, (rect.left, rect.top));
+                surface.write_pixels(&bmp, rect.left, rect.top);
 
                 let id_after = surface.generation_id();
                 let ok = check_write(
@@ -467,6 +476,23 @@ def_tier_test!(WritePixels, |reporter| {
         let mut surface =
             surfaces::wrap_pixels(&info, &mut pixels, row_bytes, None).expect("surface");
         test_write_pixels(reporter, &mut surface, &info);
+    }
+});
+
+// Port of: tests/WritePixelsTest.cpp#L504-L510 (chrome/m156)
+// The Graphite surface is read back on a real adapter (`def_graphite_adapter_test!`).
+def_graphite_adapter_test!(WritePixels_Graphite, |reporter, context| {
+    let ii = ImageInfo::new_n32_premul((DEV_W, DEV_H), None);
+    let recorder = context.make_recorder(None);
+    if let Some(surface) = GraphiteSurface::render_target(&recorder, &ii, Mipmapped::No, None, "") {
+        test_write_pixels(
+            reporter,
+            &mut GraphiteTestSurface {
+                context,
+                surface: &surface,
+            },
+            &ii,
+        );
     }
 });
 

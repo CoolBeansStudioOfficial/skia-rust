@@ -6,6 +6,7 @@
 //! The raster [`Backend`] of image filters: devices are [`BitmapDevice`]s, and special images
 //! share the pixels of the images they are made from.
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use skia_rust_core::alpha_type::AlphaType;
@@ -14,6 +15,7 @@ use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::device::Device;
 use skia_rust_core::image::Image;
+use skia_rust_core::image_filter_cache::{CreateIfNecessary, ImageFilterCache};
 use skia_rust_core::image_filter_types::Backend;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::images;
@@ -33,6 +35,12 @@ pub struct RasterBackend {
 }
 
 impl Backend for RasterBackend {
+    // Port of: src/core/SkImageFilterTypes.cpp#L186-L200 (chrome/m156), the `Backend(
+    // SkImageFilterCache::Get(), ...)` constructor argument, looked up when it is used.
+    fn cache(&self) -> Option<Rc<ImageFilterCache>> {
+        ImageFilterCache::get_default(CreateIfNecessary::Yes)
+    }
+
     // Port of: src/core/SkImageFilterTypes.cpp#L193-L200 (chrome/m156)
     fn make_device(
         &self,

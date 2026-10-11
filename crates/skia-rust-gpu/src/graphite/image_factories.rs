@@ -56,7 +56,8 @@ use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_proxy_view::TextureProxyView;
 use crate::graphite::texture_utils::{
-    PromiseTextureFulfillProc, make_bitmap_proxy_view, make_promise_image_lazy_proxy,
+    PromiseTextureFulfillProc, generate_mipmaps, make_bitmap_proxy_view,
+    make_promise_image_lazy_proxy,
 };
 use crate::graphite::yuva_backend_textures::{YUVABackendTextureInfo, YUVABackendTextures};
 
@@ -181,6 +182,33 @@ pub fn wrap_texture(
     color_space: Option<ColorSpace>,
     origin: Origin,
 ) -> Option<CoreImage> {
+    wrap_texture_with_release(
+        recorder,
+        backend_texture,
+        color_type,
+        alpha_type,
+        color_space,
+        origin,
+        None,
+    )
+}
+
+/// `WrapTexture(recorder, backendTex, colorType, alphaType, colorSpace, origin, releaseP,
+/// releaseC)`: [`wrap_texture`] with the texture's release callback `release`.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L72-L127 (chrome/m156), with `genMipmaps` = kNo
+#[doc(alias = "WrapTexture")]
+#[must_use]
+pub fn wrap_texture_with_release(
+    recorder: &Recorder,
+    backend_texture: &BackendTexture,
+    color_type: ColorType,
+    alpha_type: AlphaType,
+    color_space: Option<ColorSpace>,
+    origin: Origin,
+    release: Option<CallbackProc>,
+) -> Option<CoreImage> {
+    let release_helper = release.map(RefCntedCallback::make);
+
     let info = ColorInfo::new(color_type, alpha_type, color_space);
     let priv_ = recorder.priv_();
     let caps = Arc::clone(priv_.caps());
@@ -195,10 +223,22 @@ pub fn wrap_texture(
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         provider.create_wrapped_texture(backend_texture, "WrappedImage")?
     };
+    texture.set_release_callback(release_helper.map(|helper| helper as ReleaseCallback));
     let proxy = TextureProxy::wrap(texture);
     let swizzle = read_swizzle_for_color_type(color_type, proxy.format());
     let view = TextureProxyView::new_with_origin(Some(proxy), swizzle, origin);
     Some(Image::new(view, &info).into_core())
+}
+
+/// `SkImages::GenerateMipmapsFromBase`: whether the mip levels of a wrapped texture are generated
+/// from its base level.
+// Port of: include/gpu/graphite/Image.h#L34 (chrome/m156)
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum GenerateMipmapsFromBase {
+    /// `kNo`.
+    No,
+    /// `kYes`.
+    Yes,
 }
 
 /// `WrapTexture(recorder, backendTex, alphaType, colorSpace, origin, releaseP, releaseC)`: an image
@@ -213,6 +253,33 @@ pub fn wrap_texture_for_alpha_type(
     alpha_type: AlphaType,
     color_space: Option<ColorSpace>,
     origin: Origin,
+    release: Option<CallbackProc>,
+) -> Option<CoreImage> {
+    wrap_texture_for_alpha_type_with_mipmaps(
+        recorder,
+        backend_texture,
+        alpha_type,
+        color_space,
+        origin,
+        GenerateMipmapsFromBase::No,
+        release,
+    )
+}
+
+/// `WrapTexture(recorder, backendTex, alphaType, colorSpace, origin, genMipmaps, releaseP,
+/// releaseC)`: an image over a client's backend texture, with the color type inferred from the
+/// texture's format. With [`GenerateMipmapsFromBase::Yes`] the texture's mip levels are generated
+/// from its base level. `release` is the texture's release callback. The label is `"WrappedImage"`.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L129-L213 (chrome/m156)
+#[doc(alias = "WrapTexture")]
+#[must_use]
+pub fn wrap_texture_for_alpha_type_with_mipmaps(
+    recorder: &Recorder,
+    backend_texture: &BackendTexture,
+    alpha_type: AlphaType,
+    color_space: Option<ColorSpace>,
+    origin: Origin,
+    gen_mipmaps: GenerateMipmapsFromBase,
     release: Option<CallbackProc>,
 ) -> Option<CoreImage> {
     let release_helper = release.map(RefCntedCallback::make);
@@ -269,8 +336,20 @@ pub fn wrap_texture_for_alpha_type(
     };
     texture.set_release_callback(release_helper.map(|helper| helper as ReleaseCallback));
 
-    let view =
-        TextureProxyView::new_with_origin(Some(TextureProxy::wrap(texture)), swizzle, origin);
+    let proxy = TextureProxy::wrap(texture);
+    let view = TextureProxyView::new_with_origin(Some(Arc::clone(&proxy)), swizzle, origin);
+    if gen_mipmaps == GenerateMipmapsFromBase::Yes {
+        if view.proxy().is_some_and(|p| p.mipmapped() == Mipmapped::No) {
+            skia_log_w!(
+                "Failed SkImage:::WrapTexture because asked to generate mipmaps for nonmipmapped texture"
+            );
+            return None;
+        }
+        if !generate_mipmaps(recorder, None, &proxy) {
+            skia_log_w!("Failed SkImage::WrapTexture. Could not generate mipmaps.");
+            return None;
+        }
+    }
     Some(Image::new(view, &info).into_core())
 }
 
