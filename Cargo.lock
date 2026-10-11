@@ -1191,6 +1191,7 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-resources",
  "skia-rust-simd",
+ "skia-rust-skcms",
  "skia-rust-text",
  "skia-rust-tools",
  "zstd",
@@ -1211,6 +1212,10 @@ dependencies = [
  "skia-rust-tools",
  "wgpu",
 ]
+
+[[package]]
+name = "skia-rust-hb-subset"
+version = "0.156.0"
 
 [[package]]
 name = "skia-rust-libjpeg"
@@ -1241,6 +1246,7 @@ dependencies = [
  "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-hb-subset",
  "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-skcms",

@@ -19,6 +19,7 @@ skia-rust-raster.workspace = true
 skia-rust-tools.workspace = true
 skia-rust-text.workspace = true
 skia-rust-simd = { workspace = true, features = ["testing", "models"] }
+skia-rust-skcms.workspace = true
 # Static GM registry: the Rust counterpart of Skia's `sk_tools::Registry` behind `DEF_GM`.
 inventory = "0.3.24"
 # PNG diff images on golden mismatches.

@@ -16,6 +16,7 @@ skia-rust-codec.workspace = true
 skia-rust-zlib.workspace = true
 skia-rust-skcms.workspace = true
 skia-rust-effects.workspace = true
+skia-rust-hb-subset.workspace = true
 
 [lints]
 workspace = true

@@ -8,8 +8,19 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::bitmap_cache::{self, BitmapCacheDesc};
+use skia_rust_core::color::Color;
+use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::discardable_memory::create as create_discardable;
+use skia_rust_core::image::Image;
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::picture_recorder::PictureRecorder;
+use skia_rust_core::rect::Rect;
 use skia_rust_core::resource_cache::{Key, Rec, ResourceCache};
+use skia_rust_core::sampling_options::CubicResampler;
+use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_raster::image_picture::{BitDepth, deferred_from_picture};
 
 use crate::{Reporter, def_test, reporter_assert};
 
@@ -137,5 +148,87 @@ def_test!(ResourceCache_purge, |reporter| {
             let mut cache = ResourceCache::with_discardable_factory(create_discardable);
             test_duplicate_add(&mut cache, reporter, purgable);
         }
+    }
+});
+
+// Port of: tests/SkResourceCacheTest.cpp#L158-L186 (chrome/m156), test_discarded_image
+fn test_discarded_image(
+    reporter: &mut Reporter,
+    transform: &Matrix,
+    build_image: impl Fn() -> Option<Image>,
+) {
+    let mut surface =
+        skia_rust_raster::surfaces::raster_n32_premul((10, 10)).expect("a raster surface");
+
+    // SkBitmapCache is global, so other threads could be evicting our bitmaps.  Loop a few times
+    // to mitigate this risk.
+    for _ in 0..42 {
+        let canvas = surface.canvas();
+        canvas.save();
+
+        let image = build_image().expect("an image");
+
+        // draw the image (with a transform, to tickle different code paths) to ensure
+        // any associated resources get cached
+        canvas.concat(transform);
+        // always use high quality to ensure caching when scaled
+        canvas.draw_image_with_sampling_options(
+            &image,
+            (0.0, 0.0),
+            CubicResampler {
+                b: 1.0 / 3.0,
+                c: 1.0 / 3.0,
+            },
+            None,
+        );
+
+        let desc = BitmapCacheDesc::for_image(image.unique_id(), image.width(), image.height());
+
+        // delete the image
+        drop(image);
+
+        canvas.restore();
+
+        // all resources should have been purged
+        let mut result = Bitmap::new();
+        reporter_assert!(reporter, !bitmap_cache::find(&desc, &mut result));
+    }
+}
+
+// Port of: tests/SkResourceCacheTest.cpp#L190-L223 (chrome/m156), BitmapCache_discarded_image
+def_test!(BitmapCache_discarded_image, |reporter| {
+    // Cache entries associated with SkImages fall into two categories:
+    //
+    // 1) generated image bitmaps (managed by the image cacherator)
+    // 2) scaled/resampled bitmaps (cached when HQ filters are used)
+    //
+    // To exercise the first cache type, we use generated/picture-backed SkImages.
+    // To exercise the latter, we draw scaled bitmap images using HQ filters.
+
+    let xforms = [Matrix::scale((1.0, 1.0)), Matrix::scale((1.7, 0.5))];
+
+    for transform in &xforms {
+        test_discarded_image(reporter, transform, || {
+            let mut surface = skia_rust_raster::surfaces::raster_n32_premul((10, 10))?;
+            surface.canvas().clear(Color::new(0xFF00_FFFF));
+            surface.image_snapshot()
+        });
+
+        test_discarded_image(reporter, transform, || {
+            let mut recorder = PictureRecorder::new();
+            recorder
+                .begin_recording(Rect::from_wh(10.0, 10.0), false)
+                .clear(Color::new(0xFF00_FFFF));
+            let picture = recorder.finish_recording_as_picture(None)?;
+            deferred_from_picture(
+                picture,
+                (10, 10),
+                None,
+                None,
+                BitDepth::U8,
+                Some(ColorSpace::new_srgb()),
+                SurfaceProps::default(),
+            )
+        });
     }
 });
