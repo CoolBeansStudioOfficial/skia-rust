@@ -55335,8 +55335,8 @@ id = "tests/sksl/compute/AtomicDeclarations.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicDeclarations.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "todo"
+reason = "stale golden: Skia does not regenerate it (no gn/sksl_tests.gni entry, UNLISTED_WGSL_INPUTS); it predates `enable f16;`, the `@align(16)` array wrapper and the statement-level `_skTemp` lets, which the pinned WGSL generator emits (the regenerated sibling AtomicOperations.wgsl has `enable f16;`). docs/design/sksl.md section 6.9"
 span_hash = "c60414d8276eb3b4efc757dfe73a7f325ff3d0fb8f74065fe5ec3b1c794b9989"
 
 [[test]]
@@ -55388,8 +55388,8 @@ id = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "todo"
+reason = "stale golden: Skia does not regenerate it (no gn/sksl_tests.gni entry, UNLISTED_WGSL_INPUTS); it predates `enable f16;`, the `@align(16)` array wrapper and the statement-level `_skTemp` lets, which the pinned WGSL generator emits (the regenerated sibling AtomicOperations.wgsl has `enable f16;`). docs/design/sksl.md section 6.9"
 span_hash = "e4ddea6cb00400f18fb2ee450e687687cdd5674ad13bb0ed7b2ddab9c7bc1763"
 
 [[test]]
@@ -58039,6 +58039,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler1DShadow.glsl"
 module = "sksl"
 status = "todo"
+reason = "input not in the pinned Skia tree (no resources/sksl/errors/ReservedNameSampler1DShadow.* and no gn/sksl_tests.gni entry; sksl_goldens.rs ORPHAN_ERROR_GOLDENS), so sksl-golden-verify cannot plan it. Our lexer and parser give the golden's text for `int sampler1DShadow;`"
 span_hash = "8d12b34d1ca59eb6e3f4f16faac571d2ed24329481bde6497498cb78071dc4a2"
 
 [[test]]
@@ -58047,6 +58048,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler2DRectShadow.glsl"
 module = "sksl"
 status = "todo"
+reason = "input not in the pinned Skia tree (no resources/sksl/errors/ReservedNameSampler2DRectShadow.* and no gn/sksl_tests.gni entry; sksl_goldens.rs ORPHAN_ERROR_GOLDENS), so sksl-golden-verify cannot plan it. Our lexer and parser give the golden's text for `int sampler2DRectShadow;`"
 span_hash = "d8d303630a0fed94b2b5a96944cc0d8246dd9a59e9bd82a9dfffb8713b33e963"
 
 [[test]]
@@ -58055,6 +58057,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler2DShadow.glsl"
 module = "sksl"
 status = "todo"
+reason = "input not in the pinned Skia tree (no resources/sksl/errors/ReservedNameSampler2DShadow.* and no gn/sksl_tests.gni entry; sksl_goldens.rs ORPHAN_ERROR_GOLDENS), so sksl-golden-verify cannot plan it. Our lexer and parser give the golden's text for `int sampler2DShadow;`"
 span_hash = "929e2e4da64d8e627f5aabf16bd62a0d8f6c24cb5d2750231788b62d2e8eb12d"
 
 [[test]]
@@ -58063,6 +58066,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler3DRect.glsl"
 module = "sksl"
 status = "todo"
+reason = "input not in the pinned Skia tree (no resources/sksl/errors/ReservedNameSampler3DRect.* and no gn/sksl_tests.gni entry; sksl_goldens.rs ORPHAN_ERROR_GOLDENS), so sksl-golden-verify cannot plan it. Our lexer and parser give the golden's text for `int sampler3DRect;`"
 span_hash = "c1277e7d10c90b696f36ea1e571125b379cb7d2a75bae9fee69553a9d5231cd8"
 
 [[test]]
@@ -58071,6 +58075,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSamplerCube.glsl"
 module = "sksl"
 status = "todo"
+reason = "input not in the pinned Skia tree (no resources/sksl/errors/ReservedNameSamplerCube.* and no gn/sksl_tests.gni entry; sksl_goldens.rs ORPHAN_ERROR_GOLDENS), so sksl-golden-verify cannot plan it. Our lexer and parser give the golden's text for `int samplerCube;`"
 span_hash = "dd27a0c141b6316fd3194ce2010850b9319607c297585b1927476272d376ad85"
 
 [[test]]
@@ -62267,8 +62272,8 @@ id = "tests/sksl/intrinsics/IsInf.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsInf.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "todo"
+reason = "needs-tint-validation: the golden is Tint's error text (`Tint compilation failed.`) from ValidateWGSL; Tint is not available and naga is not a faithful substitute (docs/design/sksl.md R6)"
 span_hash = "e69a050ac40fae5106c7a112f06693b316dcfe8487f7d71a13c4f6a98e04c33d"
 
 [[test]]
@@ -62320,8 +62325,8 @@ id = "tests/sksl/intrinsics/IsNan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsNan.wgsl"
 module = "sksl"
-status = "failing"
-reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
+status = "todo"
+reason = "needs-tint-validation: the golden is Tint's error text (`Tint compilation failed.`) from ValidateWGSL; Tint is not available and naga is not a faithful substitute (docs/design/sksl.md R6)"
 span_hash = "ebea7f542c6d5cf030135ff0b1d906a155660b903653a64c024d8ffbcf678682"
 
 [[test]]

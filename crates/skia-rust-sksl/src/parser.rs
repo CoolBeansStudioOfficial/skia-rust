@@ -2578,6 +2578,26 @@ mod tests {
         assert_eq!(messages("int asm;"), ["name 'asm' is reserved"]);
     }
 
+    /// The reserved sampler names of `errors/ReservedNameSampler*.glsl` (`gn/sksl_tests.gni`'s
+    /// `RESERVED` lexer rule). Their goldens' inputs are not in the pinned tree, so this pins the
+    /// error text the goldens show for each: `name '<n>' is reserved`.
+    // Port of: src/sksl/lex/sksl.lex (RESERVED) and src/sksl/SkSLParser.cpp#L254-L258 (chrome/m156)
+    #[test]
+    fn reserved_sampler_names_are_errors() {
+        for name in [
+            "sampler1DShadow",
+            "sampler2DRectShadow",
+            "sampler2DShadow",
+            "sampler3DRect",
+            "samplerCube",
+        ] {
+            assert_eq!(
+                messages(&format!("int {name};")),
+                [format!("name '{name}' is reserved")]
+            );
+        }
+    }
+
     #[test]
     fn speculative_declarations_rewind_without_reporting() {
         // `float(x);` starts like a declaration; the failed attempt must leave no trace.
