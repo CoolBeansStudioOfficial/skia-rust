@@ -177,7 +177,9 @@ fn png_u32_into_f32(v: png::ScaledFloat) -> f32 {
 impl<'a> Reader<'a> {
     /// Port of `Reader::new`: reads the header and sets up the transforms.
     // Port of: rust/png/FFI.rs#L586-L615 (chrome/m156), non-`for_android` build
-    pub(crate) fn new(stream: Arc<Mutex<Box<dyn Stream + Send + 'a>>>) -> Result<Self, png::DecodingError> {
+    pub(crate) fn new(
+        stream: Arc<Mutex<Box<dyn Stream + Send + 'a>>>,
+    ) -> Result<Self, png::DecodingError> {
         let input = BufReader::with_capacity(BUF_CAPACITY, StreamAdapter { stream });
         let mut decoder = {
             let mut options = png::DecodeOptions::default();
@@ -305,9 +307,7 @@ impl<'a> Reader<'a> {
     /// Port of `Reader::get_fctl_info`: (width, height, x, y, dispose, blend, duration in ms).
     /// Only called when `has_fctl_chunk` is true.
     // Port of: rust/png/FFI.rs#L873-L894 (chrome/m156)
-    pub(crate) fn get_fctl_info(
-        &self,
-    ) -> (u32, u32, u32, u32, png::DisposeOp, png::BlendOp, u32) {
+    pub(crate) fn get_fctl_info(&self) -> (u32, u32, u32, u32, png::DisposeOp, png::BlendOp, u32) {
         let fctl = self
             .reader
             .info()

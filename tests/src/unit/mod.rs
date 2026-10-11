@@ -138,6 +138,7 @@ pub mod gif_test;
 pub mod gradient_test;
 #[cfg(test)]
 pub mod graphite;
+#[cfg(test)]
 pub mod hdr_metadata_test;
 #[cfg(test)]
 pub mod high_contrast_filter_test;
@@ -345,7 +346,9 @@ pub mod pdf_tagged_table_test;
 pub mod pdf_tagged_test;
 #[cfg(test)]
 pub mod picture_bbh_test;
+#[cfg(test)]
 pub mod picture_shader_test;
+#[cfg(test)]
 pub mod picture_test;
 #[cfg(test)]
 pub mod pixel_ref_test;
@@ -354,13 +357,13 @@ pub mod pixels_rec_test;
 #[cfg(test)]
 pub mod png_gainmap_test;
 #[cfg(test)]
-pub mod point3_test;
-#[cfg(test)]
-pub mod point_test;
-#[cfg(test)]
 pub mod png_rust_decoder_test;
 #[cfg(test)]
 pub mod png_rust_encoder_test;
+#[cfg(test)]
+pub mod point3_test;
+#[cfg(test)]
+pub mod point_test;
 #[cfg(test)]
 pub mod poly_utils_test;
 #[cfg(test)]
@@ -439,6 +442,7 @@ pub mod sk_image_test;
 pub mod sk_jpeg_xmp_test;
 #[cfg(test)]
 pub mod sk_path_range_iter_test;
+#[cfg(test)]
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
