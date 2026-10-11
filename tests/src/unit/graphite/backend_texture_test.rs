@@ -180,7 +180,10 @@ def_graphite_test_for_all_contexts!(ImageBackendTextureTest, |reporter, context|
                     AlphaType::Opaque,
                 );
                 if let Some(image) = &image {
-                    reporter_assert!(reporter, read_swizzle(image).as_string().chars().nth(3) == Some('1'));
+                    reporter_assert!(
+                        reporter,
+                        read_swizzle(image).as_string().chars().nth(3) == Some('1')
+                    );
                 }
                 drop(image);
                 recorder.delete_backend_texture(&texture);
@@ -264,7 +267,10 @@ def_graphite_test_for_all_contexts!(ImageBackendTextureTest, |reporter, context|
                 AlphaType::Opaque,
             );
             if let Some(image) = &image {
-                reporter_assert!(reporter, read_swizzle(image).as_string().chars().nth(3) == Some('1'));
+                reporter_assert!(
+                    reporter,
+                    read_swizzle(image).as_string().chars().nth(3) == Some('1')
+                );
             }
             // Premul/unpremul stay alpha-only
             let image = wrap_texture(&recorder, &texture, AlphaType::Premul);
