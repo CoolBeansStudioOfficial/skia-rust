@@ -37249,8 +37249,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L248-L264"
 module = "core"
-status = "todo"
-reason = "decodes images/mandrill_128.png and needs SkMipmapBuilder: not ported"
+status = "passing"
 span_hash = "0fa4bc3a068847fb584e6a059387860916a0fb4cd2b19e8c254fe6ccd3d6eace"
 
 [[test]]
@@ -37259,8 +37258,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L268-L288"
 module = "core"
-status = "todo"
-reason = "decodes images/mandrill_128.png and needs SkMipmapBuilder: not ported"
+status = "passing"
 span_hash = "254c087a3a9708a1e4d9e0d4a77ed28e02eb4847c6956ad2d40665d3f6adfcce"
 
 [[test]]
