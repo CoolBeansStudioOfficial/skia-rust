@@ -44,6 +44,7 @@ fn make_mask(surface: &mut skia_rust_raster::surface::Surface<'_>) -> Option<Ima
 // Port of: gm/imagemasksubset.cpp#L28-L43 (chrome/m156), MaskGenerator
 struct MaskGenerator {
     info: ImageInfo,
+    unique_id: u32,
 }
 
 impl ImageGenerator for MaskGenerator {
@@ -52,8 +53,7 @@ impl ImageGenerator for MaskGenerator {
     }
 
     fn unique_id(&self) -> u32 {
-        // SkNextID::ImageID(): any id that is unique to this generator.
-        0
+        self.unique_id
     }
 
     // Port of: gm/imagemasksubset.cpp#L33-L41 (chrome/m156), onGetPixels
@@ -82,7 +82,13 @@ fn make_ganesh_mask(info: &ImageInfo) -> Option<Image> {
 
 // Port of: gm/imagemasksubset.cpp#L70-L73 (chrome/m156), the SkImage_Lazy maker
 fn make_lazy_mask(info: &ImageInfo) -> Option<Image> {
-    images::deferred_from_generator(Some(Box::new(MaskGenerator { info: info.clone() })))
+    images::deferred_from_generator(Some(Box::new(MaskGenerator {
+        info: info.clone(),
+        // The `SkImageGenerator(info)` constructor's default `kNeedNewImageUniqueID`.
+        unique_id: skia_rust_core::image_generator::generator_unique_id(
+            skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID,
+        ),
+    })))
 }
 
 // Checks whether subset SkImages preserve the original color type (A8 in this case).
