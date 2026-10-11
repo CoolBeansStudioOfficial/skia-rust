@@ -90,6 +90,7 @@ pub mod font_stream;
 pub mod font_style;
 pub mod font_types;
 pub mod front_buffered_stream;
+pub mod gainmap_info;
 pub mod gauss_filter;
 pub mod gaussian_color_filter;
 pub mod geometry;
