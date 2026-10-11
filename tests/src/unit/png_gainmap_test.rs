@@ -1,16 +1,20 @@
 // Copyright 2023 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/PngGainmapTest.cpp (chrome/m156), the decode cases. The encode case needs the
-// PNG encoder's gainmap chunks, which are not ported.
+// Port of: tests/PngGainmapTest.cpp (chrome/m156), the decode cases and the encode and decode case.
 #![cfg(test)]
 // The C++ test literals are kept as written.
 #![allow(clippy::excessive_precision)]
 
 use skia_rust_codec::android_codec::AndroidCodec;
 use skia_rust_codec::codec::Result as CodecResult;
+use skia_rust_codec::encode::png_encoder::{self, Options};
 use skia_rust_codec::png_codec;
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::{Color, Color4f};
+use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::gainmap_info::{BaseImageType, GainmapInfo, GainmapType};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::pixmap::Pixmap;
@@ -25,6 +29,8 @@ use crate::{Reporter, def_test, reporter_assert, skip_missing_resource};
 struct DecodedGainmap {
     /// Whether the image had a gainmap that decoded (`decodedGainmap`).
     decoded: bool,
+    /// The base image's pixels, with their image info (`baseBitmap`).
+    base: Option<(ImageInfo, Vec<u8>)>,
     /// The gainmap rendering parameters (`gainmapInfo`).
     info: GainmapInfo,
     /// The gainmap's pixels, with their image info (`gainmapBitmap`).
@@ -36,6 +42,7 @@ struct DecodedGainmap {
 fn decode_all(r: &mut Reporter, data: &[u8]) -> DecodedGainmap {
     let mut result = DecodedGainmap {
         decoded: false,
+        base: None,
         info: GainmapInfo::default(),
         gainmap: None,
     };
@@ -53,6 +60,7 @@ fn decode_all(r: &mut Reporter, data: &[u8]) -> DecodedGainmap {
         CodecResult::Success
             == base_codec.get_pixels(&base_info, &mut base_pixels, base_row_bytes, None)
     );
+    result.base = Some((base_info, base_pixels));
 
     let Some(mut android_codec) = AndroidCodec::make_from_codec(base_codec) else {
         reporter_assert!(r, false);
@@ -159,5 +167,112 @@ def_test!(AndroidCodec_pngGainmapInvalidDecode, |r| {
         let data = skip_missing_resource!(get_resource_as_data(path), path);
         let decoded = decode_all(r, &data);
         reporter_assert!(r, !decoded.decoded);
+    }
+});
+
+// Port of: tests/PngGainmapTest.cpp#L140-L201 (chrome/m156), `AndroidCodec_pngGainmapEncodeAndDecode`.
+def_test!(AndroidCodec_pngGainmapEncodeAndDecode, |r| {
+    let color_types = [ColorType::RGBA8888, ColorType::Alpha8];
+    for color_type in color_types {
+        let mut source_gainmap_info = GainmapInfo {
+            gainmap_ratio_min: Color4f {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+            },
+            gainmap_ratio_max: Color4f {
+                r: 5.0,
+                g: 5.0,
+                b: 5.0,
+                a: 1.0,
+            },
+            gainmap_gamma: Color4f {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+            },
+            epsilon_sdr: Color4f {
+                r: 0.01,
+                g: 0.01,
+                b: 0.01,
+                a: 0.01,
+            },
+            epsilon_hdr: Color4f {
+                r: 0.001,
+                g: 0.001,
+                b: 0.001,
+                a: 0.001,
+            },
+            display_ratio_sdr: 1.0,
+            display_ratio_hdr: 3.0,
+            gainmap_math_color_space: Some(ColorSpace::new_srgb()),
+            ..GainmapInfo::default()
+        };
+        let mut source_base = Bitmap::new();
+        source_base.alloc_pixels_info(
+            &ImageInfo::new((16, 16), ColorType::RGBA8888, AlphaType::Opaque, None),
+            None,
+        );
+        source_base.erase_color(Color::from(0xFFFF_0000_u32));
+        let mut source_gainmap = Bitmap::new();
+        source_gainmap.alloc_pixels_info(
+            &ImageInfo::new((4, 4), color_type, AlphaType::Opaque, None),
+            None,
+        );
+        source_gainmap.erase_color(Color::from(0xFF00_FF00_u32));
+
+        let (Some(base_pixmap), Some(gainmap_pixmap)) =
+            (source_base.peek_pixels(), source_gainmap.peek_pixels())
+        else {
+            reporter_assert!(r, false);
+            return;
+        };
+        let Some(encoded) = png_encoder::encode_pixmap_with_gainmap(
+            &base_pixmap,
+            &Options::default(),
+            Some(&gainmap_pixmap),
+            Some(&source_gainmap_info),
+        ) else {
+            reporter_assert!(r, false);
+            return;
+        };
+
+        let decoded = decode_all(r, encoded.as_bytes());
+        reporter_assert!(r, decoded.decoded);
+
+        if let Some((base_info, base_pixels)) = &decoded.base
+            && let Some(base) =
+                Pixmap::new_readonly(base_info, base_pixels, base_info.min_row_bytes())
+        {
+            reporter_assert!(r, base_info.dimensions() == ISize::new(16, 16));
+            reporter_assert!(r, base.get_color((0, 0)) == Color::from(0xFFFF_0000_u32));
+            reporter_assert!(r, base.get_color((15, 15)) == Color::from(0xFFFF_0000_u32));
+        } else {
+            reporter_assert!(r, false);
+        }
+
+        if let Some((gainmap_info, gainmap_pixels)) = &decoded.gainmap
+            && let Some(gainmap) =
+                Pixmap::new_readonly(gainmap_info, gainmap_pixels, gainmap_info.min_row_bytes())
+        {
+            reporter_assert!(r, gainmap_info.dimensions() == ISize::new(4, 4));
+            let expected = if color_type == ColorType::Alpha8 {
+                Color::from(0xFF00_0000_u32)
+            } else {
+                Color::from(0xFF00_FF00_u32)
+            };
+            reporter_assert!(r, gainmap.get_color((0, 0)) == expected);
+            reporter_assert!(r, gainmap.get_color((3, 3)) == expected);
+        } else {
+            reporter_assert!(r, false);
+        }
+
+        // Verify the gainmap rendering parameters. A grayscale gainmap has no colour space.
+        if color_type == ColorType::Alpha8 {
+            source_gainmap_info.gainmap_math_color_space = None;
+        }
+        expect_approx_eq_info(r, &source_gainmap_info, &decoded.info);
     }
 });

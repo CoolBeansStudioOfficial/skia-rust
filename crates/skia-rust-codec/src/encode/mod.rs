@@ -8,6 +8,7 @@
 pub mod icc;
 pub mod image_encoder_fns;
 pub mod jpeg_encoder;
+pub mod jpeg_gainmap_encoder;
 pub mod png_encoder;
 pub(crate) mod png_encoder_base;
 pub(crate) mod png_encoder_impl;

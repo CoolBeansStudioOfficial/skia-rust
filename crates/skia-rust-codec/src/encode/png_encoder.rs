@@ -14,8 +14,12 @@ use std::sync::{Arc, Mutex};
 
 use bitflags::bitflags;
 use skia_rust_core::data::Data;
+use skia_rust_core::gainmap_info::GainmapInfo;
 use skia_rust_core::image::Image;
 use skia_rust_core::pixmap::Pixmap;
+use skia_rust_libpng::UnknownChunk;
+
+use crate::encoded_info::Color;
 
 bitflags! {
     /// Port of `SkPngEncoder::FilterFlag` (SkPngEncoder.h#L31-L39): the filters the encoder may use.
@@ -75,11 +79,74 @@ impl Default for Options {
 /// the pixmap is not supported or the encoding fails.
 #[doc(alias = "SkPngEncoder::Encode")]
 fn encode_to_vec(src: &Pixmap<'_>, options: &Options) -> Option<Vec<u8>> {
+    encode_to_vec_with_gainmap(src, options, None, None)
+}
+
+/// The gainmap chunks of a PNG (`SkPngEncoderMgr::setHdrMetadata`, the gainmap part): the `gmAP`
+/// chunk and, when a gainmap image is given, the `gdAT` chunk that holds the gainmap as a PNG.
+/// `None` when the gainmap cannot be encoded.
+// Port of: src/encode/SkPngEncoderImpl.cpp#L352-L408 (chrome/m156), the gainmap part of
+// setHdrMetadata
+fn gainmap_chunks(
+    gainmap: Option<&Pixmap<'_>>,
+    gainmap_info: Option<&GainmapInfo>,
+    options: &Options,
+) -> Option<Vec<UnknownChunk>> {
+    let chunk = |name: &[u8; 4], data: Vec<u8>| UnknownChunk {
+        name: [name[0], name[1], name[2], name[3], 0],
+        data,
+        // PNG_HAVE_IHDR: the chunks follow the header.
+        location: 0x01,
+    };
+    match (gainmap, gainmap_info) {
+        (Some(gainmap), Some(info)) => {
+            let gainmap_version = GainmapInfo::serialize_version();
+
+            // The gainmap is encoded in its own PNG, with the same options and without its own
+            // gainmap. The gainmap's colour space is written in its ICC profile, unless the
+            // gainmap is grayscale, which PNG does not give an RGB profile.
+            let mut gainmap_info = info.clone();
+            let target = crate::encode::png_encoder_base::get_target_info(gainmap.info());
+            let is_gray = target.as_ref().is_none_or(|target| {
+                matches!(target.dst_info.color(), Color::Gray | Color::GrayAlpha)
+            });
+            let gainmap_pixels = if is_gray {
+                gainmap_info.gainmap_math_color_space = None;
+                Pixmap::new_readonly(gainmap.info(), gainmap.addr()?, gainmap.row_bytes())?
+            } else {
+                let info_with_space = gainmap
+                    .info()
+                    .with_color_space(info.gainmap_math_color_space.clone());
+                Pixmap::new_readonly(&info_with_space, gainmap.addr()?, gainmap.row_bytes())?
+            };
+            let data =
+                encode_to_vec_with_gainmap(&gainmap_pixels, options, None, Some(&gainmap_info))?;
+            Some(vec![
+                chunk(b"gmAP", gainmap_version.as_bytes().to_vec()),
+                chunk(b"gdAT", data),
+            ])
+        }
+        (None, Some(info)) => {
+            // Without a gainmap image, the gainmap metadata describes the pixels being encoded.
+            Some(vec![chunk(b"gmAP", info.serialize().as_bytes().to_vec())])
+        }
+        _ => Some(Vec::new()),
+    }
+}
+
+/// `encode_to_vec`, with the gainmap chunks of [`gainmap_chunks`].
+fn encode_to_vec_with_gainmap(
+    src: &Pixmap<'_>,
+    options: &Options,
+    gainmap: Option<&Pixmap<'_>>,
+    gainmap_info: Option<&GainmapInfo>,
+) -> Option<Vec<u8>> {
     // The encoder reads the same pixels through its own read-only view of the pixmap.
     let view = Pixmap::new_readonly(src.info(), src.addr()?, src.row_bytes())?;
+    let chunks = gainmap_chunks(gainmap, gainmap_info, options)?;
     let out = Arc::new(Mutex::new(Vec::new()));
     let height = src.height();
-    let mut encoder = make(Arc::clone(&out), view, options)?;
+    let mut encoder = make_with_gainmap_chunks(Arc::clone(&out), view, options, &chunks)?;
     if !encoder.encode_rows(height) {
         return None;
     }
@@ -151,5 +218,36 @@ pub fn make<'a>(
     src: Pixmap<'a>,
     options: &Options,
 ) -> Option<PngEncoder<'a>> {
-    crate::encode::png_encoder_impl::make(out, src, options).map(PngEncoder)
+    crate::encode::png_encoder_impl::make(out, src, options, &[]).map(PngEncoder)
+}
+
+/// [`make`] with the gainmap chunks of [`gainmap_chunks`] written after the header.
+fn make_with_gainmap_chunks<'a>(
+    out: Arc<Mutex<Vec<u8>>>,
+    src: Pixmap<'a>,
+    options: &Options,
+    chunks: &[UnknownChunk],
+) -> Option<PngEncoder<'a>> {
+    crate::encode::png_encoder_impl::make(out, src, options, chunks).map(PngEncoder)
+}
+
+/// Returns the PNG bytes of `src` with a gainmap, or `None` if the encoding fails.
+///
+/// The gainmap image (`gainmap`) is encoded as a PNG in a `gdAT` chunk inside a `gmAP` chunk, with
+/// its parameters (`gainmap_info`). Without a gainmap image, `gainmap_info` alone is written as a
+/// `gmAP` chunk, which describes the pixels of `src` as a gainmap.
+///
+/// Port of `SkPngEncoder::Encode(const SkPixmap&, const Options&)` with `fGainmap` and
+/// `fGainmapInfo` set.
+// Port of: src/encode/SkPngEncoderImpl.cpp#L352-L408 (chrome/m156), setHdrMetadata
+#[doc(alias = "SkPngEncoder::Encode")]
+#[must_use]
+pub fn encode_pixmap_with_gainmap(
+    src: &Pixmap<'_>,
+    options: &Options,
+    gainmap: Option<&Pixmap<'_>>,
+    gainmap_info: Option<&GainmapInfo>,
+) -> Option<Data> {
+    encode_to_vec_with_gainmap(src, options, gainmap, gainmap_info)
+        .map(|bytes| Data::new_copy(&bytes))
 }

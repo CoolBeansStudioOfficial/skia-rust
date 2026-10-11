@@ -138,6 +138,7 @@ pub mod gif_test;
 pub mod gradient_test;
 #[cfg(test)]
 pub mod graphite;
+pub mod hdr_metadata_test;
 #[cfg(test)]
 pub mod high_contrast_filter_test;
 #[cfg(test)]

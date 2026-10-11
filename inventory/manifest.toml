@@ -35034,7 +35034,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L75-L110"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "0cee14bd055d60b8ba11bc1c26bf2eb616f3fa2bab023997847bb7539a71caa8"
 
 [[test]]
@@ -35044,7 +35044,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1205-L1329"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "7f040f5e8eb339611e89353569e8c9aafe5d3b74ce02e5c411b1eea98254f3ff"
 
 [[test]]
@@ -35054,7 +35054,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L228-L281"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "8a7ede3298e6d8b6e13ebe08c323c1637493a8201d43fa663bb2507694b3a83a"
 
 [[test]]
@@ -35064,7 +35064,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L112-L226"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "1f71392e2cca295a1921a919e0fa53674624f301bf856aaeab6f7e5e6ce14b4b"
 
 [[test]]
@@ -35074,7 +35074,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L283-L321"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "f3e9658e6c2e55952e3d07e2a00336d1b5eaf798d2b278ccd17c99709e2a3d2e"
 
 [[test]]
@@ -35084,7 +35084,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L485-L932"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "26c0d5e13841f0866e31ecdd45adac15608493bc3a745069f22454747bed98ed"
 
 [[test]]
@@ -35094,7 +35094,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L323-L415"
 module = "core"
 status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
 span_hash = "bd83ad66c9f141eceafc771d8f64dc6ce3c329bcbe68540cc3996f64e18e8715"
 
 [[test]]
@@ -35103,8 +35103,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L20-L47"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+status = "passing"
 span_hash = "753d4f76097391c67c30432d642f81b96f1e182293cb48a7f1b10387a0ea64fb"
 
 [[test]]
@@ -35113,8 +35112,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L49-L73"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
+status = "passing"
 span_hash = "3e580ffed2f451dc72b1544eed04a1fb6e9b930666a52c2e19a3291e6c55c248"
 
 [[test]]
@@ -36364,8 +36362,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L615-L702"
 module = "codec"
-status = "todo"
-reason = "needs SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C17), not ported"
+status = "passing"
 span_hash = "9610696b5052569c4a02724b75dacad398c9ed7b3c6e487eb4991c65b4d5c592"
 
 [[test]]
@@ -36392,8 +36389,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L765-L839"
 module = "codec"
-status = "todo"
-reason = "needs SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C17) and the JPEG gainmap decode hooks (SkAndroidCodec::getGainmapAndroidCodec), not ported"
+status = "passing"
 span_hash = "9deef51eb6338e7eb612f64331e734c5ee80b872b4fe5e3d39893b224c42ad95"
 
 [[test]]
@@ -36411,8 +36407,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L893-L989"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the JPEG gainmap codec (SkJpegCodec gainmap hooks), plus SkJpegGainmapEncoder::EncodeHDRGM (docs/design/codecs.md C13, C17), not ported"
+status = "passing"
 span_hash = "978f54400feeaf3d98e34ed56b2e3f9ebb648c2b96b7679f1d172d475a1363e3"
 
 [[test]]
@@ -40152,8 +40147,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L140-L201"
 module = "codec"
-status = "todo"
-reason = "needs the PNG gainmap chunks in the encoder (docs/design/codecs.md C16), not ported"
+status = "passing"
 span_hash = "625d8cfd9d3c2e242c7bfb239309808e613b882fc1cad899a5adaa2a3076f747"
 
 [[test]]

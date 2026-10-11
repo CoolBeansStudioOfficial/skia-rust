@@ -10,7 +10,8 @@
 // Not ported, each returns `false` / `None` rather than encoding differently:
 // - `SkJpegEncoder::Make(SkYUVAPixmaps)` (the `SkEncoder` for YUVA): only `encode_yuva` is
 //   ported, which writes the whole file, as `Encode(SkWStream*, SkYUVAPixmaps)` does.
-// - the gainmap encoder (`SkJpegGainmapEncoder.cpp`), which is outside this port.
+// - the gainmap encoder (`SkJpegGainmapEncoder.cpp`) is in `jpeg_gainmap_encoder`, and uses
+//   `make_with_segments` here for its explicit metadata segments.
 
 use std::io;
 use std::sync::{Arc, Mutex};
@@ -322,6 +323,21 @@ pub fn make<'a>(
     src: Pixmap<'a>,
     options: &Options,
 ) -> Option<JpegEncoder<'a>> {
+    let segments = metadata_segments(&src, options);
+    make_with_segments(out, src, options, &segments)
+}
+
+/// Port of `SkJpegEncoderImpl::MakeRGB` with an explicit metadata segment list
+/// (`SkJpegMetadataEncoder::SegmentList`): the encoder for `src`, with `segments` written in place
+/// of the default metadata. The file goes to `out`.
+// Port of: src/encode/SkJpegEncoderImpl.cpp#L321-L341 (chrome/m156), MakeRGB, and
+// src/encode/SkJpegEncoderImpl.cpp#L281-L296 (chrome/m156), SkJpegEncoderMgr::initializeCommon
+pub(crate) fn make_with_segments<'a>(
+    out: Arc<Mutex<Vec<u8>>>,
+    src: Pixmap<'a>,
+    options: &Options,
+    segments: &[(u8, Vec<u8>)],
+) -> Option<JpegEncoder<'a>> {
     let info = src.info();
     let width = u32::try_from(info.width()).ok()?;
     let height = u32::try_from(info.height()).ok()?;
@@ -329,7 +345,6 @@ pub fn make<'a>(
         return None;
     }
     let source = row_source(info, options)?;
-    let segments = metadata_segments(&src, options);
 
     let mut cinfo = Compress::new();
     cinfo.set_image(width, height, source.in_cs, source.components);
@@ -349,7 +364,7 @@ pub fn make<'a>(
         .set_quality(i32::try_from(options.quality).ok()?, true)
         .ok()?;
     cinfo.start_compress(true).ok()?;
-    for (marker, body) in &segments {
+    for (marker, body) in segments {
         cinfo.write_marker(*marker, body).ok()?;
     }
     Some(JpegEncoder {

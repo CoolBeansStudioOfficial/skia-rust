@@ -5,8 +5,9 @@
 // write struct and its header, colour space, text and write steps) and `SkPngEncoderImpl` (the
 // row and finish steps). libpng is the port in skia-rust-libpng.
 //
-// The HDR metadata and gainmap chunks (`SkPngEncoder::Options::fHdrMetadata`, `fGainmap`,
-// `fGainmapInfo`) are not ported: their chunks are not written.
+// The gainmap chunks (`SkPngEncoder::Options::fGainmap`, `fGainmapInfo`: the `gmAP` and `gdAT`
+// chunks) are written from the chunk list that `png_encoder` builds. The HDR metadata chunks
+// (`fHdrMetadata`: `cLLI` and `mDCV`) are not ported.
 
 // Clippy: a line-by-line port of Skia's C++; the casts follow the C++ conversions.
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -18,7 +19,7 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_libpng::{
     PNG_HANDLE_CHUNK_ALWAYS, PngColor8, PngInfo, PngResult, PngStruct, TextCompression,
-    create_info_struct,
+    UnknownChunk, create_info_struct,
 };
 
 use crate::encode::icc::write_icc_profile;
@@ -158,12 +159,17 @@ impl PngEncoderMgr {
     }
 
     /// Port of `SkPngEncoderMgr::setHdrMetadata` (SkPngEncoderImpl.cpp#L268-L290), for the keep
-    /// list that Skia sets unconditionally. The HDR chunks themselves are not ported.
-    pub(crate) fn set_hdr_metadata(&mut self) {
+    /// list that Skia sets unconditionally, and then the chunks it adds for the gainmap. The HDR
+    /// metadata chunks (`cLLI`, `mDCV`) are not ported.
+    pub(crate) fn set_hdr_metadata(&mut self, gainmap_chunks: &[UnknownChunk]) -> PngResult<()> {
         self.png.set_keep_unknown_chunks(
             PNG_HANDLE_CHUNK_ALWAYS,
             &[b"gmAP", b"gdAT", b"mDCV", b"cLLI"],
         );
+        if gainmap_chunks.is_empty() {
+            return Ok(());
+        }
+        self.png.set_unknown_chunks(&mut self.info, gainmap_chunks)
     }
 
     /// Port of `SkPngEncoderMgr::writeInfo` (SkPngEncoderImpl.cpp#L292-L309): writes the header,
@@ -323,6 +329,7 @@ pub(crate) fn make<'a>(
     out: Arc<Mutex<Vec<u8>>>,
     src: Pixmap<'a>,
     options: &Options,
+    gainmap_chunks: &[UnknownChunk],
 ) -> Option<PngEncoderImpl<'a>> {
     if !pixmap_is_valid(&src) {
         return None;
@@ -331,7 +338,7 @@ pub(crate) fn make<'a>(
     let mut mgr = PngEncoderMgr::make(out);
     mgr.set_header(&target_info, src.info(), options).ok()?;
     mgr.set_color_space(src.info());
-    mgr.set_hdr_metadata();
+    mgr.set_hdr_metadata(gainmap_chunks).ok()?;
     mgr.write_info(&target_info).ok()?;
     Some(PngEncoderImpl {
         base: PngEncoderBase::new(target_info, src),
