@@ -252,8 +252,25 @@ pub const K_NO_PRETTY_FLAG: u32 = 0x01;
 #[doc(alias = "SkXMLStreamWriter")]
 pub struct XmlStreamWriter<'a> {
     base: XmlWriterBase,
-    stream: &'a mut dyn WStream,
+    stream: Box<dyn WStream + 'a>,
     flags: u32,
+}
+
+/// A borrowed stream as an owned [`WStream`].
+struct BorrowedStream<'a>(&'a mut dyn WStream);
+
+impl WStream for BorrowedStream<'_> {
+    fn write(&mut self, buffer: &[u8]) -> bool {
+        self.0.write(buffer)
+    }
+
+    fn flush(&mut self) {
+        self.0.flush();
+    }
+
+    fn bytes_written(&self) -> usize {
+        self.0.bytes_written()
+    }
 }
 
 impl std::fmt::Debug for XmlStreamWriter<'_> {
@@ -270,6 +287,13 @@ impl<'a> XmlStreamWriter<'a> {
     // Port of: src/xml/SkXMLWriter.cpp#L178-L181 (chrome/m156)
     #[must_use]
     pub fn new(stream: &'a mut dyn WStream, flags: u32) -> Self {
+        Self::new_owned(Box::new(BorrowedStream(stream)), flags)
+    }
+
+    /// Like [`XmlStreamWriter::new`], for a writer that owns its stream (skia-rust: the SVG
+    /// device is owned by its canvas, so it cannot borrow the stream it writes to).
+    #[must_use]
+    pub fn new_owned(stream: Box<dyn WStream + 'a>, flags: u32) -> Self {
         Self {
             base: XmlWriterBase::new(true),
             stream,
@@ -385,7 +409,32 @@ impl XmlWriter for XmlStreamWriter<'_> {
 #[doc(alias = "SkXMLParserWriter")]
 pub struct XmlParserWriter<'a> {
     base: XmlWriterBase,
-    parser: &'a mut dyn XmlParser,
+    parser: Box<dyn XmlParser + 'a>,
+}
+
+/// A borrowed parser as an owned [`XmlParser`].
+struct BorrowedParser<'a>(&'a mut dyn XmlParser);
+
+impl XmlParser for BorrowedParser<'_> {
+    fn on_start_element(&mut self, elem: &str) -> bool {
+        self.0.on_start_element(elem)
+    }
+
+    fn on_add_attribute(&mut self, name: &str, value: &str) -> bool {
+        self.0.on_add_attribute(name, value)
+    }
+
+    fn on_end_element(&mut self, elem: &str) -> bool {
+        self.0.on_end_element(elem)
+    }
+
+    fn on_text(&mut self, text: &str) -> bool {
+        self.0.on_text(text)
+    }
+
+    fn error_mut(&mut self) -> Option<&mut super::parser::XmlParserError> {
+        self.0.error_mut()
+    }
 }
 
 impl std::fmt::Debug for XmlParserWriter<'_> {
@@ -400,6 +449,13 @@ impl<'a> XmlParserWriter<'a> {
     // Port of: src/xml/SkXMLWriter.cpp#L262-L265 (chrome/m156)
     #[must_use]
     pub fn new(parser: &'a mut dyn XmlParser) -> Self {
+        Self::new_owned(Box::new(BorrowedParser(parser)))
+    }
+
+    /// Like [`XmlParserWriter::new`], for a writer that owns its parser (skia-rust: the SVG
+    /// device is owned by its canvas, so it cannot borrow the parser it writes to).
+    #[must_use]
+    pub fn new_owned(parser: Box<dyn XmlParser + 'a>) -> Self {
         Self {
             base: XmlWriterBase::new(false),
             parser,

@@ -5,6 +5,7 @@ pub mod alpha_runs;
 pub mod analytic_edge;
 pub mod auto_blitter_choose;
 pub mod bitmap_device;
+pub mod clip_stack_device;
 pub mod blit_row;
 pub mod blitter;
 pub mod blitter_a8;
