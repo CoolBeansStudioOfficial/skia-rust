@@ -153,6 +153,8 @@ pub mod image_filter_test;
 #[cfg(test)]
 pub mod image_from565_bitmap;
 #[cfg(test)]
+pub mod image_generator_orientation_test;
+#[cfg(test)]
 pub mod image_generator_test;
 #[cfg(test)]
 pub mod image_is_opaque_test;
