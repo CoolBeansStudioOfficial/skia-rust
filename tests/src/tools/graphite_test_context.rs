@@ -19,9 +19,8 @@ use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::graphite_types::{SubmitInfo, SyncToCpu};
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::wgpu::{
-    AdapterTestContext, CapsProfile, DeviceFeatures, WgpuContext, WgpuSharedContext,
-    any_adapter_backend_context, make_context, noop_backend_context,
-    noop_backend_context_for_profile, serialized_adapter_context,
+    AdapterTestContext, CapsProfile, DeviceFeatures, WgpuContext, WgpuSharedContext, make_context,
+    noop_backend_context, noop_backend_context_for_profile, serialized_adapter_context,
 };
 
 /// `skiatest::IsDawnContextType` for a context name from [`all_contexts`]: the Dawn profiles are
