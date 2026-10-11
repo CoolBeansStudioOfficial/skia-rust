@@ -16,7 +16,9 @@ use std::time::{Duration, Instant};
 
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::executor::{Executor, ThreadPool, WorkOrder};
 use skia_rust_effects::gradient::Interpolation;
+use skia_rust_gpu::graphite::context_options::{Callback, ContextOptions};
 use skia_rust_gpu::graphite::draw_types::DrawTypeFlags;
 use skia_rust_gpu::graphite::graphite_types::{DepthStencilFlags, SubmitInfo, SyncToCpu};
 use skia_rust_gpu::graphite::precompile::paint_options::PaintOptions;
@@ -25,7 +27,18 @@ use skia_rust_gpu::graphite::precompile_context::PrecompileContext;
 use skia_rust_gpu::graphite::public_precompile::{RenderPassProperties, precompile};
 use skia_rust_gpu::graphite::wgpu::WgpuContext;
 
-use crate::{def_graphite_test_for_all_contexts, reporter_assert};
+use crate::{def_graphite_test_for_contexts_with_options, reporter_assert};
+
+// DM's `SetTestOptions` gives every Graphite test context an executor: a multi-list FIFO thread
+// pool with two work lists and `FLAGS_gpuThreads` (2) threads
+// (`tools/flags/CommonFlagsGraphite.cpp#L33-L36`). The threaded PipelineManager compiles on it, so
+// the second PaintOption variant of a pipeline finds the first one still in flight (a cache miss,
+// not a hit), which is what these tests count. Without an executor the compile is inline and the
+// count differs.
+fn threaded_options(options: &mut ContextOptions) {
+    let executor: Arc<dyn Executor> = Arc::new(ThreadPool::new(WorkOrder::Fifo, 2, 2, false));
+    options.executor = Some(Callback(executor));
+}
 
 // The 12 comes from 4 types of gradient times 3 combinations (i.e., 4,8,N) for each one.
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L172-L173 (chrome/m156)
@@ -183,9 +196,9 @@ fn run_test(
 // This test precompiles all four flavors of gradient sequentially but on multiple
 // threads with the goal of creating cache races.
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L390-L414 (chrome/m156)
-def_graphite_test_for_all_contexts!(
-    #[ignore = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"]
+def_graphite_test_for_contexts_with_options!(
     ThreadedPipelinePrecompileTest,
+    |options| { threaded_options(options) },
     |reporter, context| {
         let num_purging_threads = 0;
         let num_precompile_threads = 4;
@@ -233,9 +246,9 @@ const NUM_OPACITY_VARIATIONS: u32 = 2;
 // This test compiles the gradient flavors on a thread and then tests out the time-based
 // purging.
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L505-L516 (chrome/m156)
-def_graphite_test_for_all_contexts!(
-    #[ignore = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"]
+def_graphite_test_for_contexts_with_options!(
     ThreadedPipelinePrecompilePurgingTest,
+    |options| { threaded_options(options) },
     |reporter, context| {
         let num_purging_threads = 0;
         let num_precompile_threads = 1;

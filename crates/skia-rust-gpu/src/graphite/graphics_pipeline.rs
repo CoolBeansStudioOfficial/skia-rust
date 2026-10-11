@@ -218,8 +218,11 @@ pub struct GraphicsPipelineBase {
     was_used: AtomicBool,
     /// `fPipelineInfo.fEpoch`: the last epoch in which the pipeline was touched.
     epoch: AtomicU16,
-    /// `Resource::lastAccessTime()`, which `updateAccessTime()` sets.
-    last_access: Mutex<StdSteadyClockTimePoint>,
+    /// `Resource::lastAccessTime()`, which `updateAccessTime()` sets. `None` until then: C++'s
+    /// `fLastAccess` is default-constructed (the clock's epoch), which is before any purge time,
+    /// so a pipeline that was never accessed (a precompiled one, which does not count as a use)
+    /// is purged by the first purge.
+    last_access: Mutex<Option<StdSteadyClockTimePoint>>,
 }
 
 impl GraphicsPipelineBase {
@@ -261,7 +264,7 @@ impl GraphicsPipelineBase {
             from_precompile,
             was_used: AtomicBool::new(false),
             epoch: AtomicU16::new(0),
-            last_access: Mutex::new(StdSteadyClockTimePoint::now()),
+            last_access: Mutex::new(None),
         }
     }
 
@@ -324,12 +327,13 @@ impl GraphicsPipelineBase {
         *self
             .last_access
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = StdSteadyClockTimePoint::now();
+            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+            Some(StdSteadyClockTimePoint::now());
     }
 
-    /// `lastAccessTime()`.
+    /// `lastAccessTime()`: `None` if it was never set (C++'s default time point).
     #[must_use]
-    pub fn last_access_time(&self) -> StdSteadyClockTimePoint {
+    pub fn last_access_time(&self) -> Option<StdSteadyClockTimePoint> {
         *self
             .last_access
             .lock()
