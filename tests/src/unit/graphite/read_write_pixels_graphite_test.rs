@@ -923,73 +923,66 @@ fn graphite_read_pixels_test_driver<T: SourceInfo>(
 }
 
 // Port of: tests/graphite/ReadWritePixelsGraphiteTest.cpp#L559-L646 (chrome/m156)
-def_graphite_adapter_test!(
-    ImageAsyncReadPixelsGraphite,
-    |reporter, context| {
-        let mut rules = ReadPixelTestRules {
-            allow_unpremul_src: true,
-            uncontained_rect_succeeds: false,
-            origin: Origin::TopLeft,
-        };
+def_graphite_adapter_test!(ImageAsyncReadPixelsGraphite, |reporter, context| {
+    let mut rules = ReadPixelTestRules {
+        allow_unpremul_src: true,
+        uncontained_rect_succeeds: false,
+        origin: Origin::TopLeft,
+    };
 
-        for origin in [Origin::TopLeft, Origin::BottomLeft] {
-            rules.origin = origin;
-            for renderable in [Renderable::No, Renderable::Yes] {
-                let src_factory = move |context: &mut WgpuContext,
-                                        recorder: &mut Recorder,
-                                        src: &Pixmap<'_>|
-                      -> Option<CoreImage> {
-                    let image = make_backend_texture_image(
-                        context,
-                        recorder,
-                        src,
-                        Mipmapped::No,
-                        renderable,
-                        origin,
-                        Protected::No,
-                    );
-
-                    if let Some(mut recording) = recorder.snap() {
-                        let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
-                    }
-                    image
-                };
-                let label = format!(
-                    "Renderable: {}, Origin: {}",
-                    i32::from(renderable == Renderable::Yes),
-                    i32::from(origin == Origin::BottomLeft),
-                );
-                graphite_read_pixels_test_driver(
-                    reporter,
+    for origin in [Origin::TopLeft, Origin::BottomLeft] {
+        rules.origin = origin;
+        for renderable in [Renderable::No, Renderable::Yes] {
+            let src_factory = move |context: &mut WgpuContext,
+                                    recorder: &mut Recorder,
+                                    src: &Pixmap<'_>|
+                  -> Option<CoreImage> {
+                let image = make_backend_texture_image(
                     context,
-                    rules,
-                    src_factory,
-                    image_read,
-                    &label,
+                    recorder,
+                    src,
+                    Mipmapped::No,
+                    renderable,
+                    origin,
+                    Protected::No,
                 );
-            }
-        }
 
-        // It's possible that we've created an Image using the factory, but then don't try to do
-        // readPixels on it, leaving a hanging command buffer. So we submit here to clean up.
-        let _ = context.submit(SubmitInfo::new(SyncToCpu::No));
+                if let Some(mut recording) = recorder.snap() {
+                    let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
+                }
+                image
+            };
+            let label = format!(
+                "Renderable: {}, Origin: {}",
+                i32::from(renderable == Renderable::Yes),
+                i32::from(origin == Origin::BottomLeft),
+            );
+            graphite_read_pixels_test_driver(
+                reporter,
+                context,
+                rules,
+                src_factory,
+                image_read,
+                &label,
+            );
+        }
     }
-);
+
+    // It's possible that we've created an Image using the factory, but then don't try to do
+    // readPixels on it, leaving a hanging command buffer. So we submit here to clean up.
+    let _ = context.submit(SubmitInfo::new(SyncToCpu::No));
+});
 
 // Port of: tests/graphite/ReadWritePixelsGraphiteTest.cpp#L648-L712 (chrome/m156)
-def_graphite_adapter_test!(
-    SurfaceAsyncReadPixelsGraphite,
-    |reporter, context| {
-        let rules = ReadPixelTestRules {
-            allow_unpremul_src: true,
-            uncontained_rect_succeeds: false,
-            origin: Origin::TopLeft,
-        };
+def_graphite_adapter_test!(SurfaceAsyncReadPixelsGraphite, |reporter, context| {
+    let rules = ReadPixelTestRules {
+        allow_unpremul_src: true,
+        uncontained_rect_succeeds: false,
+        origin: Origin::TopLeft,
+    };
 
-        let src_factory = |context: &mut WgpuContext,
-                           recorder: &mut Recorder,
-                           src: &Pixmap<'_>|
-         -> Option<Surface> {
+    let src_factory =
+        |context: &mut WgpuContext, recorder: &mut Recorder, src: &Pixmap<'_>| -> Option<Surface> {
             let surface = Surface::render_target(recorder, src.info(), Mipmapped::No, None, "");
             if let Some(surface) = &surface {
                 let _ = surface.canvas().write_pixels(
@@ -1005,10 +998,9 @@ def_graphite_adapter_test!(
             }
             surface
         };
-        graphite_read_pixels_test_driver(reporter, context, rules, src_factory, surface_read, "");
+    graphite_read_pixels_test_driver(reporter, context, rules, src_factory, surface_read, "");
 
-        // It's possible that we've created an Image using the factory, but then don't try to do
-        // readPixels on it, leaving a hanging command buffer. So we submit here to clean up.
-        let _ = context.submit(SubmitInfo::new(SyncToCpu::No));
-    }
-);
+    // It's possible that we've created an Image using the factory, but then don't try to do
+    // readPixels on it, leaving a hanging command buffer. So we submit here to clean up.
+    let _ = context.submit(SubmitInfo::new(SyncToCpu::No));
+});
