@@ -141,6 +141,8 @@ pub struct ReadBuffer<'a> {
     /// `fFactoryArray`: the factories that an index references, by name, in order (1 is the
     /// first). Empty when the flattenables are read by name.
     factory_names: Vec<String>,
+    /// The negation of `fAllowSkSL` (which defaults to true), so that `Default` allows SkSL.
+    sksl_disallowed: bool,
 }
 
 impl<'a> ReadBuffer<'a> {
@@ -161,6 +163,21 @@ impl<'a> ReadBuffer<'a> {
         let mut buffer = ReadBuffer::new(data);
         buffer.deserial_procs = deserial_procs;
         buffer
+    }
+
+    /// `allowSkSL`: whether runtime effects may be read from the buffer (true by default).
+    // Port of: src/core/SkReadBuffer.h#L187 (chrome/m156)
+    #[doc(alias = "allowSkSL")]
+    #[must_use]
+    pub fn allow_sksl(&self) -> bool {
+        !self.sksl_disallowed
+    }
+
+    /// `setAllowSkSL`.
+    // Port of: src/core/SkReadBuffer.h#L188 (chrome/m156)
+    #[doc(alias = "setAllowSkSL")]
+    pub fn set_allow_sksl(&mut self, allow: bool) {
+        self.sksl_disallowed = !allow;
     }
 
     /// The procs the buffer reads with (`getDeserialProcs`).
@@ -590,6 +607,25 @@ impl ReadBuffer<'_> {
             return 0;
         }
         value
+    }
+
+    /// Reads the points of an array whose count must be `points.len()` (`readPointArray`).
+    // Port of: src/core/SkReadBuffer.cpp#L308-L310 (chrome/m156)
+    #[doc(alias = "readPointArray")]
+    pub fn read_point_array(&mut self, points: &mut [Point]) -> bool {
+        let count = self.read_uint();
+        if !self.validate(usize::try_from(count).ok() == Some(points.len())) {
+            return false;
+        }
+        let Some(src) = self.skip(points.len().saturating_mul(2 * size_of::<f32>())) else {
+            return false;
+        };
+        let (chunks, _) = src.as_chunks::<{ size_of::<f32>() }>();
+        for (point, pair) in points.iter_mut().zip(chunks.chunks_exact(2)) {
+            point.x = f32::from_ne_bytes(pair[0]);
+            point.y = f32::from_ne_bytes(pair[1]);
+        }
+        true
     }
 
     /// Reads the scalars of an array whose count must be `values.len()` (`readScalarArray`).

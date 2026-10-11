@@ -25,6 +25,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::strike_cache::StrikeCache;
 
 use crate::text_gpu::sub_run_container::{StrikeDeviceInfo, SubRunTarget};
 use crate::text_gpu::text_blob::{TextBlob, TextBlobKey};
@@ -206,8 +207,13 @@ impl TextBlobRedrawCoordinator {
                 self.remove(blob);
             }
 
-            let mut new_blob =
-                TextBlob::make(glyph_run_list, paint, &position_matrix, strike_device_info);
+            let mut new_blob = TextBlob::make(
+                glyph_run_list,
+                paint,
+                &position_matrix,
+                strike_device_info,
+                StrikeCache::global(),
+            );
 
             if can_cache {
                 new_blob.add_key(&key);

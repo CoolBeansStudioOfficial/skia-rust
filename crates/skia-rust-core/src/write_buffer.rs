@@ -491,6 +491,18 @@ impl BinaryWriteBuffer {
         }
     }
 
+    /// Writes a 4-byte-aligned point array: its count, then the points (`writePointArray`).
+    // Port of: src/core/SkWriteBuffer.cpp#L110-L113 (chrome/m156)
+    #[doc(alias = "writePointArray")]
+    pub fn write_point_array(&mut self, values: &[Point]) {
+        self.writer
+            .write32(i32::try_from(values.len()).unwrap_or(i32::MAX));
+        for value in values {
+            self.writer.write_scalar(value.x);
+            self.writer.write_scalar(value.y);
+        }
+    }
+
     /// Writes the 9 entries of `matrix` (`writeMatrix`).
     // Port of: src/core/SkWriteBuffer.cpp#L119-L121 (chrome/m156)
     #[doc(alias = "writeMatrix")]

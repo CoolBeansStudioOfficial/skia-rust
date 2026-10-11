@@ -35,6 +35,7 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
+use skia_rust_core::strike_cache::StrikeCache;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blend_mode_blender::get_blend_mode_singleton;
 use skia_rust_core::blender::Blender;
@@ -3707,6 +3708,7 @@ impl CoreDevice for Device {
             list,
             paint,
             &strike_device_info,
+            StrikeCache::global(),
         )
         .map(Slug::from_base)
     }

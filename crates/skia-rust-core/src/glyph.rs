@@ -344,6 +344,47 @@ impl GlyphDigest {
         self.bits |= (action as u64) << shift;
     }
 
+    /// `SkGlyphDigest::setActionFor(actionType, glyph, strike)`: decides the action for
+    /// `action_type`. `prepare` stands for the `strike->prepareForImage/Path/Drawable(glyph)`
+    /// calls; it is given the action type (`DirectMaskCpu` for an image, `Path`, or `Drawable`)
+    /// and returns whether the glyph then has the data.
+    // Port of: src/core/SkGlyph.cpp#L640-L688 (chrome/m156)
+    #[doc(alias = "setActionFor")]
+    pub fn set_action_for(
+        &mut self,
+        action_type: ActionType,
+        prepare: &mut dyn FnMut(ActionType) -> bool,
+    ) {
+        // We don't have to do any more if the glyph is marked as kDrop because it was isEmpty().
+        if self.action_for(action_type) != GlyphAction::Unset {
+            return;
+        }
+        let mut action = GlyphAction::Reject;
+        match action_type {
+            ActionType::DirectMask => {
+                if self.fits_in_atlas_direct() {
+                    action = GlyphAction::Accept;
+                }
+            }
+            ActionType::DirectMaskCpu | ActionType::Path | ActionType::Drawable => {
+                if prepare(action_type) {
+                    action = GlyphAction::Accept;
+                }
+            }
+            ActionType::Mask => {
+                if self.fits_in_atlas_interpolated() {
+                    action = GlyphAction::Accept;
+                }
+            }
+            ActionType::Sdft => {
+                if self.fits_in_atlas_direct() && self.mask_format() == MaskFormat::Sdf {
+                    action = GlyphAction::Accept;
+                }
+            }
+        }
+        self.set_action(action_type, action);
+    }
+
     /// `SkGlyphDigest::maxDimension`.
     // Port of: src/core/SkGlyph.h#L349-L351 (chrome/m156)
     #[must_use]
