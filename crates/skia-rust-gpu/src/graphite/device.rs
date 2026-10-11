@@ -35,7 +35,6 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-use skia_rust_core::strike_cache::StrikeCache;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blend_mode_blender::get_blend_mode_singleton;
 use skia_rust_core::blender::Blender;
@@ -64,6 +63,7 @@ use skia_rust_core::shader::Shader;
 use skia_rust_core::size::ISize;
 use skia_rust_core::slug::Slug;
 use skia_rust_core::special_image::SpecialImage;
+use skia_rust_core::strike_cache::StrikeCache;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec, Style as StrokeStyleKind};
 use skia_rust_core::surface_props::{PixelGeometry, SurfaceProps};
 use skia_rust_core::vertices::Vertices;

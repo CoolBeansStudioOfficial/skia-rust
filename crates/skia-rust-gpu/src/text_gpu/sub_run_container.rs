@@ -29,7 +29,7 @@
 //! skia-rust: Skia allocates the sub runs and their data in a `SubRunAllocator` arena and links
 //! them in an intrusive list; here they are owned (a `Vec` of [`SubRun`]), and the atlas sub runs
 //! are shared (`Arc`) with the draws that record them. The sub runs are made from the global
-//! strike cache. Not ported: the flattening of sub runs (`flatten`, `MakeFromBuffer`: Slug
+//! strike cache. The flattening of sub runs (`flatten`, `MakeFromBuffer`: Slug
 //! serialization needs the remote glyph cache, T23), `EstimateAllocSize` and
 //! `testingOnly_atlasSubRun`.
 
@@ -52,13 +52,18 @@ use skia_rust_core::packed_glyph_id::PackedGlyphId;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{Scalar, scalar, scalar_floor_to_scalar, scalar_sqrt};
 use skia_rust_core::scaler_context::ScalerContextBuildFlags;
-use skia_rust_core::strike::{StrikeForGpu, StrikeForGpuCacheInterface, StrikePromise};
+use skia_rust_core::strike::{
+    StrikeForGpu, StrikeForGpuCacheInterface, StrikePromise, TypefaceIdTranslator,
+};
+use skia_rust_core::strike_cache::StrikeCache;
 use skia_rust_core::strike_spec::StrikeSpec;
 use skia_rust_core::stroke_rec::StrokeRec;
 use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 use skia_rust_effects::dash_path_effect;
 
 use crate::gpu::mask_format::MaskFormat;
@@ -258,6 +263,140 @@ impl AtlasSubRun {
         }
     }
 
+    /// `DirectMaskSubRun::MakeFromBuffer`. Returns `None` (and an invalid buffer) if the data is
+    /// bad.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L450-L465 (chrome/m156)
+    #[must_use]
+    pub fn direct_mask_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<Self> {
+        let glyph_vector = GlyphVector::make_from_buffer(buffer, client);
+        if !buffer.validate(glyph_vector.is_some()) {
+            return None;
+        }
+        let glyph_vector = glyph_vector?;
+
+        let vertex_filler = make_vertex_filler_from_buffer(
+            buffer,
+            &glyph_vector,
+            ActionType::DirectMask,
+            Self::MASK_GLYPH_INSETTING,
+        );
+        if !buffer.validate(vertex_filler.is_some()) {
+            return None;
+        }
+
+        Some(Self {
+            kind: AtlasSubRunKind::DirectMask,
+            vertex_filler: vertex_filler?,
+            glyph_vector,
+        })
+    }
+
+    /// `TransformedMaskSubRun::MakeFromBuffer`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L567-L581 (chrome/m156)
+    #[must_use]
+    pub fn transformed_mask_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<Self> {
+        let glyph_vector = GlyphVector::make_from_buffer(buffer, client);
+        if !buffer.validate(glyph_vector.is_some()) {
+            return None;
+        }
+        let glyph_vector = glyph_vector?;
+
+        let vertex_filler = make_vertex_filler_from_buffer(
+            buffer,
+            &glyph_vector,
+            ActionType::Mask,
+            Self::MASK_GLYPH_INSETTING,
+        );
+        if !buffer.validate(vertex_filler.is_some()) {
+            return None;
+        }
+        let vertex_filler = vertex_filler?;
+
+        Some(Self {
+            kind: AtlasSubRunKind::TransformedMask {
+                is_big_enough: Self::is_big_enough(vertex_filler.creation_matrix()),
+            },
+            vertex_filler,
+            glyph_vector,
+        })
+    }
+
+    /// `SDFTSubRun::MakeFromBuffer`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L939-L961 (chrome/m156)
+    #[must_use]
+    pub fn sdft_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<Self> {
+        let use_lcd = buffer.read_int();
+        let is_anti_aliased = buffer.read_int();
+        let matrix_range = SdftMatrixRange::make_from_buffer(buffer);
+
+        let glyph_vector = GlyphVector::make_from_buffer(buffer, client);
+        if !buffer.validate(glyph_vector.is_some()) {
+            return None;
+        }
+        let glyph_vector = glyph_vector?;
+
+        let vertex_filler = make_vertex_filler_from_buffer(
+            buffer,
+            &glyph_vector,
+            ActionType::Sdft,
+            Self::SDFT_GLYPH_INSETTING,
+        );
+        if !buffer.validate(vertex_filler.is_some()) {
+            return None;
+        }
+        let vertex_filler = vertex_filler?;
+
+        if !buffer.validate(vertex_filler.mask_format() == MaskFormat::A8) {
+            return None;
+        }
+
+        Some(Self {
+            kind: AtlasSubRunKind::Sdft {
+                use_lcd_text: use_lcd != 0,
+                anti_aliased: is_anti_aliased != 0,
+                matrix_range,
+            },
+            vertex_filler,
+            glyph_vector,
+        })
+    }
+
+    /// `subRunStreamTag()`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L765-L767, #L866-L868, #L999 (chrome/m156)
+    fn sub_run_stream_tag(&self) -> i32 {
+        match self.kind {
+            AtlasSubRunKind::DirectMask => stream_tag::DIRECT_MASK,
+            AtlasSubRunKind::TransformedMask { .. } => stream_tag::TRANSFORM_MASK,
+            AtlasSubRunKind::Sdft { .. } => stream_tag::SDFT,
+        }
+    }
+
+    /// `doFlatten(buffer)`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L769-L772, #L870-L873, #L1000-L1006 (chrome/m156)
+    fn do_flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        if let AtlasSubRunKind::Sdft {
+            use_lcd_text,
+            anti_aliased,
+            matrix_range,
+        } = self.kind
+        {
+            buffer.write_int(i32::from(use_lcd_text));
+            buffer.write_int(i32::from(anti_aliased));
+            matrix_range.flatten(buffer);
+        }
+        self.glyph_vector.flatten(buffer);
+        flatten_vertex_filler(buffer, &self.vertex_filler);
+    }
+
     /// The kind of the sub run.
     #[must_use]
     pub fn kind(&self) -> AtlasSubRunKind {
@@ -450,6 +589,63 @@ impl PathOpSubmitter {
             + self.ids.len() * std::mem::size_of::<usize>()
     }
 
+    /// `flatten(buffer)`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L258-L266 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        self.strike_promise
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .flatten(buffer);
+
+        buffer.write_int(i32::from(self.is_anti_aliased));
+        buffer.write_scalar(self.strike_to_source_scale);
+        buffer.write_point_array(&self.positions);
+        for &id in &self.ids {
+            buffer.write_int(i32::from(id));
+        }
+    }
+
+    /// `MakeFromBuffer(buffer, alloc, client)`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L269-L305 (chrome/m156)
+    fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<Self> {
+        let strike_promise = StrikePromise::make_from_buffer(buffer, client, StrikeCache::global());
+        if !buffer.validate(strike_promise.is_some()) {
+            return None;
+        }
+        let strike_promise = strike_promise?;
+
+        let is_anti_alias = buffer.read_int() != 0;
+
+        let strike_to_source_scale = buffer.read_scalar();
+        if !buffer.validate(0.0 < strike_to_source_scale) {
+            return None;
+        }
+
+        let positions = make_points_from_buffer(buffer);
+        if positions.is_empty() {
+            return None;
+        }
+
+        // Remember, we stored an int for glyph id.
+        let ids = read_glyph_ids(buffer, positions.len())?;
+
+        if !buffer.is_valid() {
+            return None;
+        }
+
+        Some(Self {
+            ids,
+            positions,
+            strike_to_source_scale,
+            is_anti_aliased: is_anti_alias,
+            strike_promise: Mutex::new(strike_promise),
+            paths: OnceLock::new(),
+        })
+    }
+
     /// Converts the glyph ids to paths if that hasn't been done yet. This is thread safe.
     // Port of: src/text/gpu/SubRunContainer.cpp#L286-L296 (chrome/m156)
     fn paths(&self) -> &[Option<Path>] {
@@ -607,6 +803,57 @@ impl DrawableOpSubmitter {
         self.positions.len() * std::mem::size_of::<Point>()
             + self.ids.len() * std::mem::size_of::<usize>()
     }
+
+    /// `flatten(buffer)`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L519-L527 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        self.strike_promise
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .flatten(buffer);
+
+        buffer.write_scalar(self.strike_to_source_scale);
+        buffer.write_point_array(&self.positions);
+        for &id in &self.ids {
+            buffer.write_int(i32::from(id));
+        }
+    }
+
+    /// `MakeFromBuffer(buffer, alloc, client)`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L529-L563 (chrome/m156)
+    fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<Self> {
+        let strike_promise = StrikePromise::make_from_buffer(buffer, client, StrikeCache::global());
+        if !buffer.validate(strike_promise.is_some()) {
+            return None;
+        }
+        let strike_promise = strike_promise?;
+
+        let strike_to_source_scale = buffer.read_scalar();
+        if !buffer.validate(0.0 < strike_to_source_scale) {
+            return None;
+        }
+
+        let positions = make_points_from_buffer(buffer);
+        if positions.is_empty() {
+            return None;
+        }
+
+        let ids = read_glyph_ids(buffer, positions.len())?;
+
+        if !buffer.is_valid() {
+            return None;
+        }
+
+        Some(Self {
+            ids,
+            positions,
+            strike_to_source_scale,
+            strike_promise: Mutex::new(strike_promise),
+        })
+    }
 }
 
 /// `DrawableSubRun`: glyphs drawn as drawables.
@@ -651,6 +898,62 @@ impl SubRun {
         }
     }
 
+    /// `flatten(buffer)`: the stream tag, then the sub run's data.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L1048-L1051 (chrome/m156)
+    pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        match self {
+            SubRun::Atlas(sub_run) => {
+                buffer.write_int(sub_run.sub_run_stream_tag());
+                sub_run.do_flatten(buffer);
+            }
+            SubRun::Path(sub_run) => {
+                buffer.write_int(stream_tag::PATH);
+                sub_run.path_drawing.flatten(buffer);
+            }
+            SubRun::Drawable(sub_run) => {
+                buffer.write_int(stream_tag::DRAWABLE);
+                sub_run.drawing.flatten(buffer);
+            }
+        }
+    }
+
+    /// `MakeFromBuffer(buffer, alloc, client)`: reads the stream tag and then the sub run it
+    /// names. Returns `None` if the data is bad.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L1053-L1081 (chrome/m156)
+    #[must_use]
+    pub fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<SubRun> {
+        let sub_run_type = buffer.read_int();
+        if !buffer.validate(stream_tag::BAD < sub_run_type && sub_run_type < stream_tag::COUNT) {
+            return None;
+        }
+        match sub_run_type {
+            stream_tag::DIRECT_MASK => AtlasSubRun::direct_mask_from_buffer(buffer, client)
+                .map(|sub_run| SubRun::Atlas(Arc::new(sub_run))),
+            stream_tag::SDFT => AtlasSubRun::sdft_from_buffer(buffer, client)
+                .map(|sub_run| SubRun::Atlas(Arc::new(sub_run))),
+            stream_tag::TRANSFORM_MASK => AtlasSubRun::transformed_mask_from_buffer(buffer, client)
+                .map(|sub_run| SubRun::Atlas(Arc::new(sub_run))),
+            stream_tag::PATH => {
+                let path_drawing = PathOpSubmitter::make_from_buffer(buffer, client);
+                if !buffer.validate(path_drawing.is_some()) {
+                    return None;
+                }
+                path_drawing.map(|path_drawing| SubRun::Path(PathSubRun { path_drawing }))
+            }
+            stream_tag::DRAWABLE => {
+                let drawing = DrawableOpSubmitter::make_from_buffer(buffer, client);
+                if !buffer.validate(drawing.is_some()) {
+                    return None;
+                }
+                drawing.map(|drawing| SubRun::Drawable(DrawableSubRun { drawing }))
+            }
+            _ => None,
+        }
+    }
+
     /// `canReuse(paint, positionMatrix)`.
     #[must_use]
     pub fn can_reuse(&self, paint: &Paint, position_matrix: &Matrix) -> bool {
@@ -682,6 +985,175 @@ impl SubRun {
             SubRun::Path(_) | SubRun::Drawable(_) => None,
         }
     }
+}
+
+/// `SubRunStreamTag`: how a sub run is tagged in a stream.
+// Port of: src/text/gpu/SubRunContainer.cpp#L76-L87 (chrome/m156)
+mod stream_tag {
+    /// `kBad`: 0, to line up with errors from `readInt`.
+    pub const BAD: i32 = 0;
+    /// `kDirectMaskStreamTag`.
+    pub const DIRECT_MASK: i32 = 1;
+    /// `kSDFTStreamTag`.
+    pub const SDFT: i32 = 2;
+    /// `kTransformMaskStreamTag`.
+    pub const TRANSFORM_MASK: i32 = 3;
+    /// `kPathStreamTag`.
+    pub const PATH: i32 = 4;
+    /// `kDrawableStreamTag`.
+    pub const DRAWABLE: i32 = 5;
+    /// `kSubRunStreamTagCount`.
+    pub const COUNT: i32 = 6;
+}
+
+/// `BagOfBytes::WillCountFit<SkPoint>(n)`.
+// Port of: src/text/gpu/SubRunAllocator.h#L119-L123 (chrome/m156)
+fn will_count_fit_points(n: u32) -> bool {
+    /// `BagOfBytes::kMaxByteSize`: `INT_MAX - k4K`.
+    const MAX_BYTE_SIZE: i32 = i32::MAX - (1 << 12);
+    const MAX_N: i32 = MAX_BYTE_SIZE / 8;
+    i32::try_from(n).is_ok_and(|n| (0..MAX_N).contains(&n))
+}
+
+/// `make_points_from_buffer`: the points of an array in the buffer. Returns the empty vector if
+/// there is a problem reading the positions.
+// Port of: src/text/gpu/SubRunContainer.cpp#L115-L130 (chrome/m156)
+fn make_points_from_buffer(buffer: &mut ReadBuffer<'_>) -> Vec<Point> {
+    let glyph_count = buffer.get_array_count();
+
+    // Zero indicates a problem with serialization.
+    if !buffer.validate(glyph_count != 0) {
+        return Vec::new();
+    }
+
+    // Check that the count will not overflow the arena.
+    if !buffer.validate(will_count_fit_points(glyph_count)) {
+        return Vec::new();
+    }
+
+    // skia-rust: the points are not read into storage that the count sized before it is checked
+    // against the data: a count that the rest of the buffer cannot hold fails the read below as
+    // well, without a large allocation.
+    let count = glyph_count as usize;
+    if !buffer.validate_can_read_n(count, size_of::<Point>()) {
+        return Vec::new();
+    }
+
+    let mut positions = vec![Point::new(0.0, 0.0); count];
+    if !buffer.read_point_array(&mut positions) {
+        return Vec::new();
+    }
+    positions
+}
+
+/// Reads `count` glyph ids, which were written as `int`s (`SkTo<SkGlyphID>(buffer.readInt())`).
+/// C++ aborts on an id that does not fit; here the buffer becomes invalid.
+// Port of: src/text/gpu/SubRunContainer.cpp#L288-L293, #L541-L546 (chrome/m156)
+fn read_glyph_ids(buffer: &mut ReadBuffer<'_>, count: usize) -> Option<Vec<GlyphId>> {
+    if !buffer.validate_can_read_n(count, size_of::<i32>()) {
+        return None;
+    }
+    let mut ids = Vec::with_capacity(count);
+    for _ in 0..count {
+        let id = GlyphId::try_from(buffer.read_int());
+        if !buffer.validate(id.is_ok()) {
+            return None;
+        }
+        ids.push(id.ok()?);
+    }
+    Some(ids)
+}
+
+/// `glyph_bounds_from_left_top(digest, inset, leftTop)`.
+// Port of: src/text/gpu/SubRunContainer.cpp#L92-L97 (chrome/m156)
+fn glyph_bounds_from_left_top(digest: GlyphDigest, inset: i32, left_top: Point) -> GlyphRect {
+    let bounds = digest.bounds();
+    #[allow(clippy::cast_precision_loss)] // the insets are 0, 1 and 2
+    let inset_f = inset as scalar;
+    let offset = left_top - bounds.left_top() - Point::new(inset_f, inset_f);
+    glyph_bounds(digest, inset, offset)
+}
+
+/// `reconstruct_safe_bounds`: the bounds of the glyphs at the positions, from the strike's own
+/// metrics rather than from the bounds in the stream.
+// Port of: src/text/gpu/SubRunContainer.cpp#L132-L153 (chrome/m156)
+fn reconstruct_safe_bounds(
+    left_top: &[Point],
+    glyph_vector: &GlyphVector,
+    action_type: ActionType,
+    inset: i32,
+) -> Rect {
+    let strike = Arc::clone(glyph_vector.strike_promise().strike());
+    let mut guard = strike.lock();
+
+    let mut bounding_rect = skglyph::empty_rect();
+    for (i, &position) in left_top.iter().enumerate() {
+        let packed_id = glyph_vector.get_packed_glyph_id(i);
+        let digest = guard.digest_for(action_type, packed_id);
+        bounding_rect = skglyph::rect_union(
+            bounding_rect,
+            glyph_bounds_from_left_top(digest, inset, position),
+        );
+    }
+    if bounding_rect.is_empty() {
+        Rect::new_empty()
+    } else {
+        bounding_rect.rect()
+    }
+}
+
+/// `flatten_vertex_filler`.
+// Port of: src/text/gpu/SubRunContainer.cpp#L155-L160 (chrome/m156)
+fn flatten_vertex_filler(buffer: &mut BinaryWriteBuffer, vf: &VertexFiller) {
+    buffer.write_int(vf.mask_format() as i32);
+    buffer.write_bool(vf.can_draw_direct());
+    buffer.write_matrix(vf.creation_matrix());
+    buffer.write_point_array(vf.top_lefts());
+}
+
+/// `make_vertex_filler_from_buffer`.
+// Port of: src/text/gpu/SubRunContainer.cpp#L162-L193 (chrome/m156)
+fn make_vertex_filler_from_buffer(
+    buffer: &mut ReadBuffer<'_>,
+    glyph_vector: &GlyphVector,
+    action_type: ActionType,
+    inset: i32,
+) -> Option<VertexFiller> {
+    /// `MaskFormat::kLast`.
+    const MASK_FORMAT_LAST: u32 = 2;
+    let mask_format = match buffer.read32_le(MASK_FORMAT_LAST) {
+        1 => MaskFormat::A565,
+        2 => MaskFormat::Argb,
+        _ => MaskFormat::A8,
+    };
+
+    let can_draw_direct = buffer.read_bool();
+
+    let creation_matrix = buffer.read_matrix();
+    // The only valid creationMatrices do not have perspective and many rendering parts assume
+    // they are non-affine, so reject any malformed matrices here.
+    if !buffer.validate(!creation_matrix.has_perspective()) {
+        return None;
+    }
+
+    let left_top = make_points_from_buffer(buffer);
+    if left_top.is_empty() {
+        return None;
+    }
+
+    if !buffer.validate(glyph_vector.glyph_count() == left_top.len()) {
+        return None;
+    }
+
+    let safe_bounds = reconstruct_safe_bounds(&left_top, glyph_vector, action_type, inset);
+
+    Some(VertexFiller::new(
+        mask_format,
+        &creation_matrix,
+        safe_bounds,
+        &left_top,
+        can_draw_direct,
+    ))
 }
 
 /// `glyph_bounds(digest, inset, origin)`.
@@ -843,10 +1315,7 @@ fn prepare_for_path_or_drawable_drawing(
 
 /// `find_maximum_glyph_dimension`: the largest dimension of the mask of any of the glyphs.
 // Port of: src/text/gpu/SubRunContainer.cpp#L1112-L1122 (chrome/m156)
-fn find_maximum_glyph_dimension(
-    strike: &dyn StrikeForGpu,
-    glyphs: &[GlyphId],
-) -> scalar {
+fn find_maximum_glyph_dimension(strike: &dyn StrikeForGpu, glyphs: &[GlyphId]) -> scalar {
     let mut guard = strike.lock_for_gpu();
     let mut max_dimension: scalar = 0.0;
     for &glyph_id in glyphs {
@@ -990,6 +1459,67 @@ impl SubRunContainer {
     #[must_use]
     pub fn unflatten_size_hint(&self) -> usize {
         self.sub_runs.iter().map(SubRun::unflatten_size).sum()
+    }
+
+    /// `flattenAllocSizeHint(buffer)`: writes the sum of the sizes of the sub runs.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L1083-L1089 (chrome/m156)
+    pub fn flatten_alloc_size_hint(&self, buffer: &mut BinaryWriteBuffer) {
+        let unflatten_size_hint: usize = self.sub_runs.iter().map(SubRun::unflatten_size).sum();
+        buffer.write_int(i32::try_from(unflatten_size_hint).unwrap_or(i32::MAX));
+    }
+
+    /// `AllocSizeHintFromBuffer(buffer)`.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L1091-L1100 (chrome/m156)
+    #[must_use]
+    pub fn alloc_size_hint_from_buffer(buffer: &mut ReadBuffer<'_>) -> i32 {
+        let mut sub_runs_size_hint = buffer.read_int();
+
+        // Since the hint doesn't affect correctness, if it looks fishy just pick a reasonable
+        // value.
+        if !(0..=(1 << 16)).contains(&sub_runs_size_hint) {
+            sub_runs_size_hint = 128;
+        }
+        sub_runs_size_hint
+    }
+
+    /// `flattenRuns(buffer)`: the initial position matrix, the count of sub runs and the sub
+    /// runs.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L1102-L1112 (chrome/m156)
+    pub fn flatten_runs(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_matrix(&self.initial_position_matrix);
+        buffer.write_int(i32::try_from(self.sub_runs.len()).unwrap_or(i32::MAX));
+        for sub_run in &self.sub_runs {
+            sub_run.flatten(buffer);
+        }
+    }
+
+    /// `MakeFromBufferInAlloc(buffer, client, alloc)`. Returns `None` if the data is bad.
+    // Port of: src/text/gpu/SubRunContainer.cpp#L1114-L1132 (chrome/m156)
+    #[must_use]
+    pub fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<SubRunContainer> {
+        let position_matrix = buffer.read_matrix();
+        if !buffer.is_valid() {
+            return None;
+        }
+        let mut container = SubRunContainer::new(&position_matrix);
+
+        let sub_run_count = buffer.read_int();
+        if !buffer.validate(sub_run_count > 0) {
+            return None;
+        }
+        for _ in 0..sub_run_count {
+            let sub_run = SubRun::make_from_buffer(buffer, client);
+            if !buffer.validate(sub_run.is_some()) {
+                return None;
+            }
+            if let Some(sub_run) = sub_run {
+                container.sub_runs.push(sub_run);
+            }
+        }
+        Some(container)
     }
 
     /// `MakeInAlloc(glyphRunList, positionMatrix, runPaint, strikeDeviceInfo, strikeCache, alloc,

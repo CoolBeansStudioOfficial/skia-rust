@@ -7,8 +7,8 @@
 //! a text blob drawn with a paint, kept so they can be drawn again with a different matrix and
 //! clip.
 //!
-//! Not ported: `doFlatten` and `MakeFromBuffer` (serialization needs the remote glyph cache,
-//! T23).
+//! A slug is serialized with [`SlugBase::do_flatten`] and read back with [`deserialize`], which
+//! translates the typeface ids of a strike server's process if there is a client.
 
 use core::any::Any;
 
@@ -16,9 +16,11 @@ use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::slug::SlugBase;
-use skia_rust_core::strike::StrikeForGpuCacheInterface;
+use skia_rust_core::slug::{Slug, SlugBase};
+use skia_rust_core::strike::{StrikeForGpuCacheInterface, TypefaceIdTranslator};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::text_gpu::sub_run_container::{
     StrikeDeviceInfo, SubRunContainer, SubRunCreationBehavior,
@@ -47,6 +49,31 @@ impl SlugImpl {
             source_bounds,
             origin,
         }
+    }
+
+    /// `MakeFromBuffer(buffer, client)`: reads a slug that [`SlugBase::do_flatten`] wrote.
+    /// Returns `None` if the data is bad.
+    // Port of: src/text/gpu/SlugImpl.cpp#L46-L69 (chrome/m156)
+    #[must_use]
+    pub fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<SlugImpl> {
+        let source_bounds = buffer.read_rect();
+        if !buffer.validate(!source_bounds.is_empty()) {
+            return None;
+        }
+        let origin = buffer.read_point();
+        let _alloc_size_hint = SubRunContainer::alloc_size_hint_from_buffer(buffer);
+
+        let container = SubRunContainer::make_from_buffer(buffer, client);
+
+        // Something went wrong while reading.
+        if !buffer.is_valid() {
+            return None;
+        }
+
+        Some(SlugImpl::new(container?, source_bounds, origin))
     }
 
     /// `position_matrix(drawMatrix, drawOrigin)`: `drawMatrix * translate(drawOrigin)`.
@@ -117,7 +144,26 @@ impl SlugBase for SlugImpl {
         self.source_bounds.with_offset(self.origin)
     }
 
+    // Port of: src/text/gpu/SlugImpl.cpp#L39-L44 (chrome/m156)
+    fn do_flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_rect(&self.source_bounds);
+        buffer.write_point(self.origin);
+        self.sub_runs.flatten_alloc_size_hint(buffer);
+        self.sub_runs.flatten_runs(buffer);
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
+}
+
+/// `Slug::Deserialize(data, size, client)`: the slug that `data` holds. If there is a client,
+/// then the data is from a different process (the strike server's), and its typeface ids are
+/// translated. Returns `None` if the data is bad.
+// Port of: src/text/gpu/Slug.cpp#L45-L52 (chrome/m156)
+#[doc(alias = "Deserialize")]
+#[must_use]
+pub fn deserialize(data: &[u8], client: Option<&dyn TypefaceIdTranslator>) -> Option<Slug> {
+    let mut buffer = ReadBuffer::new(data);
+    SlugImpl::make_from_buffer(&mut buffer, client).map(Slug::from_base)
 }

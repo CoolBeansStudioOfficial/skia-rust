@@ -6,9 +6,6 @@
 //! [`SubRunControl`]: the thresholds that pick how a run of glyphs is drawn (distance field
 //! text, direct masks or paths), and [`SdftMatrixRange`], the range of scales one distance field
 //! size can be reused for.
-//!
-//! Not ported: `SdftMatrixRange::flatten`/`MakeFromBuffer` (Slug serialization needs the remote
-//! glyph cache, T23).
 
 use skia_rust_core::font::{Edging, Font};
 use skia_rust_core::font_priv::approximate_transformed_text_size;
@@ -17,7 +14,9 @@ use skia_rust_core::glyph::GlyphDigest;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scalar::{Scalar, scalar};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::graphite::caps::Caps;
 
@@ -57,6 +56,22 @@ impl SdftMatrixRange {
     pub fn matrix_in_range(&self, matrix: &Matrix) -> bool {
         let max_scale = matrix.max_scale();
         self.matrix_min < max_scale && max_scale <= self.matrix_max
+    }
+
+    /// `flatten(buffer)`.
+    // Port of: src/text/gpu/SubRunControl.cpp#L148-L151 (chrome/m156)
+    pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar(self.matrix_min);
+        buffer.write_scalar(self.matrix_max);
+    }
+
+    /// `MakeFromBuffer(buffer)`.
+    // Port of: src/text/gpu/SubRunControl.cpp#L153-L157 (chrome/m156)
+    #[must_use]
+    pub fn make_from_buffer(buffer: &mut ReadBuffer<'_>) -> Self {
+        let min = buffer.read_scalar();
+        let max = buffer.read_scalar();
+        Self::new(min, max)
     }
 }
 
