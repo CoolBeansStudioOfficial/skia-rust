@@ -256,6 +256,7 @@ pub mod mirrortile;
 pub mod mixedtextblobs;
 pub mod mixercolorfilter;
 pub mod modecolorfilters;
+pub mod modules;
 pub mod morphology;
 pub mod nearesthalfpixelimage;
 pub mod nested;

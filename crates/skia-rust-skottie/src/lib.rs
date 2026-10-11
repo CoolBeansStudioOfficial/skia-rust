@@ -28,6 +28,7 @@ pub mod skottie_json;
 pub mod skottie_property;
 pub mod skottie_value;
 pub mod slot_manager;
+pub mod utils;
 
 pub use external_layer::{ExternalLayer, PrecompInterceptor};
 pub use skottie::{
