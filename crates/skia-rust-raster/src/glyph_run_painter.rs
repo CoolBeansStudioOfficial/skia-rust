@@ -4,10 +4,13 @@
 // Ported from Skia: src/core/SkGlyphRunPainter.{h,cpp} (chrome/m156), the CPU painter
 // `skcpu::GlyphRunListPainter`.
 //
-// Glyph drawables are drawn with the canvas (`canvas->saveLayer(); drawable->draw(canvas)`),
-// which a device cannot reach: the painter returns at each drawable (`PendingGlyphDrawable`)
-// and the canvas draws it, then calls the painter again with the same `GlyphRunDrawCursor` to
-// continue after it (`Device::on_draw_glyph_run_list_step`). The draw order is Skia's.
+// Glyph drawables and glyph paths are drawn with the canvas (`canvas->saveLayer();
+// drawable->draw(canvas)`, `canvas->concat(m); canvas->drawPath(path)`), which a device cannot
+// reach: the painter returns at each of them (`PendingGlyph`) and the canvas draws it, then calls
+// the painter again with the same `GlyphRunDrawCursor` to continue after it
+// (`Device::on_draw_glyph_run_list_step`). The draw order is Skia's. Drawing a path with the
+// canvas matters beyond the path: restoring the canvas sets the transform of the top device
+// from the canvas matrix again.
 
 //! The CPU glyph painter: chooses, for each run, whether its glyphs draw as paths, as masks
 //! at device positions, or as scaled masks, and hands the accepted glyphs to the device.
@@ -17,7 +20,7 @@ use std::sync::Arc;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::device::{GlyphRunDrawCursor, PendingGlyphDrawable};
+use skia_rust_core::device::{GlyphRunDrawCursor, PendingGlyph, PendingGlyphKind};
 use skia_rust_core::font_types::GlyphId;
 use skia_rust_core::glyph::{
     ActionType, Glyph, GlyphAction, GlyphDigest, GlyphPositionRoundingSpec,
@@ -30,7 +33,6 @@ use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::packed_glyph_id::PackedGlyphId;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::AddPathMode;
-use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
@@ -60,14 +62,6 @@ pub trait BitmapDevicePainter {
         paint: &Paint,
         mips: Option<Arc<Mipmap>>,
     );
-
-    /// `canvas->concat(m); canvas->drawPath(path, paint)`: draws `path` with `matrix` applied
-    /// before the device transform.
-    fn draw_glyph_path_concat(&mut self, path: &Path, matrix: &Matrix, paint: &Paint);
-
-    /// `canvas->drawPath(path, paint)` with the current transform: the path is already in
-    /// device space.
-    fn draw_glyph_path_device(&mut self, path: &Path, paint: &Paint);
 }
 
 /// The glyph painter of one device (`skcpu::GlyphRunListPainter`): the props, the color type and
@@ -105,9 +99,9 @@ impl GlyphRunListPainter {
     ///
     /// When the paint has a path effect or mask filter (its strike descriptor is not ported).
     ///
-    /// Glyph drawables are not drawn: the first one that `cursor` has not passed is returned and
-    /// `cursor` moves past it; call again to continue (see the module docs). `None` means every
-    /// run is drawn.
+    /// Glyph paths and drawables are not drawn: the first one that `cursor` has not passed is
+    /// returned and `cursor` moves past it; call again to continue (see the module docs). `None`
+    /// means every run is drawn.
     // Port of: src/core/SkGlyphRunPainter.cpp#L219-L423 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
     pub fn draw_for_bitmap_device(
@@ -117,7 +111,7 @@ impl GlyphRunListPainter {
         paint: &Paint,
         draw_matrix: &Matrix,
         cursor: &mut GlyphRunDrawCursor,
-    ) -> Option<PendingGlyphDrawable> {
+    ) -> Option<PendingGlyph> {
         // The bitmap blitters can only draw LCD text to a N32 bitmap in srcOver. Otherwise,
         // convert the lcd text into A8 text. The props communicate this to the scaler.
         let props = if is_n32(self.color_type) && paint.is_src_over() {
@@ -166,13 +160,21 @@ impl GlyphRunListPainter {
                         || path_paint.mask_filter().is_some()
                         || (stroking && !hairline);
 
-                    // The paths of a resumed run are drawn already.
-                    let accepted = if resumed_drawables.is_some() {
-                        Vec::new()
+                    // The paths of a resumed run are drawn already, up to the one that `cursor`
+                    // passed (all of them when the run is at its drawables).
+                    let paths_done = if resumed_drawables.is_some() {
+                        accepted.len()
+                    } else if run_index == cursor.run {
+                        cursor.paths_done
                     } else {
-                        accepted
+                        0
                     };
-                    for (digest, pos) in accepted {
+                    // The canvas draws the next path: SkAutoCanvasRestore acr(canvas, true);
+                    // canvas->concat(m); canvas->drawPath(*path, pathPaint), or without the
+                    // concat when the paint needs the exact CTM.
+                    if let Some((index, (digest, pos))) =
+                        accepted.into_iter().enumerate().nth(paths_done)
+                    {
                         let glyph = guard.glyph(digest);
                         let Some(path) = glyph.path() else {
                             panic!("a glyph accepted for paths has a path");
@@ -183,14 +185,24 @@ impl GlyphRunListPainter {
                             (strike_to_source_scale, strike_to_source_scale),
                             translate,
                         );
+                        cursor.run = run_index;
+                        cursor.drawables_done = None;
+                        cursor.paths_done = index + 1;
                         if needs_exact_ctm {
                             let mut builder = PathBuilder::new();
                             builder.add_path_with_transform(path, &m, AddPathMode::Append);
                             builder.set_is_volatile(true);
-                            device.draw_glyph_path_device(&builder.detach(), &path_paint);
-                        } else {
-                            device.draw_glyph_path_concat(path, &m, &path_paint);
+                            return Some(PendingGlyph {
+                                kind: PendingGlyphKind::DevicePath(builder.detach()),
+                                matrix: Matrix::default(),
+                                paint: path_paint,
+                            });
                         }
+                        return Some(PendingGlyph {
+                            kind: PendingGlyphKind::Path(path.clone()),
+                            matrix: m,
+                            paint: path_paint,
+                        });
                     }
                 }
                 if !source.is_empty() {
@@ -218,8 +230,8 @@ impl GlyphRunListPainter {
                         // The canvas draws it: saveLayer(m.mapRect(bounds), paint); draw(m).
                         cursor.run = run_index;
                         cursor.drawables_done = Some(index + 1);
-                        return Some(PendingGlyphDrawable {
-                            drawable: drawable.clone(),
+                        return Some(PendingGlyph {
+                            kind: PendingGlyphKind::Drawable(drawable.clone()),
                             matrix: m,
                             paint: paint.clone(),
                         });

@@ -24026,8 +24026,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
-status = "failing"
-reason = "runtime-shader image filter: diagnostic pass with diffs: 1580 of 375000 px differ (565), all in the skew and perspective cells (max channel delta 66/255); the translate, scale and rotate cells match. See notes/gm_runtimeimagefilter_cpp_rtif_distort.md"
+status = "passing"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]

@@ -47,7 +47,8 @@ use crate::color_filters;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::device::{
-    CreateInfo, Device, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyphDrawable, clip_shader,
+    CreateInfo, Device, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyph, PendingGlyphKind,
+    clip_shader,
 };
 use crate::floating_point::is_finite_all;
 use crate::font::Font;
@@ -2178,7 +2179,7 @@ impl CanvasState {
         list: &GlyphRunList<'_>,
         paint: &Paint,
         cursor: &mut GlyphRunDrawCursor,
-    ) -> Option<PendingGlyphDrawable> {
+    ) -> Option<PendingGlyph> {
         crate::device::draw_glyph_run_list_step(self.top_device_mut(), list, paint, cursor)
     }
 
@@ -4406,8 +4407,8 @@ impl Canvas {
                 self.state
                     .borrow_mut()
                     .step_glyph_run_list(list, auto_layer.paint(), &mut cursor);
-            let Some(PendingGlyphDrawable {
-                drawable,
+            let Some(PendingGlyph {
+                kind,
                 matrix,
                 paint,
             }) = next
@@ -4415,13 +4416,35 @@ impl Canvas {
                 break;
             };
             let save_count = self.save_count();
-            let drawable_bounds = matrix.map_rect(drawable.bounds()).0;
-            self.save_layer(
-                &SaveLayerRec::default()
-                    .bounds(&drawable_bounds)
-                    .paint(&paint),
-            );
-            drawable.draw(self, Some(&matrix));
+            match kind {
+                PendingGlyphKind::Drawable(drawable) => {
+                    let drawable_bounds = matrix.map_rect(drawable.bounds()).0;
+                    self.save_layer(
+                        &SaveLayerRec::default()
+                            .bounds(&drawable_bounds)
+                            .paint(&paint),
+                    );
+                    drawable.draw(self, Some(&matrix));
+                }
+                PendingGlyphKind::Path(path) => {
+                    // SkAutoCanvasRestore acr(canvas, true); canvas->concat(m);
+                    // canvas->drawPath(*path, pathPaint)
+                    self.save();
+                    self.concat(&matrix);
+                    self.draw_path(&path, &paint);
+                }
+                PendingGlyphKind::DevicePath(path) => {
+                    if matrix.is_identity() {
+                        self.draw_path(&path, &paint);
+                    } else {
+                        // The glyph of a list with `RSXform`s: its transform is in front of the
+                        // path.
+                        self.save();
+                        self.concat(&matrix);
+                        self.draw_path(&path, &paint);
+                    }
+                }
+            }
             self.restore_to_count(save_count);
         }
         self.state.borrow_mut().end_auto_layer(&auto_layer);

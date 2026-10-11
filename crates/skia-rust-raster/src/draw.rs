@@ -31,7 +31,7 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode_priv::supports_coverage_as_alpha;
 use skia_rust_core::canvas::PointMode;
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::device::{Device, GlyphRunDrawCursor, PendingGlyphDrawable};
+use skia_rust_core::device::{Device, GlyphRunDrawCursor, PendingGlyph};
 use skia_rust_core::draw_procs::draw_treat_as_hairline;
 use skia_rust_core::draw_types::DrawCoverage;
 use skia_rust_core::floating_point::{float_round2int, float_saturate2int};
@@ -41,7 +41,6 @@ use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::image_raster::{CopyPixelsMode, ImageRaster};
-use skia_rust_core::m44::M44;
 use skia_rust_core::mask::{CreateMode, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::{FilterReturn, MaskFilter};
 use skia_rust_core::matrix::Matrix;
@@ -1587,19 +1586,19 @@ fn draw_into_mask(mask: &mut MaskBuilder, raw: &PathRaw<'_>, style: InitStyle) {
 
 impl Draw<'_> {
     /// `skcpu::Draw::drawGlyphRunList`: draws `list` with `painter`, unless the clip is empty.
-    /// The canvas of C++ is not passed: glyph paths draw on this draw, see [`BitmapDevicePainter`].
+    /// The canvas of C++ is not passed: a glyph path is returned for the canvas to draw.
     // Port of: src/core/SkDraw_text.cpp#L125-L134 (chrome/m156)
     #[doc(alias = "drawGlyphRunList")]
     ///
-    /// skia-rust: stops at each glyph drawable and returns it, for the canvas to draw; call
-    /// again with the same `cursor` to continue.
+    /// skia-rust: stops at each glyph path and drawable and returns it, for the canvas to draw;
+    /// call again with the same `cursor` to continue.
     pub fn draw_glyph_run_list(
         &mut self,
         painter: &GlyphRunListPainter,
         list: &GlyphRunList<'_>,
         paint: &Paint,
         cursor: &mut GlyphRunDrawCursor,
-    ) -> Option<PendingGlyphDrawable> {
+    ) -> Option<PendingGlyph> {
         self.validate();
         if self.rc.is_empty() {
             return None;
@@ -1609,8 +1608,7 @@ impl Draw<'_> {
     }
 }
 
-/// `skcpu::Draw` as the glyph painter sees it: masks through `paintMasks` and paths through the
-/// draw itself.
+/// `skcpu::Draw` as the glyph painter sees it: masks through `paintMasks`.
 impl BitmapDevicePainter for Draw<'_> {
     // Port of: src/core/SkDraw_text.cpp#L53-L123 (chrome/m156), Draw::paintMasks
     //
@@ -1650,20 +1648,6 @@ impl BitmapDevicePainter for Draw<'_> {
         mips: Option<Arc<Mipmap>>,
     ) {
         Draw::draw_bitmap(self, bitmap, matrix, dst_or_null, sampling, paint, mips);
-    }
-
-    // Port of: src/core/SkCanvas.cpp#L2866-L2874 (chrome/m156), concat then drawPath
-    fn draw_glyph_path_concat(&mut self, path: &Path, matrix: &Matrix, paint: &Paint) {
-        // canvas->concat(m): the canvas matrix is an SkM44, so CTM * m is composed in 4x4 (float
-        // order of SkM44::setConcat), and the device takes its 3x3 part (`asM33`).
-        let ctm = M44::concat(&M44::from(self.ctm.clone()), &M44::from(matrix.clone())).to_m33();
-        let mut draw = self.reborrow();
-        draw.ctm = &ctm;
-        draw.draw_path(path, paint, None);
-    }
-
-    fn draw_glyph_path_device(&mut self, path: &Path, paint: &Paint) {
-        self.draw_path(path, paint, None);
     }
 }
 

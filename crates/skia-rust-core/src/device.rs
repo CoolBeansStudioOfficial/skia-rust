@@ -485,7 +485,7 @@ pub trait Device {
         list: &GlyphRunList<'_>,
         paint: &Paint,
         cursor: &mut GlyphRunDrawCursor,
-    ) -> Option<PendingGlyphDrawable> {
+    ) -> Option<PendingGlyph> {
         let _ = cursor;
         self.on_draw_glyph_run_list(list, paint);
         None
@@ -1014,17 +1014,51 @@ pub fn clip_shader(device: &mut dyn Device, sh: &Shader, op: ClipOp) {
     device.on_clip_shader(sh);
 }
 
-/// A glyph drawable a device collected while drawing a glyph run list: the drawable, the matrix
-/// that places it relative to the canvas, and the paint of the text
+/// What a device hands back to its canvas in the middle of a glyph run (see [`PendingGlyph`]).
+#[derive(Clone, Debug)]
+pub enum PendingGlyphKind {
+    /// A glyph drawable (`glyph->drawable()`): the canvas draws it with
+    /// `saveLayer(m.mapRect(bounds), paint); drawable->draw(canvas, &m)`.
+    Drawable(Drawable),
+    /// A glyph path in the glyph's own space: the canvas draws it with
+    /// `SkAutoCanvasRestore acr(canvas, true); canvas->concat(m); canvas->drawPath(path, paint)`.
+    /// The restore sets the device's transform from the canvas matrix again, which a device that
+    /// is not the root one (a layer) did not have until then.
+    Path(Path),
+    /// A glyph path that is in the canvas's space already (the paint needs the exact CTM): the
+    /// canvas draws it with `canvas->drawPath(path, paint)`.
+    DevicePath(Path),
+}
+
+/// A glyph a device collected while drawing a glyph run list, which only the canvas can draw: what
+/// to draw, the matrix that places it relative to the canvas, and the paint of the text
 /// (`Device::on_draw_glyph_run_list_step`).
 #[derive(Clone, Debug)]
-pub struct PendingGlyphDrawable {
-    /// The drawable of the glyph (`glyph->drawable()`).
-    pub drawable: Drawable,
-    /// The matrix from the drawable's space to the canvas's (`m` in `drawForBitmapDevice`).
+pub struct PendingGlyph {
+    /// What to draw.
+    pub kind: PendingGlyphKind,
+    /// The matrix from the glyph's space to the canvas's (`m` in `drawForBitmapDevice`).
     pub matrix: Matrix,
     /// The paint the text is drawn with.
     pub paint: Paint,
+}
+
+impl PendingGlyph {
+    /// Draws a glyph path on `device` without a canvas: `canvas->concat(m); canvas->drawPath(...)`
+    /// becomes a change of the device transform. Drawables are not drawn, since only a canvas can.
+    pub fn draw_path_on_device(&self, device: &mut dyn Device) {
+        match &self.kind {
+            PendingGlyphKind::Drawable(_) => {}
+            PendingGlyphKind::Path(path) | PendingGlyphKind::DevicePath(path) => {
+                let local_to_device = M44::concat(
+                    device.state().local_to_device44(),
+                    &M44::from(self.matrix.clone()),
+                );
+                let mut restore = DeviceTransformRestore::new(device, &local_to_device);
+                restore.device().draw_path(path, &self.paint);
+            }
+        }
+    }
 }
 
 /// `SkDevice::drawGlyphRunList` without the canvas: draws `list` on `device`, through
@@ -1052,8 +1086,10 @@ pub struct GlyphRunDrawCursor {
     /// The run that was being drawn.
     pub run: usize,
     /// How many drawables of that run were returned already; `None` when the run has not
-    /// started.
+    /// reached its drawables (its glyph paths come first).
     pub drawables_done: Option<usize>,
+    /// How many glyph paths of that run were returned already.
+    pub paths_done: usize,
     /// The progress through a list with `RSXform`s (`simplifyGlyphRunRSXFormAndRedraw`); `None`
     /// before such a list starts, and always `None` for a list without `RSXform`s.
     pub rsxform: Option<Box<RSXformDrawCursor>>,
@@ -1080,7 +1116,7 @@ pub fn draw_glyph_run_list_step(
     list: &GlyphRunList<'_>,
     paint: &Paint,
     cursor: &mut GlyphRunDrawCursor,
-) -> Option<PendingGlyphDrawable> {
+) -> Option<PendingGlyph> {
     if !device.state().local_to_device().is_finite() {
         return None;
     }
@@ -1103,7 +1139,9 @@ pub fn simplify_glyph_run_rsxform_and_redraw(
     paint: &Paint,
 ) {
     let mut cursor = GlyphRunDrawCursor::default();
-    while simplify_glyph_run_rsxform_step(device, list, paint, &mut cursor).is_some() {}
+    while let Some(pending) = simplify_glyph_run_rsxform_step(device, list, paint, &mut cursor) {
+        pending.draw_path_on_device(device);
+    }
 }
 
 /// `SkDevice::simplifyGlyphRunRSXFormAndRedraw` up to the next glyph drawable, which it returns
@@ -1123,7 +1161,7 @@ pub fn simplify_glyph_run_rsxform_step(
     list: &GlyphRunList<'_>,
     paint: &Paint,
     cursor: &mut GlyphRunDrawCursor,
-) -> Option<PendingGlyphDrawable> {
+) -> Option<PendingGlyph> {
     let builder = GlyphRunBuilder::new();
     let state = cursor.rsxform.get_or_insert_with(Default::default);
     let runs = list.runs();
@@ -1186,8 +1224,8 @@ pub fn simplify_glyph_run_rsxform_step(
             )
         };
         if let Some(pending) = pending {
-            return Some(PendingGlyphDrawable {
-                drawable: pending.drawable,
+            return Some(PendingGlyph {
+                kind: pending.kind,
                 matrix: Matrix::concat(&glyph_to_local, &pending.matrix),
                 paint: pending.paint,
             });

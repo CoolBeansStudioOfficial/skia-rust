@@ -36,59 +36,51 @@ fn make_filter() -> Option<ImageFilter> {
 }
 
 // Port of: gm/runtimeimagefilter.cpp#L44-L79 (chrome/m156), rtif_distort
-crate::def_simple_gm_bg!(
-    #[ignore = "see notes/gm_runtimeimagefilter_cpp_rtif_distort.md"]
-    rtif_distort,
-    canvas,
-    500,
-    750,
-    Color::BLACK,
-    {
-        let clip = Rect::from_wh(250.0, 250.0);
-        let mut filter_paint = Paint::default();
-        filter_paint.set_image_filter(make_filter());
+crate::def_simple_gm_bg!(rtif_distort, canvas, 500, 750, Color::BLACK, {
+    let clip = Rect::from_wh(250.0, 250.0);
+    let mut filter_paint = Paint::default();
+    filter_paint.set_image_filter(make_filter());
 
-        let draw_layer = |tx: f32, ty: f32, m: Matrix| {
-            canvas.save();
-            canvas.translate((tx, ty));
-            canvas.clip_rect(clip, None, None);
-            canvas.concat(&m);
-            canvas.save_layer(&SaveLayerRec::default().paint(&filter_paint));
-            let text = "The quick brown fox jumped over the lazy dog.";
-            let mut rand = Random::default();
-            let mut font = default_portable_font();
-            for _ in 0..25 {
-                let x = rand.next_u_less_than(500);
-                let y = rand.next_u_less_than(500);
-                let mut paint = Paint::default();
-                paint.set_color(color_to_565(Color::new(rand.next_bits(24) | 0xFF00_0000)));
-                font.set_size(rand.next_range_scalar(0.0, 300.0));
-                // SkIntToScalar(x): x and y are below 500, so the casts are exact.
-                #[allow(clippy::cast_precision_loss)]
-                canvas.draw_str(text, (x as f32, y as f32), &font, &paint);
-            }
-            canvas.restore();
-            canvas.restore();
-        };
+    let draw_layer = |tx: f32, ty: f32, m: Matrix| {
+        canvas.save();
+        canvas.translate((tx, ty));
+        canvas.clip_rect(clip, None, None);
+        canvas.concat(&m);
+        canvas.save_layer(&SaveLayerRec::default().paint(&filter_paint));
+        let text = "The quick brown fox jumped over the lazy dog.";
+        let mut rand = Random::default();
+        let mut font = default_portable_font();
+        for _ in 0..25 {
+            let x = rand.next_u_less_than(500);
+            let y = rand.next_u_less_than(500);
+            let mut paint = Paint::default();
+            paint.set_color(color_to_565(Color::new(rand.next_bits(24) | 0xFF00_0000)));
+            font.set_size(rand.next_range_scalar(0.0, 300.0));
+            // SkIntToScalar(x): x and y are below 500, so the casts are exact.
+            #[allow(clippy::cast_precision_loss)]
+            canvas.draw_str(text, (x as f32, y as f32), &font, &paint);
+        }
+        canvas.restore();
+        canvas.restore();
+    };
 
-        draw_layer(0.0, 0.0, Matrix::new_identity());
-        draw_layer(250.0, 0.0, Matrix::scale((0.5, 0.5)));
-        draw_layer(0.0, 250.0, Matrix::rotate_deg_pivot(45.0, (125.0, 125.0)));
-        draw_layer(
-            250.0,
-            250.0,
-            Matrix::concat(
-                &Matrix::scale((0.5, 0.5)),
-                &Matrix::rotate_deg_pivot(45.0, (125.0, 125.0)),
-            ),
-        );
-        draw_layer(0.0, 500.0, Matrix::skew((-0.5, 0.0)));
-        let mut p = Matrix::new_identity();
-        p.set_persp_x(0.0015);
-        p.set_persp_y(-0.0015);
-        draw_layer(250.0, 500.0, p);
-    }
-);
+    draw_layer(0.0, 0.0, Matrix::new_identity());
+    draw_layer(250.0, 0.0, Matrix::scale((0.5, 0.5)));
+    draw_layer(0.0, 250.0, Matrix::rotate_deg_pivot(45.0, (125.0, 125.0)));
+    draw_layer(
+        250.0,
+        250.0,
+        Matrix::concat(
+            &Matrix::scale((0.5, 0.5)),
+            &Matrix::rotate_deg_pivot(45.0, (125.0, 125.0)),
+        ),
+    );
+    draw_layer(0.0, 500.0, Matrix::skew((-0.5, 0.0)));
+    let mut p = Matrix::new_identity();
+    p.set_persp_x(0.0015);
+    p.set_persp_y(-0.0015);
+    draw_layer(250.0, 500.0, p);
+});
 
 // Port of: gm/runtimeimagefilter.cpp#L81-L108 (chrome/m156), rtif_unsharp
 crate::def_simple_gm!(rtif_unsharp, canvas, 512, 256, {
