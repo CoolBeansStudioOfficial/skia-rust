@@ -16812,8 +16812,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmapfilters.cpp#L114-L114"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawString) is stale because text has landed; re-check the remaining needs"
+status = "failing"
+reason = "ported; pixels match except the N32 row label: ToolUtils::colortype_name(kN32) is BGRA_8888 on the Windows oracle and RGBA_8888 on this RGBA host (157 px in the label row). See notes/gm_bitmapfilters_cpp_FilterGM.md"
 span_hash = "4a54a347805cb06f730a513d432ca1b641b0529564ec49481cd55f1e95f63600"
 
 [[test]]
@@ -18627,8 +18627,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L107-L148"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: SkShaders::MakeTurbulence and the image-filter Shader/ColorFilter/Compose factories are on main; re-check"
+status = "passing"
 span_hash = "6835bce8d9ed6bcd46b89b14f1646705578ee3334127219f47d876ce49c993fe"
 
 [[test]]
@@ -19707,8 +19706,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L264-L302"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (resource stream) is stale because get_resource_as_stream exists; re-check the blob path"
+status = "passing"
 span_hash = "3713bba18f7836b70cbec27269bbdb4751da8f35ad7313bac51371539eb38710"
 
 [[test]]
@@ -23904,8 +23902,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrect.cpp#L315-L315"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "8f8f0a49a7c24ea9b6edaaaf5195079ac982a5ca16ade39d37784ad94d85c972"
 
 [[test]]
@@ -25194,8 +25191,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/surface.cpp#L170-L170"
 module = "text"
-status = "todo"
-reason = "not attempted in this sweep: SurfacePropsGM is not written yet (text and gradients)"
+status = "passing"
 span_hash = "54b4394be45f96ff10a15149f8616c2e2715dbd99b95efad49070c163b7f3c71"
 
 [[test]]
@@ -25842,8 +25838,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/vertices.cpp#L207-L207"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: drawVertices/drawPatch are ported; the GM's gradient shader path needs checking"
+status = "passing"
 span_hash = "4d8869c55c1eb6620ad0f14f2460a0de7ea469ffde7a302af3f2bac26e920276"
 
 [[test]]

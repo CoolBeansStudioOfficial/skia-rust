@@ -262,6 +262,12 @@ impl GM for VerticesGm {
 
 // Port of: gm/vertices.cpp#L206-L206 (chrome/m156), DEF_GM(return new VerticesGM(1);)
 crate::def_gm!(VerticesGM_1 = "VerticesGM(1)", VerticesGm::new(1.0));
+// Port of: gm/vertices.cpp#L207 (chrome/m156), DEF_GM(return new VerticesGM(1 / kShaderSize);),
+// with kShaderSize = 40 (an SkScalar, so the quotient is a float division).
+crate::def_gm!(
+    VerticesGM_1_over_kShaderSize = "VerticesGM(1 / kShaderSize)",
+    VerticesGm::new(1.0_f32 / 40.0_f32)
+);
 
 // Port of: gm/vertices.cpp#L209-L227 (chrome/m156), draw_batching
 fn draw_batching(canvas: &Canvas) {
