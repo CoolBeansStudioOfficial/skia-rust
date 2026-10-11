@@ -53370,7 +53370,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_VULKAN_CONTEXTS"
 source = "tests/graphite/VerticesPaddingTest.cpp#L204-L332"
 module = "gpu"
 status = "todo"
-reason = "needs a real adapter (lavapipe job) and async readback of draw and static vertex buffers through buffer maps; not ported in this sweep (332 C++ lines)"
+reason = "Not ported in this sweep. It needs the same readback helpers as StaticVerticesPaddingTest (get_readback_buffer and copy_and_readback_buffer_sync, tests/graphite/VerticesPaddingTest.cpp#L67-L132), plus the draw path that fills the dynamic vertex buffers, on the Dawn and Vulkan profiles on a real adapter."
 span_hash = "63bccaf83ce8e4b9d2e6bc058b0b5fff3636bf374f130bdfb46cac43e00e882a"
 
 [[test]]
@@ -53380,7 +53380,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_VULKAN_CONTEXTS"
 source = "tests/graphite/VerticesPaddingTest.cpp#L133-L202"
 module = "gpu"
 status = "todo"
-reason = "needs a real adapter (lavapipe job) and async readback of draw and static vertex buffers through buffer maps; not ported in this sweep (332 C++ lines)"
+reason = "Not ported in this sweep. The helpers exist (GlobalCache::static_vertex_copy_ranges, static_vertex_buffer), but the test reads the static vertex buffer back through the C++ helpers get_readback_buffer and copy_and_readback_buffer_sync (tests/graphite/VerticesPaddingTest.cpp#L67-L132): a buffer copy, a synchronous map and a tick, on the Dawn and Vulkan profiles on a real adapter. That readback path is not ported as a unit."
 span_hash = "5fd20f7e7ab840f4a62acbf6525107645b553e11aa2d48b95c80d883205fa8b6"
 
 [[test]]
