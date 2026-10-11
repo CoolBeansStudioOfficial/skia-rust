@@ -40034,8 +40034,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L936-L1082"
 module = "core"
-status = "todo"
-reason = "needs SkCanvas::drawDrawable (not on main: only glyph drawables draw through the canvas) and SkDrawable op recording for approximateOpCount"
+status = "passing"
 span_hash = "d1fa0e3dc6ee446e34cffe5b577d80a264b7ee43468d88011475bc145035088c"
 
 [[test]]
@@ -40062,8 +40061,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L1084-L1153"
 module = "core"
-status = "todo"
-reason = "needs SkCanvas::drawDrawable (not on main) for its second half, and SkDrawable op recording for approximateOpCount"
+status = "passing"
 span_hash = "b2b5fbc366357ad344a46298a1c6fe72265ba8585ef8bece181c1e347f7456ae"
 
 [[test]]

@@ -9,7 +9,7 @@
 //! hooks of `SkCanvas`. Here it is a [`Canvas`] over a no-pixels device that carries a
 //! [`CanvasHooks`] object appending to the record; [`RecordCanvas`] owns that canvas and derefs
 //! to it. The record is shared (`Rc<RefCell<Record>>`) between the hooks and the owner, as
-//! `SkRecord*` is in Skia. The `SkDrawableList` and the draws of record types that are not ported
+//! `SkRecord*` is in Skia. The `SkDrawableList` is a `Vec<Drawable>`, shared the same way. The draws of record types that are not ported
 //! (text, vertices, ...) are not here. `onDrawImage2` is unreachable in Skia (`drawImage` goes
 //! through `drawImageRect`), so `DrawImage` is never recorded.
 
@@ -21,6 +21,7 @@ use crate::canvas::{
     Canvas, CanvasHooks, Lattice, PointMode, SaveLayerRec, SaveLayerStrategy, SrcRectConstraint,
 };
 use crate::clip_op::ClipOp;
+use crate::drawable::Drawable;
 use crate::glyph_run::GlyphRunList;
 use crate::image::Image;
 use crate::m44::M44;
@@ -32,7 +33,7 @@ use crate::point::Point;
 use crate::record::Record;
 use crate::records::{
     ClipOpAndAA, ClipPath, ClipRRect, ClipRect, ClipRegion, ClipShader, Concat44, DrawArc,
-    DrawDRRect, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint, DrawPath, DrawPicture,
+    DrawDRRect, DrawDrawable, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint, DrawPath, DrawPicture,
     DrawPoints, DrawRRect, DrawRect, DrawRegion, DrawTextBlob, ResetClip, Restore, Save, SaveLayer,
     Scale, SetM44, Translate,
 };
@@ -46,6 +47,10 @@ use crate::text_blob::TextBlob;
 
 /// A record shared between the recording canvas and its owner (`SkRecord*`).
 pub type SharedRecord = Rc<RefCell<Record>>;
+
+/// The drawables a recording canvas references, shared between the canvas's hooks and its owner
+/// (`SkDrawableList`, held by `std::unique_ptr` and made on the first `drawDrawable`).
+pub type SharedDrawableList = Rc<RefCell<Option<Vec<Drawable>>>>;
 
 // SK_MaxS32FitsInFloat: the largest float below 2^31.
 const MAX_S32_FITS_IN_FLOAT: i32 = 2_147_483_520;
@@ -73,6 +78,7 @@ fn safe_picture_bounds(bounds: &Rect) -> IRect {
 struct RecordHooks {
     record: SharedRecord,
     approx_bytes_used_by_sub_pictures: Rc<Cell<usize>>,
+    drawable_list: SharedDrawableList,
 }
 
 impl RecordHooks {
@@ -345,6 +351,22 @@ impl CanvasHooks for RecordHooks {
         true
     }
 
+    // Port of: src/core/SkRecordCanvas.cpp#L214-L221 (chrome/m156)
+    fn on_draw_drawable(&mut self, drawable: &Drawable, matrix: Option<&Matrix>) -> bool {
+        let index = {
+            let mut list = self.drawable_list.borrow_mut();
+            let list = list.get_or_insert_with(Vec::new);
+            list.push(drawable.clone());
+            i32::try_from(list.len() - 1).expect("SkToS32")
+        };
+        self.append(DrawDrawable {
+            matrix: matrix.cloned(),
+            worst_case_bounds: drawable.bounds(),
+            index,
+        });
+        true
+    }
+
     // Port of: src/core/SkRecordCanvas.cpp#L255-L261 (chrome/m156)
     fn on_draw_picture(
         &mut self,
@@ -370,6 +392,7 @@ impl CanvasHooks for RecordHooks {
 pub struct RecordCanvas {
     canvas: Canvas,
     approx_bytes_used_by_sub_pictures: Rc<Cell<usize>>,
+    drawable_list: SharedDrawableList,
 }
 
 impl Deref for RecordCanvas {
@@ -385,6 +408,7 @@ impl RecordCanvas {
         record: Option<&SharedRecord>,
         bounds: &IRect,
         approx_bytes: &Rc<Cell<usize>>,
+        drawable_list: &SharedDrawableList,
     ) -> Canvas {
         let canvas = Canvas::new_no_pixels_irect(bounds, None);
         // With no record, calls are not recorded (a record that nobody reads stands in).
@@ -392,6 +416,7 @@ impl RecordCanvas {
         canvas.set_hooks(Some(Box::new(RecordHooks {
             record,
             approx_bytes_used_by_sub_pictures: Rc::clone(approx_bytes),
+            drawable_list: Rc::clone(drawable_list),
         })));
         canvas
     }
@@ -403,9 +428,16 @@ impl RecordCanvas {
     pub fn new(record: &SharedRecord, width: i32, height: i32) -> RecordCanvas {
         debug_assert!(width >= 0 && height >= 0);
         let approx_bytes = Rc::new(Cell::new(0));
+        let drawable_list = SharedDrawableList::default();
         RecordCanvas {
-            canvas: Self::make_canvas(Some(record), &IRect::from_wh(width, height), &approx_bytes),
+            canvas: Self::make_canvas(
+                Some(record),
+                &IRect::from_wh(width, height),
+                &approx_bytes,
+                &drawable_list,
+            ),
             approx_bytes_used_by_sub_pictures: approx_bytes,
+            drawable_list,
         }
     }
 
@@ -415,11 +447,18 @@ impl RecordCanvas {
     #[must_use]
     pub fn new_with_bounds(record: Option<&SharedRecord>, bounds: &Rect) -> RecordCanvas {
         let approx_bytes = Rc::new(Cell::new(0));
-        let canvas = Self::make_canvas(record, &safe_picture_bounds(bounds), &approx_bytes);
+        let drawable_list = SharedDrawableList::default();
+        let canvas = Self::make_canvas(
+            record,
+            &safe_picture_bounds(bounds),
+            &approx_bytes,
+            &drawable_list,
+        );
         debug_assert!(canvas.image_info().width() >= 0 && canvas.image_info().height() >= 0);
         RecordCanvas {
             canvas,
             approx_bytes_used_by_sub_pictures: approx_bytes,
+            drawable_list,
         }
     }
 
@@ -432,6 +471,7 @@ impl RecordCanvas {
         let hooks = RecordHooks {
             record: Rc::clone(record),
             approx_bytes_used_by_sub_pictures: Rc::clone(&self.approx_bytes_used_by_sub_pictures),
+            drawable_list: Rc::clone(&self.drawable_list),
         };
         self.canvas.set_hooks(Some(Box::new(hooks)));
         self.canvas
@@ -449,15 +489,31 @@ impl RecordCanvas {
         self.approx_bytes_used_by_sub_pictures.get()
     }
 
+    /// The drawables referenced by the recorded `DrawDrawable` ops, in the order of their
+    /// indexes (`getDrawableList`); `None` if no drawable was drawn.
+    #[doc(alias = "getDrawableList")]
+    #[must_use]
+    pub fn drawable_list(&self) -> Option<Vec<Drawable>> {
+        self.drawable_list.borrow().clone()
+    }
+
+    /// Takes the drawable list, leaving the canvas without one (`detachDrawableList`).
+    #[doc(alias = "detachDrawableList")]
+    pub fn detach_drawable_list(&self) -> Option<Vec<Drawable>> {
+        self.drawable_list.borrow_mut().take()
+    }
+
     /// Makes the canvas forget entirely about its record; calls to the canvas then record
     /// nothing (`forgetRecord`).
     // Port of: src/core/SkRecordCanvas.cpp#L117-L122 (chrome/m156)
     #[doc(alias = "forgetRecord")]
     pub fn forget_record(&mut self) {
         self.approx_bytes_used_by_sub_pictures.set(0);
+        *self.drawable_list.borrow_mut() = None;
         self.canvas.set_hooks(Some(Box::new(RecordHooks {
             record: Rc::new(RefCell::new(Record::new())),
             approx_bytes_used_by_sub_pictures: Rc::clone(&self.approx_bytes_used_by_sub_pictures),
+            drawable_list: Rc::clone(&self.drawable_list),
         })));
     }
 }

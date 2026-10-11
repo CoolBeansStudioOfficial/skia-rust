@@ -12,8 +12,7 @@
 //! Serialization (`serialize`, `from_data`, `from_stream`) covers the pictures of paints, paths
 //! and draw ops that are ported; the sections that are not (text, images, nested pictures) are
 //! listed in `notes/picture-serialization.md`.
-//! `makeShader` (the picture shader is Phase 3) is not ported, and a picture holds no drawable
-//! snapshots (`SkDrawable` is not ported).
+//! A picture holds the snapshots of the drawables drawn into it (`SkSnapshotArray`).
 
 use std::fmt;
 use std::sync::Arc;
@@ -72,6 +71,8 @@ pub(crate) struct PictureInner {
     // When the record is None, then we treat the picture as a "placeholder"
     // placeholders provide the bare minimum to operate on a picture
     record: Option<Arc<Record>>,
+    // `fDrawablePicts`: the snapshots of the drawables, by the index of their `DrawDrawable` ops.
+    drawable_picts: Option<Vec<Picture>>,
     bbh: Option<Arc<dyn BBoxHierarchy>>,
     // `fAddedToCache`: whether a cache entry (a picture shader's image) was made from the picture.
     added_to_cache: AtomicBool,
@@ -126,6 +127,7 @@ impl Picture {
     pub(crate) fn new(
         cull: Rect,
         record: Option<Arc<Record>>,
+        drawable_picts: Option<Vec<Picture>>,
         bbh: Option<Arc<dyn BBoxHierarchy>>,
         approx_bytes_used_by_sub_pictures: usize,
     ) -> Picture {
@@ -135,6 +137,7 @@ impl Picture {
                 cull_rect: cull,
                 approx_bytes_used_by_sub_pictures,
                 record,
+                drawable_picts,
                 bbh,
                 added_to_cache: AtomicBool::new(false),
             }),
@@ -164,6 +167,8 @@ impl Picture {
         record_draw(
             record,
             canvas,
+            self.inner.drawable_picts.as_deref(),
+            None,
             if use_bbh {
                 self.inner.bbh.as_deref()
             } else {
@@ -210,7 +215,7 @@ impl Picture {
     #[doc(alias = "MakePlaceholder")]
     #[must_use]
     pub fn new_placeholder(cull: impl AsRef<Rect>) -> Picture {
-        picture_priv::make_picture(*cull.as_ref(), None, None, 0)
+        picture_priv::make_picture(*cull.as_ref(), None, None, None, 0)
     }
 
     /// Returns the approximate number of operations in the picture, not counting nested ones
@@ -336,6 +341,11 @@ impl Picture {
             // The custom format (and the failure marker) has no reader here.
             _ => None,
         }
+    }
+
+    /// The snapshots of the drawables drawn into the picture (`fDrawablePicts`).
+    pub(crate) fn drawable_picts(&self) -> Option<&[Picture]> {
+        self.inner.drawable_picts.as_deref()
     }
 
     /// The commands of the picture, `None` for a placeholder.

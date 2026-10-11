@@ -37,6 +37,20 @@ pub trait DrawableBase: Send + Sync + fmt::Debug {
     fn on_approximate_bytes_used(&self) -> usize {
         0
     }
+
+    /// `SkDrawable::onMakePictureSnapshot`: the drawable recorded into a picture whose cull rect
+    /// is its bounds. `None` if the recording fails.
+    // Port of: src/core/SkDrawable.cpp#L88-L98 (chrome/m156)
+    fn on_make_picture_snapshot(&self) -> Option<Picture> {
+        let mut recorder = PictureRecorder::new();
+        let canvas = recorder.begin_recording(self.on_get_bounds(), false);
+        // SkDrawable::draw(canvas, nullptr)
+        let save_count = canvas.save_count();
+        canvas.save();
+        self.on_draw(canvas);
+        canvas.restore_to_count(save_count);
+        recorder.finish_recording_as_picture(None)
+    }
 }
 
 /// A shared handle to a drawable (`sk_sp<SkDrawable>`). Cloning it shares the drawable.
@@ -87,10 +101,7 @@ impl Drawable {
     #[doc(alias = "makePictureSnapshot")]
     #[must_use]
     pub fn make_picture_snapshot(&self) -> Option<Picture> {
-        let mut recorder = PictureRecorder::new();
-        let canvas = recorder.begin_recording(self.bounds(), false);
-        self.draw(canvas, None);
-        recorder.finish_recording_as_picture(None)
+        self.0.on_make_picture_snapshot()
     }
 
     /// `SkDrawable::approximateBytesUsed`.

@@ -25,6 +25,7 @@ use crate::clip_op::ClipOp;
 use crate::color::Color;
 use crate::image::Image;
 use crate::m44::M44;
+use crate::drawable::Drawable;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
 use crate::path::Path;
@@ -650,6 +651,11 @@ impl CanvasHooks for PictureRecordHooks {
         _mode: BlendMode,
         _paint: &Paint,
     ) -> bool {
+        self.unsupported()
+    }
+
+    // Drawables are not encoded yet (`DRAW_DRAWABLE`, the `DRAWABLE` section).
+    fn on_draw_drawable(&mut self, _drawable: &Drawable, _matrix: Option<&Matrix>) -> bool {
         self.unsupported()
     }
 

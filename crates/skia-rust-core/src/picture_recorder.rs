@@ -5,8 +5,6 @@
 
 //! `SkPictureRecorder`: records drawing commands into a [`Picture`] through a [`Canvas`].
 //!
-//! skia-rust: `finishRecordingAsDrawable` is not ported (`SkDrawable` is not).
-
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -140,17 +138,31 @@ impl PictureRecorder {
 
     /// `finishRecordingAsDrawable`: the recording as a drawable, whose bounds are the cull rect
     /// and which draws the recorded calls. Returns `None` if recording was not active.
-    // Port of: src/core/SkPictureRecorder.cpp#L119-L136 (chrome/m156), finishRecordingAsDrawable.
-    // The recorded drawable draws the picture (`SkRecordDraw` of the record; the picture's
-    // drawable list is empty here, as no drawable is recorded into a picture yet).
+    // Port of: src/core/SkPictureRecorder.cpp#L119-L136 (chrome/m156)
     #[doc(alias = "finishRecordingAsDrawable")]
     pub fn finish_recording_as_drawable(&mut self) -> Option<Drawable> {
         self.recording_canvas()?;
-        let bounds = self.cull_rect;
-        let picture = self.finish_recording();
+        self.actively_recording = false;
+        self.recorder.restore_to_count(1); // If we were missing any restores, add them now.
+
+        record_optimize(&mut self.record.borrow_mut());
+
+        if let Some(bbh) = &self.bbh {
+            let record = self.record.borrow();
+            let count = record.count();
+            let mut bounds = vec![Rect::new_empty(); count];
+            let mut meta = vec![Metadata::default(); count];
+            record_fill_bounds(&self.cull_rect, &record, &mut bounds, &mut meta);
+            bbh.insert_with_metadata(&bounds, &meta);
+        }
+
+        // std::move(fRecord): the record leaves the recorder; the next recording starts a new one.
+        let record = std::mem::take(&mut *self.record.borrow_mut());
         Some(Drawable::new(Arc::new(RecordedDrawable {
-            picture,
-            bounds,
+            record: Arc::new(record),
+            bbh: self.bbh.take(),
+            drawable_list: self.recorder.detach_drawable_list(),
+            bounds: self.cull_rect,
         })))
     }
 
@@ -164,6 +176,9 @@ impl PictureRecorder {
 
         // TODO: delay as much of this work until just before first playback?
         record_optimize(&mut self.record.borrow_mut());
+
+        let drawable_list = self.recorder.drawable_list();
+        let pict_list = drawable_list.as_deref().and_then(snapshot_drawables);
 
         if let Some(bbh) = &self.bbh {
             let record = self.record.borrow();
@@ -187,13 +202,17 @@ impl PictureRecorder {
             self.cull_rect = bbh_bound;
         }
 
-        let sub_picture_bytes = self.recorder.approx_bytes_used_by_sub_pictures();
+        let mut sub_picture_bytes = self.recorder.approx_bytes_used_by_sub_pictures();
+        for pict in pict_list.iter().flatten() {
+            sub_picture_bytes += pict.approximate_bytes_used();
+        }
 
         // std::move(fRecord): the record leaves the recorder; the next recording starts a new one.
         let record = std::mem::take(&mut *self.record.borrow_mut());
         picture_priv::make_picture(
             self.cull_rect,
             Some(Arc::new(record)),
+            pict_list,
             self.bbh.take(),
             sub_picture_bytes,
         )
@@ -205,21 +224,47 @@ impl PictureRecorder {
     #[doc(alias = "partialReplay")]
     #[doc(hidden)]
     pub fn partial_replay(&self, canvas: &Canvas) {
+        let drawable_list = self.recorder.drawable_list();
         record_draw(
             &self.record.borrow(),
             canvas,
+            None, /*drawable picts*/
+            drawable_list.as_deref(),
             None, /*bbh*/
             None, /*callback*/
         );
     }
 }
 
+/// The snapshots of a drawable list, or `None` if one of the drawables has none
+/// (`SkDrawableList::newDrawableSnapshot`).
+// Port of: src/core/SkRecordCanvas.cpp#L62-L77 (chrome/m156)
+fn snapshot_drawables(drawables: &[Drawable]) -> Option<Vec<Picture>> {
+    if drawables.is_empty() {
+        return None;
+    }
+    // if a snapshot is null, then all the previous pics are released and the result is null
+    drawables
+        .iter()
+        .map(Drawable::make_picture_snapshot)
+        .collect()
+}
+
 /// `SkRecordedDrawable`: a recording that draws as a drawable, within its cull rect.
 // Port of: src/core/SkRecordedDrawable.{h,cpp} (chrome/m156)
-#[derive(Debug)]
 struct RecordedDrawable {
-    picture: Picture,
+    record: Arc<Record>,
+    bbh: Option<Arc<dyn BBoxHierarchy>>,
+    drawable_list: Option<Vec<Drawable>>,
     bounds: Rect,
+}
+
+impl std::fmt::Debug for RecordedDrawable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RecordedDrawable")
+            .field("bounds", &self.bounds)
+            .finish_non_exhaustive()
+    }
 }
 
 impl DrawableBase for RecordedDrawable {
@@ -232,6 +277,49 @@ impl DrawableBase for RecordedDrawable {
     /// `onDraw`: the recorded calls, drawn onto the canvas.
     // Port of: src/core/SkRecordedDrawable.cpp#L36-L44 (chrome/m156)
     fn on_draw(&self, canvas: &Canvas) {
-        canvas.draw_picture(&self.picture, None, None);
+        record_draw(
+            &self.record,
+            canvas,
+            None,
+            self.drawable_list.as_deref(),
+            self.bbh.as_deref(),
+            None,
+        );
+    }
+
+    /// `onApproximateBytesUsed`.
+    // Port of: src/core/SkRecordedDrawable.cpp#L23-L34 (chrome/m156)
+    fn on_approximate_bytes_used(&self) -> usize {
+        let drawables_size: usize = self
+            .drawable_list
+            .iter()
+            .flatten()
+            .map(Drawable::approximate_bytes_used)
+            .sum();
+        std::mem::size_of::<Self>()
+            + self.record.bytes_used()
+            + self.bbh.as_ref().map_or(0, |bbh| bbh.bytes_used())
+            + drawables_size
+    }
+
+    /// `onMakePictureSnapshot`.
+    // Port of: src/core/SkRecordedDrawable.cpp#L46-L59 (chrome/m156)
+    fn on_make_picture_snapshot(&self) -> Option<Picture> {
+        // TODO: should we plumb-down the BBHFactory and recordFlags from our host
+        //       PictureRecorder?
+        let pict_list = self.drawable_list.as_deref().and_then(snapshot_drawables);
+
+        let mut sub_picture_bytes = 0;
+        for pict in pict_list.iter().flatten() {
+            sub_picture_bytes += pict.approximate_bytes_used();
+        }
+
+        Some(picture_priv::make_picture(
+            self.bounds,
+            Some(Arc::clone(&self.record)),
+            pict_list,
+            self.bbh.clone(),
+            sub_picture_bytes,
+        ))
     }
 }

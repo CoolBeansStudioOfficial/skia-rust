@@ -6,17 +6,16 @@
 //! `SkRecordDraw`: plays a [`Record`] back into a [`Canvas`], and computes the bounds of each op
 //! for a bounding box hierarchy.
 //!
-//! skia-rust: Skia's `drawablePicts`/`drawables` parameters (for `DrawDrawable`) are not here;
-//! `SkDrawable` is not ported. The draws of the record types that are not ported
-//! (`DrawTextBlob`, ...) have no arm.
+//! skia-rust: the draws of the record types that are not ported have no arm.
 
 use crate::bbh_factory::{BBoxHierarchy, Metadata};
 use crate::blend_mode::BlendMode;
 use crate::canvas::{AutoCanvasRestore, Canvas, Lattice, SaveLayerRec};
+use crate::drawable::Drawable;
 use crate::m44::M44;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
-use crate::picture::AbortCallback;
+use crate::picture::{AbortCallback, Picture};
 use crate::point::Point;
 use crate::record::Record;
 use crate::records::Command;
@@ -26,11 +25,15 @@ use crate::scalar::scalar;
 /// Draws a record into a canvas (`SkRecordDraw`).
 ///
 /// With a `bbh`, only the ops that affect the pixels in the canvas's current clip are drawn.
+/// A `DrawDrawable` op draws the drawable at its index in `drawables`, or, if there are none, the
+/// picture at its index in `drawable_picts`.
 // Port of: src/core/SkRecordDraw.cpp#L48-L87 (chrome/m156)
 #[doc(alias = "SkRecordDraw")]
 pub fn record_draw(
     record: &Record,
     canvas: &Canvas,
+    drawable_picts: Option<&[Picture]>,
+    drawables: Option<&[Drawable]>,
     bbh: Option<&dyn BBoxHierarchy>,
     mut callback: Option<&mut dyn AbortCallback>,
 ) {
@@ -47,7 +50,7 @@ pub fn record_draw(
         let mut ops = Vec::new();
         bbh.search(&query, &mut ops);
 
-        let draw = Draw::new(canvas, None);
+        let draw = Draw::new(canvas, drawable_picts, drawables, None);
         for &op in &ops {
             if let Some(callback) = callback.as_deref_mut()
                 && callback.abort()
@@ -59,7 +62,7 @@ pub fn record_draw(
         }
     } else {
         // Draw all ops.
-        let draw = Draw::new(canvas, None);
+        let draw = Draw::new(canvas, drawable_picts, drawables, None);
         for i in 0..record.count() {
             if let Some(callback) = callback.as_deref_mut()
                 && callback.abort()
@@ -79,12 +82,21 @@ pub fn record_draw(
 pub struct Draw<'a> {
     initial_ctm: M44,
     canvas: &'a Canvas,
+    drawable_picts: Option<&'a [Picture]>,
+    drawables: Option<&'a [Drawable]>,
 }
 
 impl<'a> Draw<'a> {
     /// A visitor drawing into `canvas`; `initial_ctm` defaults to the canvas's current matrix.
-    pub fn new(canvas: &'a Canvas, initial_ctm: Option<&M44>) -> Draw<'a> {
+    pub fn new(
+        canvas: &'a Canvas,
+        drawable_picts: Option<&'a [Picture]>,
+        drawables: Option<&'a [Drawable]>,
+        initial_ctm: Option<&M44>,
+    ) -> Draw<'a> {
         Draw {
+            drawable_picts,
+            drawables,
             initial_ctm: initial_ctm
                 .copied()
                 .unwrap_or_else(|| canvas.local_to_device()),
@@ -205,6 +217,17 @@ impl<'a> Draw<'a> {
                     r.paint.as_ref(),
                     r.constraint,
                 );
+            }
+            Command::DrawDrawable(r) => {
+                // Port of: src/core/SkRecordDraw.cpp#L182-L191 (chrome/m156)
+                let index = usize::try_from(r.index).expect("SkASSERT(r.index >= 0)");
+                if let Some(drawables) = self.drawables {
+                    debug_assert!(self.drawable_picts.is_none());
+                    canvas.draw_drawable(&drawables[index], r.matrix.as_ref());
+                } else {
+                    let picts = self.drawable_picts.expect("a recording with drawables");
+                    canvas.draw_picture(&picts[index], r.matrix.as_ref(), None);
+                }
             }
             Command::DrawOval(r) => {
                 canvas.draw_oval(r.oval, &r.paint);
@@ -597,6 +620,7 @@ impl<'r, 'o> FillBounds<'r, 'o> {
 
                 self.adjust_and_map(dst, Some(&op.paint))
             }
+            Command::DrawDrawable(op) => self.adjust_and_map(op.worst_case_bounds, None),
             Command::DrawPicture(op) => {
                 let mut dst = op.picture.cull_rect();
                 dst = op.matrix.map_rect(dst).0;
