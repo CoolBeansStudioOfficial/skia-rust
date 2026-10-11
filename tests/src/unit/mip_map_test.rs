@@ -3,9 +3,6 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/MipMapTest.cpp (chrome/m156)
 //
-// Not ported: `image_mip_factory` and `image_mip_mismatch` decode `images/mandrill_128.png`
-// (image decoding is not ported).
-//
 // `SkMipmap::Build` does not run raster pipelines (and `eraseColor` is a memset), so the tests
 // do not depend on the CPU tier (`def_test!`).
 
@@ -15,13 +12,20 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::Color;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::mipmap::Mipmap;
+use skia_rust_core::mipmap_builder::MipmapBuilder;
+use skia_rust_core::paint::Paint;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::random::Random;
 use skia_rust_core::scalar::{SCALAR_1, scalar};
 use skia_rust_core::size::{ISize, Size};
 
+use crate::resources::get_resource_as_image;
 use crate::{Reporter, def_test, reporter_assert};
+use skia_rust_raster::surfaces::wrap_pixels;
 
 // Port of: tests/MipMapTest.cpp#L35-L38 (chrome/m156)
 fn make_bitmap(bm: &mut Bitmap, width: i32, height: i32) {
@@ -277,4 +281,87 @@ def_test!(MipMap_F16, |_reporter| {
     );
     bmp.erase_color(Color::new(0));
     let _mipmap = Mipmap::build(&bmp.peek_pixels().expect("pixels"), true);
+});
+
+// Port of: tests/MipMapTest.cpp#L234-L246 (chrome/m156), fill_in_mips
+fn fill_in_mips(builder: &mut MipmapBuilder, img: &Image) {
+    let count = builder.count_levels();
+    for i in 0..count {
+        let Some((info, row_bytes, pixels)) = builder.level_mut(i) else {
+            continue;
+        };
+        let (w, h) = (info.width(), info.height());
+        // SkSurfaces::WrapPixels(pm)
+        let Some(mut surf) = wrap_pixels(&info, pixels, row_bytes, None) else {
+            continue;
+        };
+        // drawImageRect(img, SkRect::MakeIWH(pm.width(), pm.height()), SkSamplingOptions())
+        surf.canvas().draw_image_rect_with_sampling_options(
+            img,
+            None,
+            Rect::from_wh(w as f32, h as f32),
+            SamplingOptions::default(),
+            &Paint::default(),
+        );
+    }
+}
+
+// Port of: tests/MipMapTest.cpp#L248-L266 (chrome/m156), image_mip_factory
+def_test!(image_mip_factory, |reporter| {
+    // TODO: what do to about lazy images and mipmaps?
+    let img = get_resource_as_image("images/mandrill_128.png")
+        .and_then(|img| img.to_raster_image())
+        .expect("mandrill_128.png");
+
+    reporter_assert!(reporter, !img.has_mipmaps());
+    let img1 = img.with_default_mipmaps().expect("default mipmaps");
+    reporter_assert!(reporter, !img.ptr_eq(&img1));
+    reporter_assert!(reporter, img1.has_mipmaps());
+
+    let mut builder = MipmapBuilder::new(img.image_info());
+    fill_in_mips(&mut builder, &img);
+
+    let img2 = builder.attach_to(&img);
+    reporter_assert!(reporter, !img.ptr_eq(&img2));
+    reporter_assert!(reporter, !img1.ptr_eq(&img2));
+    reporter_assert!(reporter, img2.has_mipmaps());
+});
+
+// Ensure we can't attach mips that don't "match" the image
+//
+// Port of: tests/MipMapTest.cpp#L268-L293 (chrome/m156), image_mip_mismatch
+def_test!(image_mip_mismatch, |reporter| {
+    let check_fails = |reporter: &mut Reporter, img: &Image, info: &ImageInfo| {
+        let mut builder = MipmapBuilder::new(info);
+        fill_in_mips(&mut builder, img);
+        let img2 = builder.attach_to(img);
+        // if withMipmaps() succeeds, it returns a new image, otherwise it returns the original
+        reporter_assert!(reporter, img.ptr_eq(&img2));
+    };
+
+    let img = get_resource_as_image("images/mandrill_128.png")
+        .and_then(|img| img.to_raster_image())
+        .expect("mandrill_128.png");
+
+    // check size, colortype, and alphatype
+
+    check_fails(
+        reporter,
+        &img,
+        &img.image_info().with_wh(img.width() + 2, img.height() - 3),
+    );
+
+    reporter_assert!(reporter, img.image_info().color_type() != ColorType::RGB565);
+    check_fails(
+        reporter,
+        &img,
+        &img.image_info().with_color_type(ColorType::RGB565),
+    );
+
+    reporter_assert!(reporter, img.image_info().alpha_type() != AlphaType::Unpremul);
+    check_fails(
+        reporter,
+        &img,
+        &img.image_info().with_alpha_type(AlphaType::Unpremul),
+    );
 });
