@@ -564,10 +564,6 @@ impl OverdrawCanvas {
     // Port of: src/core/SkOverdrawCanvas.cpp#L38-L57 (chrome/m156)
     #[must_use]
     pub fn new(canvas: Rc<Canvas>) -> OverdrawCanvas {
-        let info = canvas.image_info();
-
-        // Non-drawing calls that SkOverdrawCanvas does not override (translate, save, etc.)
-        // will pass through to the input canvas.
         #[rustfmt::skip]
         static INCREMENT_ALPHA: [f32; 20] = [
             0.0, 0.0, 0.0, 0.0, 0.0,
@@ -575,6 +571,8 @@ impl OverdrawCanvas {
             0.0, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 1.0 / 255.0,
         ];
+
+        let info = canvas.image_info();
 
         let mut paint = Paint::default();
         paint.set_anti_alias(false);
@@ -587,6 +585,8 @@ impl OverdrawCanvas {
         let n_way = NWayCanvas::with_hooks(info.width(), info.height(), |base| {
             Box::new(OverdrawHooks { base, paint })
         });
+        // Non-drawing calls that SkOverdrawCanvas does not override (translate, save, etc.)
+        // will pass through to the input canvas.
         n_way.add_canvas(canvas);
         OverdrawCanvas { n_way }
     }

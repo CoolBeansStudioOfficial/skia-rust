@@ -637,7 +637,8 @@ def_test!(Picture_nested_op_count, |r| {
 });
 
 // Port of: tests/PictureTest.cpp#L936-L1082 (chrome/m156)
-def_test!(Picture_nested_draw_drawable, |r| {
+#[allow(clippy::similar_names, clippy::too_many_lines)] // the names and size of the C++ test
+fn picture_nested_draw_drawable(r: &mut Reporter) {
     #[derive(Debug)]
     struct MultiOpDrawable {
         num_ops: i32,
@@ -647,7 +648,7 @@ def_test!(Picture_nested_draw_drawable, |r| {
     }
 
     impl MultiOpDrawable {
-        fn new(
+        fn make(
             num_ops: i32,
             child_drawable: Option<Drawable>,
             num_child_draws: i32,
@@ -712,20 +713,20 @@ def_test!(Picture_nested_draw_drawable, |r| {
             reporter_assert!(r, n == expected_nested);
         };
 
-    let drawable1 = MultiOpDrawable::new(1, None, 0, None);
-    let drawable10 = MultiOpDrawable::new(10, None, 0, None);
+    let drawable1 = MultiOpDrawable::make(1, None, 0, None);
+    let drawable10 = MultiOpDrawable::make(10, None, 0, None);
     let pic10 = make_rect_picture(10);
 
-    let drawable1_withpic = MultiOpDrawable::new(1, None, 0, Some(pic10.clone()));
-    let drawable10_withpic = MultiOpDrawable::new(10, None, 0, Some(pic10.clone()));
+    let drawable1_withpic = MultiOpDrawable::make(1, None, 0, Some(pic10.clone()));
+    let drawable10_withpic = MultiOpDrawable::make(10, None, 0, Some(pic10.clone()));
 
-    let drawable1_child1 = MultiOpDrawable::new(0, Some(drawable1.clone()), 1, None);
-    let drawable1_child10 = MultiOpDrawable::new(0, Some(drawable10.clone()), 1, None);
-    let drawable10_child1 = MultiOpDrawable::new(0, Some(drawable1.clone()), 10, None);
-    let drawable10_child10 = MultiOpDrawable::new(0, Some(drawable10.clone()), 10, None);
+    let drawable1_child1 = MultiOpDrawable::make(0, Some(drawable1.clone()), 1, None);
+    let drawable1_child10 = MultiOpDrawable::make(0, Some(drawable10.clone()), 1, None);
+    let drawable10_child1 = MultiOpDrawable::make(0, Some(drawable1.clone()), 10, None);
+    let drawable10_child10 = MultiOpDrawable::make(0, Some(drawable10.clone()), 10, None);
 
     let mixed_parent =
-        MultiOpDrawable::new(5, Some(drawable10_child10.clone()), 2, Some(pic10.clone()));
+        MultiOpDrawable::make(5, Some(drawable10_child10.clone()), 2, Some(pic10.clone()));
 
     // 1. Leaf drawables (direct drawRect ops only)
     {
@@ -793,7 +794,13 @@ def_test!(Picture_nested_draw_drawable, |r| {
         check_shallow_and_nested(&make_picture(1, &mixed_parent), 1, 239);
         check_shallow_and_nested(&make_picture(10, &mixed_parent), 10, 2390);
     }
-});
+}
+
+def_test!(
+    #[allow(clippy::semicolon_if_nothing_returned)] // rustfmt drops the semicolon in the macro
+    Picture_nested_draw_drawable,
+    |r| { picture_nested_draw_drawable(r) }
+);
 
 // Port of: tests/PictureTest.cpp#L1084-L1153 (chrome/m156)
 def_test!(Picture_recursion_limit, |r| {

@@ -220,13 +220,15 @@ impl<'a> Draw<'a> {
             }
             Command::DrawDrawable(r) => {
                 // Port of: src/core/SkRecordDraw.cpp#L182-L191 (chrome/m156)
-                let index = usize::try_from(r.index).expect("SkASSERT(r.index >= 0)");
+                debug_assert!(r.index >= 0);
+                let index = usize::try_from(r.index).unwrap_or(usize::MAX);
                 if let Some(drawables) = self.drawables {
                     debug_assert!(self.drawable_picts.is_none());
-                    canvas.draw_drawable(&drawables[index], r.matrix.as_ref());
-                } else {
-                    let picts = self.drawable_picts.expect("a recording with drawables");
-                    canvas.draw_picture(&picts[index], r.matrix.as_ref(), None);
+                    if let Some(drawable) = drawables.get(index) {
+                        canvas.draw_drawable(drawable, r.matrix.as_ref());
+                    }
+                } else if let Some(pict) = self.drawable_picts.and_then(|picts| picts.get(index)) {
+                    canvas.draw_picture(pict, r.matrix.as_ref(), None);
                 }
             }
             Command::DrawAnnotation(r) => {
