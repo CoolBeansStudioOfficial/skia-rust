@@ -792,6 +792,10 @@ impl ImageBase for Image {
         &self.info
     }
 
+    fn texture_size(&self) -> usize {
+        Image::texture_size(self)
+    }
+
     fn unique_id(&self) -> u32 {
         self.unique_id
     }

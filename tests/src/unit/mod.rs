@@ -490,6 +490,8 @@ pub mod test_test;
 #[cfg(test)]
 pub mod text_blob_test;
 #[cfg(test)]
+pub mod texture_size_test;
+#[cfg(test)]
 pub mod time;
 #[cfg(test)]
 pub mod typeface_test;

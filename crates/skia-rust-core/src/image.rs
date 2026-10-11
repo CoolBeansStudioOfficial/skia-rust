@@ -190,7 +190,7 @@ impl Image {
     #[doc(alias = "textureSize")]
     #[must_use]
     pub fn texture_size(&self) -> usize {
-        0
+        self.0.texture_size()
     }
 
     /// Whether the image can be drawn by the CPU: raster images always can, lazy images when
