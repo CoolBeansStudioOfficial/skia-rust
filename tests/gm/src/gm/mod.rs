@@ -173,6 +173,7 @@ pub mod fillrect_gradient;
 pub mod filltypes;
 pub mod filltypespersp;
 pub mod filterbug;
+pub mod filterfastbounds;
 pub mod filterindiabox;
 pub mod fontcache;
 pub mod fontmgr;
