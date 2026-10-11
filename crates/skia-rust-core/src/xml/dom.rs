@@ -199,6 +199,33 @@ pub struct Dom {
     nodes: Vec<NodeData>,
     root: Option<Node>,
     parser: Option<DomParser>,
+    shared_parser: Option<SharedDomParser>,
+}
+
+/// A [`DomParser`] that [`Dom::begin_parsing_shared`] hands out, which an owner such as an
+/// `XmlParserWriter` can hold while the [`Dom`] waits for [`Dom::finish_parsing`].
+///
+/// skia-rust: `SkDOM::beginParsing` returns a raw pointer that the SVG device keeps while the
+/// test finishes parsing; shared ownership stands in for that pointer.
+#[derive(Debug, Clone, Default)]
+pub struct SharedDomParser(std::rc::Rc<std::cell::RefCell<DomParser>>);
+
+impl XmlParser for SharedDomParser {
+    fn on_start_element(&mut self, elem: &str) -> bool {
+        self.0.borrow_mut().on_start_element(elem)
+    }
+
+    fn on_add_attribute(&mut self, name: &str, value: &str) -> bool {
+        self.0.borrow_mut().on_add_attribute(name, value)
+    }
+
+    fn on_end_element(&mut self, elem: &str) -> bool {
+        self.0.borrow_mut().on_end_element(elem)
+    }
+
+    fn on_text(&mut self, text: &str) -> bool {
+        self.0.borrow_mut().on_text(text)
+    }
 }
 
 impl Dom {
@@ -270,6 +297,16 @@ impl Dom {
         self.parser.insert(DomParser::new())
     }
 
+    /// Like [`Dom::begin_parsing`], with a parser that can be held elsewhere. Finish with
+    /// [`Dom::finish_parsing`].
+    #[doc(alias = "beginParsing")]
+    pub fn begin_parsing_shared(&mut self) -> SharedDomParser {
+        debug_assert!(self.parser.is_none() && self.shared_parser.is_none());
+        self.shared_parser
+            .insert(SharedDomParser::default())
+            .clone()
+    }
+
     // Port of: src/xml/SkDOM.cpp#L332-L338 (chrome/m156)
     ///
     /// # Panics
@@ -277,7 +314,10 @@ impl Dom {
     /// If [`Dom::begin_parsing`] was not called.
     #[doc(alias = "finishParsing")]
     pub fn finish_parsing(&mut self) -> Option<Node> {
-        let parser = self.parser.take().expect("begin_parsing was called");
+        let parser = match self.shared_parser.take() {
+            Some(shared) => std::mem::take(&mut *shared.0.borrow_mut()),
+            None => self.parser.take().expect("begin_parsing was called"),
+        };
         self.root = parser.root;
         self.nodes = parser.nodes;
         self.root
