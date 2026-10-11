@@ -23814,8 +23814,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/recordopts.cpp#L142-L230"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: 230-line GM over SkImageFilters::Picture and TableARGB colour filters, with Ganesh-only flush helpers"
+status = "passing"
 span_hash = "e8c43157ad064dca707ee60568d10f240f469ccc126cf6b6050ff18c3b8d2e18"
 
 [[test]]
