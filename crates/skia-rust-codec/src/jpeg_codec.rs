@@ -22,8 +22,10 @@ use std::sync::Arc;
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::data::Data;
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
+use skia_rust_core::gainmap_info::GainmapInfo;
 use skia_rust_core::image_info::{ImageInfo, YUVColorSpace};
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
@@ -39,6 +41,8 @@ use skia_rust_skcms::{IccProfile, PixelFormat};
 use crate::codec::{Codec, CodecBase, CodecImpl, Options, Result};
 use crate::encoded_info::{Alpha, Color, EncodedInfo};
 use crate::exif;
+use crate::jpeg_metadata_decoder::{JpegMarker, JpegMetadataDecoder};
+use crate::jpeg_source_mgr::JpegSourceMgr;
 use crate::sampler::Sampler;
 use crate::swizzler::Swizzler;
 
@@ -724,6 +728,39 @@ impl CodecImpl for JpegCodec {
         true
     }
 
+    // Port of: src/codec/SkJpegCodec.cpp#L1003-L1015 (chrome/m156), onGetGainmapInfo
+    fn on_get_gainmap_info(&self, info: Option<&mut GainmapInfo>) -> bool {
+        find_gainmap(&self.decoder.marker_list, &self.data, info).is_some()
+    }
+
+    // Port of: src/codec/SkJpegCodec.cpp#L1003-L1015 (chrome/m156), onGetGainmapInfo, with the
+    // stream of the gainmap image
+    fn on_get_gainmap_info_stream(
+        &self,
+        info: Option<&mut GainmapInfo>,
+    ) -> Option<Box<MemoryStream>> {
+        find_gainmap(&self.decoder.marker_list, &self.data, info)
+            .map(|data| MemoryStream::make(Some(data)))
+    }
+
+    // Port of: src/codec/SkJpegCodec.cpp#L988-L1001 (chrome/m156), onGetGainmapCodec
+    fn on_get_gainmap_codec(
+        &mut self,
+        info: Option<&mut GainmapInfo>,
+        want_codec: bool,
+    ) -> (bool, Option<Codec<'static>>) {
+        let Some(data) = find_gainmap(&self.decoder.marker_list, &self.data, info) else {
+            return (false, None);
+        };
+        if !want_codec {
+            return (true, None);
+        }
+        match make_from_stream(MemoryStream::make(Some(data))) {
+            Ok(codec) => (true, Some(codec)),
+            Err(_) => (false, None),
+        }
+    }
+
     // Port of: src/codec/SkJpegCodec.cpp#L340-L375 (onDimensionsSupported)
     fn on_dimensions_supported(&self, _base: &CodecBase<'_>, dim: ISize) -> bool {
         scale_for_dimensions(&self.data, dim).is_some()
@@ -959,6 +996,31 @@ fn read_exif_data(markers: &[skia_rust_libjpeg::SavedMarker]) -> Option<&[u8]> {
         return Some(&marker.data[header_size..]);
     }
     None
+}
+
+// Port of: src/codec/SkJpegCodec.cpp#L1003-L1015 (chrome/m156), onGetGainmapInfo: finds the
+// gainmap image of the JPEG in `data`, from its saved markers. The gainmap parameters are written
+// to `info` only when the gainmap is found. Returns the gainmap image's data.
+fn find_gainmap(
+    markers: &[skia_rust_libjpeg::SavedMarker],
+    data: &[u8],
+    info: Option<&mut GainmapInfo>,
+) -> Option<Data> {
+    let marker_list = markers
+        .iter()
+        .map(|marker| JpegMarker {
+            marker: u32::from(marker.marker),
+            data: Data::new_copy(&marker.data),
+        })
+        .collect();
+    let metadata = JpegMetadataDecoder::from_marker_list(marker_list);
+    let mut stream = MemoryStream::make(Some(Data::new_copy(data)));
+    let mut source_mgr = JpegSourceMgr::make(&mut *stream, 1024);
+    let (image, gainmap_info) = metadata.find_gainmap_image(&mut source_mgr)?;
+    if let Some(info) = info {
+        *info = gainmap_info;
+    }
+    Some(image)
 }
 
 /// Port of `SkJpegCodec::MakeFromStream`: reads the header and the ICC profile, and builds the

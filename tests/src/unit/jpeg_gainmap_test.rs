@@ -1,21 +1,23 @@
 // Copyright 2023 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/JpegGainmapTest.cpp (chrome/m156), the segment scan, Multi-Picture Format and
-// source-manager cases. The gainmap decode, transcode and encode cases need the gainmap codec
-// accessors, which are not ported yet (see the manifest reasons).
+// Port of: tests/JpegGainmapTest.cpp (chrome/m156), the segment scan, Multi-Picture Format,
+// source-manager, gainmap decode and gainmap parameter cases. The encode and transcode cases
+// need `SkJpegGainmapEncoder::EncodeHDRGM` and are not ported yet (see the manifest reasons).
 #![cfg(test)]
 // The C++ test literals are kept as written (digit groups, float digits).
 #![allow(clippy::unreadable_literal, clippy::excessive_precision)]
 
+use skia_rust_codec::android_codec::AndroidCodec;
 use skia_rust_codec::codec::Result as CodecResult;
 use skia_rust_codec::codecs;
+use skia_rust_codec::jpeg_codec;
 use skia_rust_codec::jpeg_constants::{JPEG_MARKER_START_OF_SCAN, MPF_MARKER};
 use skia_rust_codec::jpeg_multi_picture::MultiPictureParameters;
 use skia_rust_codec::jpeg_segment_scan::JpegSegment;
 use skia_rust_codec::jpeg_source_mgr::JpegSourceMgr;
 use skia_rust_core::color::{Color, Color4f};
-use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::color_space::{ColorSpace, named_gamut, named_transfer_fn};
 use skia_rust_core::data::Data;
 use skia_rust_core::gainmap_info::{BaseImageType, GainmapInfo, GainmapType};
 use skia_rust_core::image_info::ImageInfo;
@@ -24,8 +26,8 @@ use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream, StreamAsset};
 
 use crate::gainmap_test_common::expect_approx_eq_info;
-use crate::resources::resource_dir;
-use crate::{def_test, reporter_assert};
+use crate::resources::{get_resource_as_data, resource_dir};
+use crate::{Reporter, def_test, reporter_assert};
 
 /// The stream of a resource file, as `GetResourceAsStream` gives it (a seekable file stream).
 fn get_resource_as_stream(path: &str) -> Option<Box<dyn StreamAsset>> {
@@ -652,4 +654,321 @@ def_test!(AndroidCodec_gainmapInfoParse, |r| {
         )
     );
     expect_approx_eq_info(r, &single_channel_info_round_trip, &single_channel_info);
+});
+
+/// Reads the whole of a test stream, as the JPEG decoder does when it is made.
+fn read_all(stream: &mut dyn Stream) -> Vec<u8> {
+    let mut out = Vec::new();
+    let mut chunk = [0u8; 4096];
+    loop {
+        let n = stream.read(&mut chunk);
+        if n == 0 {
+            break;
+        }
+        out.extend_from_slice(&chunk[..n]);
+    }
+    out
+}
+
+/// A colour with alpha 1, as the `{r, g, b, 1.f}` initializers of the C++ test give it.
+fn opaque(r: f32, g: f32, b: f32) -> Color4f {
+    Color4f { r, g, b, a: 1.0 }
+}
+
+/// The decoded base image, the decoded gainmap and the gainmap parameters (the outputs of the
+/// C++ `decode_all`).
+struct DecodedJpeg {
+    /// The base image's info and pixels.
+    base: Option<(ImageInfo, Vec<u8>)>,
+    /// The gainmap image's info and pixels.
+    gainmap: Option<(ImageInfo, Vec<u8>)>,
+    /// The gainmap parameters.
+    info: GainmapInfo,
+}
+
+// Decode an image and its gainmap.
+// Port of: tests/JpegGainmapTest.cpp#L423-L457 (chrome/m156), `decode_all`. The JPEG decoder reads
+// its whole stream into memory when it is made, so the test stream is read the same way here.
+fn decode_all(r: &mut Reporter, stream: &mut dyn Stream) -> DecodedJpeg {
+    let mut result = DecodedJpeg {
+        base: None,
+        gainmap: None,
+        info: GainmapInfo::default(),
+    };
+    let data = read_all(stream);
+
+    // Decode the base bitmap.
+    let Ok(mut base_codec) =
+        jpeg_codec::make_from_stream(MemoryStream::make(Some(Data::new_copy(&data))))
+    else {
+        reporter_assert!(r, false);
+        return result;
+    };
+    let base_info = base_codec.info().clone();
+    let base_row_bytes = base_info.min_row_bytes();
+    let mut base_pixels = vec![0u8; base_info.compute_byte_size(base_row_bytes)];
+    reporter_assert!(
+        r,
+        CodecResult::Success
+            == base_codec.get_pixels(&base_info, &mut base_pixels, base_row_bytes, None)
+    );
+    result.base = Some((base_info, base_pixels));
+
+    let Some(mut android_codec) = AndroidCodec::make_from_codec(base_codec) else {
+        reporter_assert!(r, false);
+        return result;
+    };
+
+    // Extract the gainmap info and codec.
+    let mut gainmap_codec = None;
+    let found =
+        android_codec.get_gainmap_android_codec(Some(&mut result.info), Some(&mut gainmap_codec));
+    reporter_assert!(r, found);
+    let Some(mut gainmap_codec) = gainmap_codec else {
+        reporter_assert!(r, false);
+        return result;
+    };
+
+    // Decode the gainmap bitmap.
+    let gainmap_info = gainmap_codec.info();
+    let gainmap_row_bytes = gainmap_info.min_row_bytes();
+    let mut gainmap_pixels = vec![0u8; gainmap_info.compute_byte_size(gainmap_row_bytes)];
+    reporter_assert!(
+        r,
+        CodecResult::Success
+            == gainmap_codec.get_android_pixels(
+                &gainmap_info,
+                &mut gainmap_pixels,
+                gainmap_row_bytes,
+                None
+            )
+    );
+    result.gainmap = Some((gainmap_info, gainmap_pixels));
+    result
+}
+
+// Port of: tests/JpegGainmapTest.cpp#L463-L572 (chrome/m156), `AndroidCodec_jpegGainmapDecode`.
+def_test!(AndroidCodec_jpegGainmapDecode, |r| {
+    struct Rec {
+        path: &'static str,
+        dimensions: ISize,
+        origin_color: u32,
+        far_corner_color: u32,
+        info: GainmapInfo,
+    }
+    let recs = [
+        Rec {
+            path: "images/iphone_13_pro.jpeg",
+            dimensions: ISize::new(1512, 2016),
+            origin_color: 0xFF3B3B3B,
+            far_corner_color: 0xFF101010,
+            info: GainmapInfo {
+                gainmap_ratio_min: opaque(1.0, 1.0, 1.0),
+                gainmap_ratio_max: opaque(3.482202, 3.482202, 3.482202),
+                gainmap_gamma: opaque(1.0, 1.0, 1.0),
+                epsilon_sdr: opaque(0.0, 0.0, 0.0),
+                epsilon_hdr: opaque(0.0, 0.0, 0.0),
+                display_ratio_sdr: 1.0,
+                display_ratio_hdr: 3.482202,
+                base_image_type: BaseImageType::Sdr,
+                gainmap_type: GainmapType::Apple,
+                gainmap_math_color_space: None,
+            },
+        },
+        Rec {
+            path: "images/iphone_15.jpeg",
+            dimensions: ISize::new(2016, 1512),
+            origin_color: 0xFF5C5C5C,
+            far_corner_color: 0xFF656565,
+            info: GainmapInfo {
+                gainmap_ratio_min: opaque(1.0, 1.0, 1.0),
+                gainmap_ratio_max: opaque(3.755272, 3.755272, 3.755272),
+                gainmap_gamma: opaque(1.0, 1.0, 1.0),
+                epsilon_sdr: opaque(0.0, 0.0, 0.0),
+                epsilon_hdr: opaque(0.0, 0.0, 0.0),
+                display_ratio_sdr: 1.0,
+                display_ratio_hdr: 3.755272,
+                base_image_type: BaseImageType::Sdr,
+                gainmap_type: GainmapType::Apple,
+                gainmap_math_color_space: None,
+            },
+        },
+        Rec {
+            path: "images/gainmap_gcontainer_only.jpg",
+            dimensions: ISize::new(32, 32),
+            origin_color: 0xffffffff,
+            far_corner_color: 0xffffffff,
+            info: GainmapInfo {
+                gainmap_ratio_min: opaque(25.0, 0.5, 1.0),
+                gainmap_ratio_max: opaque(2.0, 4.0, 8.0),
+                gainmap_gamma: opaque(0.5, 1.0, 2.0),
+                epsilon_sdr: opaque(0.01, 0.001, 0.0001),
+                epsilon_hdr: opaque(0.0001, 0.001, 0.01),
+                display_ratio_sdr: 2.0,
+                display_ratio_hdr: 4.0,
+                base_image_type: BaseImageType::Sdr,
+                gainmap_type: GainmapType::Default,
+                gainmap_math_color_space: None,
+            },
+        },
+        Rec {
+            path: "images/gainmap_iso21496_1_adobe_gcontainer.jpg",
+            dimensions: ISize::new(32, 32),
+            origin_color: 0xffffffff,
+            far_corner_color: 0xff000000,
+            info: GainmapInfo {
+                gainmap_ratio_min: opaque(25.0, 0.5, 1.0),
+                gainmap_ratio_max: opaque(2.0, 4.0, 8.0),
+                gainmap_gamma: opaque(0.5, 1.0, 2.0),
+                epsilon_sdr: opaque(0.01, 0.001, 0.0001),
+                epsilon_hdr: opaque(0.0001, 0.001, 0.01),
+                display_ratio_sdr: 2.0,
+                display_ratio_hdr: 4.0,
+                base_image_type: BaseImageType::Sdr,
+                gainmap_type: GainmapType::Default,
+                gainmap_math_color_space: None,
+            },
+        },
+        Rec {
+            path: "images/gainmap_iso21496_1.jpg",
+            dimensions: ISize::new(32, 32),
+            origin_color: 0xffffffff,
+            far_corner_color: 0xff000000,
+            info: GainmapInfo {
+                gainmap_ratio_min: opaque(25.0, 0.5, 1.0),
+                gainmap_ratio_max: opaque(2.0, 4.0, 8.0),
+                gainmap_gamma: opaque(0.5, 1.0, 2.0),
+                epsilon_sdr: opaque(0.01, 0.001, 0.0001),
+                epsilon_hdr: opaque(0.0001, 0.001, 0.01),
+                display_ratio_sdr: 2.0,
+                display_ratio_hdr: 4.0,
+                base_image_type: BaseImageType::Hdr,
+                gainmap_type: GainmapType::Default,
+                gainmap_math_color_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::SRGB,
+                    &named_gamut::REC2020,
+                ),
+            },
+        },
+    ];
+
+    // The stream types of the C++ test. The memory-mapped stream is not a file stream.
+    let stream_types = [
+        StreamType::Unseekable,
+        StreamType::Seekable,
+        StreamType::MemoryMapped,
+    ];
+    for stream_type in stream_types {
+        let use_file_stream = stream_type != StreamType::MemoryMapped;
+        for rec in &recs {
+            let mut file_stream;
+            let mut memory_stream;
+            let stream: &mut dyn Stream = if use_file_stream {
+                let Some(stream) = get_resource_as_stream(rec.path) else {
+                    eprintln!("todo: skipping, missing Skia resource {}", rec.path);
+                    continue;
+                };
+                file_stream = stream;
+                &mut *file_stream
+            } else {
+                let Some(data) = get_resource_as_data(rec.path) else {
+                    eprintln!("todo: skipping, missing Skia resource {}", rec.path);
+                    continue;
+                };
+                memory_stream = MemoryStream::make(Some(Data::new_copy(&data)));
+                &mut *memory_stream
+            };
+            let mut test_stream = TestStream::new(stream_type, stream);
+
+            let decoded = decode_all(r, &mut test_stream);
+
+            // Spot-check the image size and pixels.
+            let Some((gainmap_info, gainmap_pixels)) = decoded.gainmap else {
+                reporter_assert!(r, false);
+                continue;
+            };
+            let Some(gainmap_pixmap) =
+                Pixmap::new_readonly(&gainmap_info, &gainmap_pixels, gainmap_info.min_row_bytes())
+            else {
+                reporter_assert!(r, false);
+                continue;
+            };
+            reporter_assert!(r, gainmap_info.dimensions() == rec.dimensions);
+            reporter_assert!(
+                r,
+                gainmap_pixmap.get_color((0, 0)) == Color::from(rec.origin_color)
+            );
+            reporter_assert!(
+                r,
+                gainmap_pixmap.get_color((rec.dimensions.width - 1, rec.dimensions.height - 1))
+                    == Color::from(rec.far_corner_color)
+            );
+
+            // Verify the gainmap rendering parameters.
+            expect_approx_eq_info(r, &rec.info, &decoded.info);
+        }
+    }
+});
+
+// Port of: tests/JpegGainmapTest.cpp#L574-L611 (chrome/m156), `AndroidCodec_jpegNoGainmap`.
+def_test!(AndroidCodec_jpegNoGainmap, |r| {
+    // This test image has a large APP16 segment that will stress the various SkJpegSourceMgrs'
+    // data skipping paths.
+    let path = "images/icc-v2-gbr.jpg";
+    let stream_types = [
+        StreamType::Unseekable,
+        StreamType::Seekable,
+        StreamType::MemoryMapped,
+    ];
+    for stream_type in stream_types {
+        let use_file_stream = stream_type != StreamType::MemoryMapped;
+        let mut file_stream;
+        let mut memory_stream;
+        let stream: &mut dyn Stream = if use_file_stream {
+            let Some(stream) = get_resource_as_stream(path) else {
+                eprintln!("todo: skipping, missing Skia resource {path}");
+                continue;
+            };
+            file_stream = stream;
+            &mut *file_stream
+        } else {
+            let Some(data) = get_resource_as_data(path) else {
+                eprintln!("todo: skipping, missing Skia resource {path}");
+                continue;
+            };
+            memory_stream = MemoryStream::make(Some(Data::new_copy(&data)));
+            &mut *memory_stream
+        };
+        let mut test_stream = TestStream::new(stream_type, stream);
+        let data = read_all(&mut test_stream);
+
+        // Decode the base bitmap.
+        let Ok(mut base_codec) =
+            jpeg_codec::make_from_stream(MemoryStream::make(Some(Data::new_copy(&data))))
+        else {
+            reporter_assert!(r, false);
+            continue;
+        };
+        let base_info = base_codec.info().clone();
+        let base_row_bytes = base_info.min_row_bytes();
+        let mut base_pixels = vec![0u8; base_info.compute_byte_size(base_row_bytes)];
+        reporter_assert!(
+            r,
+            CodecResult::Success
+                == base_codec.get_pixels(&base_info, &mut base_pixels, base_row_bytes, None)
+        );
+
+        let Some(android_codec) = AndroidCodec::make_from_codec(base_codec) else {
+            reporter_assert!(r, false);
+            continue;
+        };
+
+        // Try to extract the gainmap info and stream. It should fail.
+        let mut gainmap_info = GainmapInfo::default();
+        let mut gainmap_stream = None;
+        reporter_assert!(
+            r,
+            !android_codec.get_android_gainmap(Some(&mut gainmap_info), Some(&mut gainmap_stream))
+        );
+    }
 });

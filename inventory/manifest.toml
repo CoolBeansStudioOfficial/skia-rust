@@ -36383,8 +36383,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L463-L572"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec::getGainmapAndroidCodec and the JPEG gainmap decode hooks (SkJpegCodec::onGetGainmapInfo/onGetGainmapCodec, docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "f4ac08342731d0ae364e73260a268a50336d694418ba515498da0b17acbcc9d7"
 
 [[test]]
@@ -36403,8 +36402,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L574-L611"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG gainmap hooks (SkJpegCodec::onGetGainmapInfo, MPF and XMP gainmap lookup; docs/design/codecs.md C13), not ported"
+status = "passing"
 span_hash = "a040d2b8df3d908a1b8b02a153d23bae535b2884014ba6039c317a3c01084a9f"
 
 [[test]]
