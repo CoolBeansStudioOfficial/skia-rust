@@ -18482,8 +18482,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L217-L252"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "9a227536ce82bd3b777ba2211c8648dbeb55e65e89090865eefbcd968387f5a5"
 
 [[test]]
@@ -18510,8 +18509,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L270-L332"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "13109a333ef7c60d740d02a953da9f79c47a27e79d6c7f6d4929e71e1bd24ffe"
 
 [[test]]
@@ -18520,8 +18518,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L391-L484"
 module = "effects"
-status = "todo"
-reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
+status = "passing"
 span_hash = "7c8b35a69e977c06929283db1a7222bfed66adf5dbeaa6d75ce025d14f101209"
 
 [[test]]

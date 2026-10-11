@@ -22,18 +22,22 @@ use skia_rust_core::canvas::SaveLayerRec;
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::font::Font;
 use skia_rust_core::font_types::TextEncoding;
+use skia_rust_core::image::Image;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
-use skia_rust_core::rect::Rect;
+use skia_rust_core::point::Point;
+use skia_rust_core::rect::RoundOut;
+use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
 use skia_rust_tools::font_tool_utils::default_portable_typeface;
 
-use crate::tool_utils::get_resource_as_image;
+use crate::tool_utils::{get_resource_as_image, int_to_scalar};
 
 // Port of: gm/complexclip.cpp#L14-L16 (chrome/m156)
 const G_PATH_COLOR: Color = Color::BLACK;
@@ -260,6 +264,57 @@ crate::def_gm!(
     ComplexClipGm::new(true, true, true)
 );
 
+// Port of: gm/complexclip.cpp#L217-L252 (chrome/m156), clip_shader
+crate::def_simple_gm!(clip_shader, canvas, 840, 650, {
+    let img = crate::tool_utils::get_resource_as_image("images/yellow_rose.png")
+        .expect("images/yellow_rose.png (set SKIA_RESOURCES)");
+    let sh = img
+        .to_shader(None, SamplingOptions::default(), None)
+        .expect("shader");
+
+    let r = Rect::from_isize(img.dimensions());
+    let mut p = Paint::default();
+
+    canvas.translate((10.0, 10.0));
+    canvas.draw_image(&img, (0.0, 0.0), None);
+
+    canvas.save();
+    canvas.translate((int_to_scalar(img.width()) + 10.0, 0.0));
+    canvas.clip_shader(sh.clone(), ClipOp::Intersect);
+    p.set_color(Color::RED);
+    canvas.draw_rect(r, &p);
+    canvas.restore();
+
+    canvas.save();
+    canvas.translate((0.0, int_to_scalar(img.height()) + 10.0));
+    canvas.clip_shader(sh.clone(), ClipOp::Difference);
+    p.set_color(Color::GREEN);
+    canvas.draw_rect(r, &p);
+    canvas.restore();
+
+    canvas.save();
+    canvas.translate((
+        int_to_scalar(img.width()) + 10.0,
+        int_to_scalar(img.height()) + 10.0,
+    ));
+    canvas.clip_shader(sh, ClipOp::Intersect);
+    canvas.save();
+    let lm = Matrix::scale((1.0 / 5.0, 1.0 / 5.0));
+    canvas.clip_shader(
+        img.to_shader(
+            (TileMode::Repeat, TileMode::Repeat),
+            SamplingOptions::default(),
+            &lm,
+        )
+        .expect("shader"),
+        None,
+    );
+    canvas.draw_image(&img, (0.0, 0.0), None);
+
+    canvas.restore();
+    canvas.restore();
+});
+
 // Port of: gm/complexclip.cpp#L254-L268 (chrome/m156)
 crate::def_simple_gm!(clip_shader_layer, canvas, 430, 320, {
     let img = crate::tool_utils::get_resource_as_image("images/yellow_rose.png")
@@ -285,6 +340,316 @@ crate::def_simple_gm!(clip_shader_layer, canvas, 430, 320, {
     canvas.save_layer(&SaveLayerRec::default().bounds(&r));
     canvas.draw_color(Color::new(0xFFFF_0000), None);
     canvas.restore();
+});
+
+// Port of: gm/complexclip.cpp#L270-L332 (chrome/m156), clip_shader_nested
+crate::def_simple_gm!(clip_shader_nested, canvas, 256, 256, {
+    let w: f32 = 64.0;
+    let h: f32 = 64.0;
+
+    // SkColorConverter conv({ SK_ColorBLACK, SkColorSetARGB(128, 128, 128, 128) })
+    let conv = [
+        Color4f::from_color(Color::BLACK),
+        Color4f::from_color(Color::new(0x8080_8080)),
+    ];
+    let s = shaders::radial_gradient(
+        (Point::new(0.5 * w, 0.5 * h), 0.1 * w),
+        &Gradient::new(
+            Colors::new(&conv, None, TileMode::Repeat, None),
+            Interpolation::default(),
+        ),
+        None,
+    )
+    .expect("radial gradient");
+
+    let mut p = Paint::default();
+
+    // A large black rect affected by two gradient clips
+    canvas.save();
+    canvas.clip_shader(s.clone(), None);
+    canvas.scale((2.0, 2.0));
+    canvas.clip_shader(s.clone(), None);
+    canvas.draw_rect(Rect::from_wh(w, h), &p);
+    canvas.restore();
+
+    canvas.translate((0.0, 2.0 * h));
+
+    // A small red rect, with no clipping
+    canvas.save();
+    p.set_color(Color::RED);
+    canvas.draw_rect(Rect::from_wh(w, h), &p);
+    canvas.restore();
+
+    canvas.translate((2.0 * w, -2.0 * h));
+
+    // A small green rect, with clip shader and rrect clipping
+    canvas.save();
+    canvas.clip_shader(s.clone(), None);
+    canvas.clip_rrect(
+        RRect::new_rect_xy(Rect::from_wh(w, h), 10.0, 10.0),
+        None,
+        true,
+    );
+    p.set_color(Color::GREEN);
+    canvas.draw_rect(Rect::from_wh(w, h), &p);
+    canvas.restore();
+
+    canvas.translate((0.0, 2.0 * h));
+
+    // A small blue rect, with clip shader and path clipping
+    let star_path = PathBuilder::new()
+        .move_to((0.0, -33.3333))
+        .line_to((9.62, -16.6667))
+        .line_to((28.867, -16.6667))
+        .line_to((19.24, 0.0))
+        .line_to((28.867, 16.6667))
+        .line_to((9.62, 16.6667))
+        .line_to((0.0, 33.3333))
+        .line_to((-9.62, 16.6667))
+        .line_to((-28.867, 16.6667))
+        .line_to((-19.24, 0.0))
+        .line_to((-28.867, -16.6667))
+        .line_to((-9.62, -16.6667))
+        .close()
+        .detach();
+
+    canvas.save();
+    canvas.clip_shader(s, None);
+    canvas.translate((w / 2.0, h / 2.0));
+    canvas.clip_path(&star_path, None, None);
+    p.set_color(Color::BLUE);
+    canvas.translate((-w / 2.0, -h / 2.0));
+    canvas.draw_rect(Rect::from_wh(w, h), &p);
+    canvas.restore();
+});
+
+// Where is canvas->concat(persp) called relative to the clipShader calls.
+// Port of: gm/complexclip.cpp#L334-L340 (chrome/m156), ConcatPerspective
+// The variant names mirror the C++ enumerators (kConcatBeforeClips, ...), which all end in "Clips".
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(clippy::enum_variant_names)]
+enum ConcatPerspective {
+    BeforeClips,
+    AfterClips,
+    BetweenClips,
+}
+
+// Order in which clipShader(image) and clipShader(gradient) are specified; only meaningful
+// when CanvasPerspective is kConcatBetweenClips.
+// Port of: gm/complexclip.cpp#L341-L348 (chrome/m156), ClipOrder
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ClipOrder {
+    ImageFirst,
+    GradientFirst,
+}
+
+// Which shaders have perspective applied as a local matrix.
+// Port of: gm/complexclip.cpp#L349-L355 (chrome/m156), LocalMatrix
+// The variant names mirror the C++ enumerators (kNoLocalMat, ...), which all end in "LocalMat".
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(clippy::enum_variant_names)]
+enum LocalMatrix {
+    NoLocalMat,
+    ImageWithLocalMat,
+    GradientWithLocalMat,
+    BothWithLocalMat,
+}
+
+// Port of: gm/complexclip.cpp#L356-L360 (chrome/m156), Config
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct PerspConfig {
+    concat: ConcatPerspective,
+    order: ClipOrder,
+    lm: LocalMatrix,
+}
+
+// Port of: gm/complexclip.cpp#L363-L384 (chrome/m156), draw_banner
+fn draw_banner(canvas: &Canvas, config: PerspConfig) {
+    let mut banner = String::from("Persp: ");
+
+    if config.concat == ConcatPerspective::BeforeClips || config.lm == LocalMatrix::BothWithLocalMat
+    {
+        banner.push_str("Both Clips");
+    } else if (config.concat == ConcatPerspective::BetweenClips
+        && config.order == ClipOrder::ImageFirst)
+        || config.lm == LocalMatrix::GradientWithLocalMat
+    {
+        banner.push_str("Gradient");
+    } else {
+        banner.push_str("Image");
+    }
+    if config.lm != LocalMatrix::NoLocalMat {
+        banner.push_str(" (w/ LM, should equal top row)");
+    }
+
+    let font = Font::from_size(default_portable_typeface(), 12.0);
+    canvas.draw_str(&banner, (20.0, -30.0), &font, &Paint::default());
+}
+
+// Port of: gm/complexclip.cpp#L386-L390 (chrome/m156), the drawConfig lambda of clip_shader_persp
+fn draw_persp_config(
+    canvas: &Canvas,
+    img: &Image,
+    persp: &Matrix,
+    scale: &Matrix,
+    config: PerspConfig,
+) {
+    canvas.save();
+
+    draw_banner(canvas, config);
+
+    // Make clipShaders (possibly with local matrices)
+    let grad_lm = config.lm == LocalMatrix::GradientWithLocalMat
+        || config.lm == LocalMatrix::BothWithLocalMat;
+    let conv = [
+        Color4f::from_color(Color::BLACK),
+        Color4f::from_color(Color::new(0x8080_8080)),
+    ];
+    let img_w = int_to_scalar(img.width());
+    let img_h = int_to_scalar(img.height());
+    let grad_shader = shaders::radial_gradient(
+        (Point::new(0.5 * img_w, 0.5 * img_h), 0.1 * img_w),
+        &Gradient::new(
+            Colors::new(&conv, None, TileMode::Repeat, None),
+            Interpolation::default(),
+        ),
+        if grad_lm { Some(persp) } else { None },
+    )
+    .expect("radial gradient");
+    let image_lm =
+        config.lm == LocalMatrix::ImageWithLocalMat || config.lm == LocalMatrix::BothWithLocalMat;
+    let perspective_scale = Matrix::concat(persp, scale);
+    let img_shader = img
+        .to_shader(
+            (TileMode::Repeat, TileMode::Repeat),
+            SamplingOptions::default(),
+            if image_lm { &perspective_scale } else { scale },
+        )
+        .expect("image shader");
+
+    // Perspective before any clipShader
+    if config.concat == ConcatPerspective::BeforeClips {
+        canvas.concat(persp);
+    }
+
+    // First clipshader
+    let (first, second) = if config.order == ClipOrder::ImageFirst {
+        (img_shader.clone(), grad_shader.clone())
+    } else {
+        (grad_shader.clone(), img_shader.clone())
+    };
+    canvas.clip_shader(first, None);
+
+    // Perspective between clipShader
+    if config.concat == ConcatPerspective::BetweenClips {
+        canvas.concat(persp);
+    }
+
+    // Second clipShader
+    canvas.clip_shader(second, None);
+
+    // Perspective after clipShader
+    if config.concat == ConcatPerspective::AfterClips {
+        canvas.concat(persp);
+    }
+
+    // Actual draw and clip boundary are the same for all configs
+    canvas.clip_irect(img.bounds(), None);
+    canvas.clear(Color::BLACK);
+    canvas.draw_image(img, (0.0, 0.0), None);
+
+    canvas.restore();
+}
+
+// Port of: gm/complexclip.cpp#L391-L484 (chrome/m156), clip_shader_persp
+crate::def_simple_gm!(clip_shader_persp, canvas, 1370, 1030, {
+    use ClipOrder::{GradientFirst, ImageFirst};
+    use ConcatPerspective::{AfterClips, BeforeClips, BetweenClips};
+    use LocalMatrix::{BothWithLocalMat, GradientWithLocalMat, ImageWithLocalMat, NoLocalMat};
+
+    // Pairs of configs that should match in appearance where first config doesn't use a local
+    // matrix (top row of GM) and the second does (bottom row of GM).
+    let matches = [
+        // Everything has perspective
+        [
+            PerspConfig {
+                concat: BeforeClips,
+                order: ImageFirst,
+                lm: NoLocalMat,
+            },
+            PerspConfig {
+                concat: AfterClips,
+                order: ImageFirst,
+                lm: BothWithLocalMat,
+            },
+        ],
+        // Image shader has perspective
+        [
+            PerspConfig {
+                concat: BetweenClips,
+                order: GradientFirst,
+                lm: NoLocalMat,
+            },
+            PerspConfig {
+                concat: AfterClips,
+                order: ImageFirst,
+                lm: ImageWithLocalMat,
+            },
+        ],
+        // Gradient shader has perspective
+        [
+            PerspConfig {
+                concat: BetweenClips,
+                order: ImageFirst,
+                lm: NoLocalMat,
+            },
+            PerspConfig {
+                concat: AfterClips,
+                order: ImageFirst,
+                lm: GradientWithLocalMat,
+            },
+        ],
+    ];
+
+    // The image that is drawn
+    let img = crate::tool_utils::get_resource_as_image("images/yellow_rose.png")
+        .expect("images/yellow_rose.png (set SKIA_RESOURCES)");
+    // Scale factor always applied to the image shader so that it tiles
+    let scale = Matrix::scale((1.0 / 4.0, 1.0 / 4.0));
+    // The perspective matrix applied wherever needed
+    let src = Rect::from_isize(img.dimensions()).to_quad(None);
+    let iw = int_to_scalar(img.width());
+    let ih = int_to_scalar(img.height());
+    let dst = [
+        Point::new(0.0, 80.0),
+        Point::new(iw + 28.0, -100.0),
+        Point::new(iw - 28.0, ih + 100.0),
+        Point::new(0.0, ih - 80.0),
+    ];
+    let mut persp = Matrix::default();
+    assert!(
+        persp.set_poly_to_poly(&src, &dst),
+        "SkAssertResult(setPolyToPoly)"
+    );
+
+    let mut grid: IRect = persp
+        .map_rect(Rect::from_isize(img.dimensions()))
+        .0
+        .round_out();
+    grid.left -= 20; // manual adjust to look nicer
+
+    canvas.translate((10.0, 10.0));
+
+    for pair in &matches {
+        canvas.save();
+        canvas.translate((int_to_scalar(-grid.left), int_to_scalar(-grid.top)));
+        draw_persp_config(canvas, &img, &persp, &scale, pair[0]);
+        canvas.translate((0.0, int_to_scalar(grid.height())));
+        draw_persp_config(canvas, &img, &persp, &scale, pair[1]);
+        canvas.restore();
+
+        canvas.translate((int_to_scalar(grid.width()), 0.0));
+    }
 });
 
 // Port of: gm/complexclip.cpp#L486-L547 (chrome/m156), clip_shader_difference
