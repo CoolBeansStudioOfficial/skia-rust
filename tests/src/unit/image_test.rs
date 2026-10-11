@@ -871,12 +871,12 @@ fn read_pixels_u32(
     src: (i32, i32),
 ) -> bool {
     let mut bytes = [0_u8; 16];
-    for (chunk, pixel) in bytes.chunks_exact_mut(4).zip(pixels.iter()) {
-        chunk.copy_from_slice(&pixel.to_ne_bytes());
+    for (chunk, pixel) in bytes.as_chunks_mut::<4>().0.iter_mut().zip(pixels.iter()) {
+        *chunk = pixel.to_ne_bytes();
     }
     let read = image.read_pixels(info, &mut bytes, row_bytes, src);
-    for (pixel, chunk) in pixels.iter_mut().zip(bytes.chunks_exact(4)) {
-        *pixel = u32::from_ne_bytes(chunk.try_into().unwrap());
+    for (pixel, chunk) in pixels.iter_mut().zip(bytes.as_chunks::<4>().0) {
+        *pixel = u32::from_ne_bytes(*chunk);
     }
     read
 }
@@ -890,25 +890,25 @@ fn image_test_read_pixels(reporter: &mut Reporter, image: Option<&Image>) {
     let expected = pre_multiply_color(Color::WHITE);
     let not_expected = !expected;
 
-    let (w, h) = (2, 2);
-    let row_bytes = w * size_of::<u32>();
+    let (w, h) = (2_i32, 2_i32);
+    let row_bytes = 2 * size_of::<u32>();
     let mut pixels = [0_u32; 4];
 
-    let mut info = ImageInfo::new_unknown(Some(ISize::new(w as i32, h as i32)));
+    let mut info = ImageInfo::new_unknown(Some(ISize::new(w, h)));
     reporter_assert!(
         reporter,
         !read_pixels_u32(image, &info, &mut pixels, row_bytes, (0, 0))
     );
 
     // out-of-bounds should fail
-    info = ImageInfo::new_n32_premul((w as i32, h as i32), None);
+    info = ImageInfo::new_n32_premul((w, h), None);
     reporter_assert!(
         reporter,
-        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (-(w as i32), 0))
+        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (-w, 0))
     );
     reporter_assert!(
         reporter,
-        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (0, -(h as i32)))
+        !read_pixels_u32(image, &info, &mut pixels, row_bytes, (0, -h))
     );
     reporter_assert!(
         reporter,
@@ -936,7 +936,7 @@ fn image_test_read_pixels(reporter: &mut Reporter, image: Option<&Image>) {
             &info,
             &mut pixels,
             row_bytes,
-            (image.width() - w as i32, image.height() - h as i32)
+            (image.width() - w, image.height() - h)
         )
     );
     reporter_assert!(reporter, has_pixels(&pixels, expected));
@@ -948,7 +948,7 @@ fn image_test_read_pixels(reporter: &mut Reporter, image: Option<&Image>) {
         read_pixels_u32(image, &info, &mut pixels, row_bytes, (-1, -1))
     );
     reporter_assert!(reporter, pixels[3] == expected);
-    reporter_assert!(reporter, has_pixels(&pixels[..w * h - 1], not_expected));
+    reporter_assert!(reporter, has_pixels(&pixels[..3], not_expected));
 
     // partial bottom-right should succeed
     pixels.fill(not_expected);

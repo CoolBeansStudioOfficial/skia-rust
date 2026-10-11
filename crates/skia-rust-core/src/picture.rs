@@ -63,6 +63,10 @@ const PICTURE_DATA_TRAILING_BYTE: u8 = 1;
 // Port of: src/core/SkPicture.cpp#L41-L45 (chrome/m156)
 const CUSTOM_TRAILING_BYTE: u8 = 2;
 
+/// How many bytes of a custom picture are read at a time, so a size larger than the stream is not
+/// allocated up front.
+const READ_CHUNK: usize = 64 * 1024;
+
 /// The custom data the picture proc of `procs` makes for `picture`, if it makes any
 /// (`custom_serialize`). Data of 0 or 1 bytes is an empty one, which stands for a failure.
 // Port of: src/core/SkPicture.cpp#L261-L274 (chrome/m156), custom_serialize
@@ -366,7 +370,8 @@ impl Picture {
         buffer.write_rect(&info.cull_rect);
 
         if let Some(custom) = custom_serialize(self, buffer.serial_procs()) {
-            let size = i32::try_from(custom.size()).expect("checked by custom_serialize");
+            // custom_serialize checked that the size fits
+            let size = i32::try_from(custom.size()).unwrap_or(i32::MAX);
             buffer.write_int(-size); // negative for custom format
             buffer.write_pad32(custom.as_bytes());
             return;
@@ -410,14 +415,14 @@ impl Picture {
         }
 
         // size should be 0, 1, or negative
-        let ssize = buffer.read32();
-        if ssize < 0 {
+        let custom_size = buffer.read32();
+        if custom_size < 0 {
             let proc = buffer.deserial_procs().picture.clone()?;
-            let size = usize::try_from(ssize.unsigned_abs()).ok()?;
-            let bytes = buffer.skip(size)?;
-            return proc(&bytes[..size]);
+            let len = usize::try_from(custom_size.unsigned_abs()).ok()?;
+            let bytes = buffer.skip(len)?;
+            return proc(&bytes[..len]);
         }
-        if ssize != 1 {
+        if custom_size != 1 {
             // 1 is the magic 'size' that means SkPictureData follows
             return None;
         }
@@ -502,17 +507,16 @@ impl Picture {
                 forward_port(&info, &data)
             }
             CUSTOM_TRAILING_BYTE => {
-                let ssize = i32::from_ne_bytes(stream.read_u32()?.to_ne_bytes());
-                if ssize >= 0 {
+                let custom_size = i32::from_ne_bytes(stream.read_u32()?.to_ne_bytes());
+                if custom_size >= 0 {
                     return None;
                 }
                 let proc = procs.picture.as_ref()?;
-                let size = usize::try_from(ssize.unsigned_abs()).ok()?;
+                let len = usize::try_from(custom_size.unsigned_abs()).ok()?;
                 let mut bytes = Vec::new();
-                const CHUNK: usize = 64 * 1024;
-                while bytes.len() < size {
+                while bytes.len() < len {
                     let start = bytes.len();
-                    let take = CHUNK.min(size - start);
+                    let take = READ_CHUNK.min(len - start);
                     bytes.resize(start + take, 0);
                     if stream.read(&mut bytes[start..]) != take {
                         return None;

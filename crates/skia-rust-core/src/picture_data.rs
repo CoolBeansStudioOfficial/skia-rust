@@ -567,6 +567,7 @@ impl PictureData {
     /// nested pictures are read, the empty sections of the other kinds are accepted, and anything
     /// else invalidates the buffer.
     // Port of: src/core/SkPictureData.cpp#L455-L535 (chrome/m156), parseBufferTag
+    #[allow(clippy::too_many_lines)] // one arm per tag, as the switch
     fn parse_buffer_tag(
         &mut self,
         buffer: &mut ReadBuffer<'_>,

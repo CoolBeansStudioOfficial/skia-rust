@@ -44,7 +44,6 @@ use skia_rust_core::path::Path;
 use skia_rust_core::path_effect::PathEffect;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
-use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::Point;
 use skia_rust_core::point3::Point3;
 use skia_rust_core::rect::{Contains, IRect, Rect};
@@ -1064,15 +1063,15 @@ fn make_fuzz_image(fuzz: &mut Fuzz<'_>) -> Image {
         // The pixels are native N32 premultiplied words, as the C++ `SkPMColor` array.
         data.extend_from_slice(&pre_multiply_color(Color::from(c)).to_ne_bytes());
     }
-    let pixmap = Pixmap::new(
+    // The C++ pixmap owns its pixels and releases them with `sk_free`; the image takes the pixels
+    // and frees them when it drops, so the release proc is empty.
+    images::raster_from_pixmap(
         &ImageInfo::new_n32_premul((w, h), None),
-        &mut data,
+        data,
         w as usize * 4,
+        None::<fn()>,
     )
-    .expect("a valid N32 pixmap");
-    // The C++ pixmap owns its pixels and releases them with `sk_free`; the Rust copy frees them
-    // when `data` drops, so the release proc is empty.
-    images::raster_from_pixmap(&pixmap, || {}).expect("a raster image of a valid pixmap")
+    .expect("a raster image of a valid pixmap")
 }
 
 /// `FuzzPaint`: sets the paint's antialiasing, dither, colour, blend mode, style, shader, path
