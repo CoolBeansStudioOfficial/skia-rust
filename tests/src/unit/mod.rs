@@ -179,6 +179,7 @@ pub mod json_test;
 pub mod m44_test;
 #[cfg(test)]
 pub mod malloc_pixel_ref_test;
+pub mod mask_cache_test;
 #[cfg(test)]
 pub mod math_test;
 #[cfg(test)]
