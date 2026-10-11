@@ -167,6 +167,8 @@ pub mod invalid_indexed_png_test;
 #[cfg(test)]
 pub mod is_closed_single_contour_test;
 #[cfg(test)]
+pub mod jpeg_gainmap_test;
+#[cfg(test)]
 pub mod json_test;
 #[cfg(test)]
 pub mod m44_test;
