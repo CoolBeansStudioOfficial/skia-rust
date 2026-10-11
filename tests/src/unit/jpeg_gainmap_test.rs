@@ -1162,10 +1162,9 @@ fn render_gainmap_pixel(
     let mut paint = Paint::default();
     paint.set_shader(shader);
 
-    // The C++ renders into an F16 sRGB premultiplied pixel; F32 is used here.
     let render_info = ImageInfo::new(
         (1, 1),
-        ColorType::RGBAF32,
+        ColorType::RGBAF16,
         AlphaType::Premul,
         Some(ColorSpace::new_srgb()),
     );
