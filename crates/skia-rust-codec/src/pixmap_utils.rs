@@ -17,6 +17,7 @@ use skia_rust_raster::surfaces::wrap_pixels;
 
 /// `SkPixmapUtils::SwapWidthHeight`.
 // Port of: src/codec/SkPixmapUtils.cpp#L69-L71 (chrome/m156)
+#[must_use]
 pub fn swap_width_height(info: &ImageInfo) -> ImageInfo {
     info.with_wh(info.height(), info.width())
 }
@@ -86,4 +87,3 @@ fn draw_orientation(dst: &mut Pixmap<'_>, src: &Pixmap<'_>, origin: EncodedOrigi
     );
     true
 }
-

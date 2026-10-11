@@ -17,9 +17,9 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::mipmap_builder::MipmapBuilder;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::sampling_options::SamplingOptions;
-use skia_rust_core::random::Random;
 use skia_rust_core::scalar::{SCALAR_1, scalar};
 use skia_rust_core::size::{ISize, Size};
 
@@ -284,6 +284,8 @@ def_test!(MipMap_F16, |_reporter| {
 });
 
 // Port of: tests/MipMapTest.cpp#L234-L246 (chrome/m156), fill_in_mips
+// SkRect::MakeIWH of the level size is an int-to-float cast, exact for these sizes.
+#[allow(clippy::cast_precision_loss)]
 fn fill_in_mips(builder: &mut MipmapBuilder, img: &Image) {
     let count = builder.count_levels();
     for i in 0..count {
@@ -358,7 +360,10 @@ def_test!(image_mip_mismatch, |reporter| {
         &img.image_info().with_color_type(ColorType::RGB565),
     );
 
-    reporter_assert!(reporter, img.image_info().alpha_type() != AlphaType::Unpremul);
+    reporter_assert!(
+        reporter,
+        img.image_info().alpha_type() != AlphaType::Unpremul
+    );
     check_fails(
         reporter,
         &img,

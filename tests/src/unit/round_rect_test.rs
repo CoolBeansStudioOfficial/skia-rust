@@ -4,6 +4,9 @@
 // Port of: tests/RoundRectTest.cpp (chrome/m156)
 
 #![cfg(test)]
+// The assertions compare floats exactly, as the C++ test does: a tolerance here would weaken
+// them, and the port has no tolerances.
+#![allow(clippy::float_cmp)]
 
 use crate::{Reporter, def_test, reporter_assert};
 use skia_rust_core::float_bits::bits_to_float;
@@ -256,11 +259,10 @@ fn test_tricky_radii(reporter: &mut Reporter) {
         let mut rr = RRect::new();
         rr.set_rect_radii(r, &radii);
 
-        reporter_assert!(
-            reporter,
-            f64::from(rr.radii(Corner::UpperRight).y) + f64::from(rr.radii(Corner::LowerRight).y)
-                <= f64::from(rr.height())
-        );
+        let radii_sum =
+            f64::from(rr.radii(Corner::UpperRight).y) + f64::from(rr.radii(Corner::LowerRight).y);
+        let fits = radii_sum <= f64::from(rr.height());
+        reporter_assert!(reporter, fits);
     }
 }
 
@@ -283,9 +285,9 @@ fn test_empty_crbug_458524(reporter: &mut Reporter) {
 fn test_empty(reporter: &mut Reporter) {
     // out of order
     let ooo_rects = [
-        Rect::new(100.0, 0.0, 0.0, 100.0),   // ooo horizontal
-        Rect::new(0.0, 100.0, 100.0, 0.0),   // ooo vertical
-        Rect::new(100.0, 100.0, 0.0, 0.0),   // ooo both
+        Rect::new(100.0, 0.0, 0.0, 100.0), // ooo horizontal
+        Rect::new(0.0, 100.0, 100.0, 0.0), // ooo vertical
+        Rect::new(100.0, 100.0, 0.0, 0.0), // ooo both
     ];
 
     let empty_rects = [
@@ -353,7 +355,6 @@ fn test_empty(reporter: &mut Reporter) {
     r.set_rect(Rect::new(0.0, 10.0, 10.0, f32::INFINITY));
     reporter_assert!(reporter, r == RRect::new_empty());
 }
-
 
 // Port of: tests/RoundRectTest.cpp#L135-L136 (chrome/m156), kWidth and kHeight
 const K_WIDTH: scalar = 100.0;
@@ -506,15 +507,15 @@ fn test_round_rect_basic(reporter: &mut Reporter) {
 
     {
         // Test out the rrect from skbug.com/40034587
-        let rect2 = Rect::new(0.358_211_994, 0.755_430_222, 0.872_866_154, 0.806_214_333);
+        let rect2 = Rect::new(0.358_212, 0.755_430_2, 0.872_866_15, 0.806_214_33);
 
         test_9patch_rrect(
             reporter,
             rect2,
-            0.926_942_348,
-            0.642_850_280,
-            0.529_063_463,
-            0.587_844_372,
+            0.926_942_35,
+            0.642_850_3,
+            0.529_063_46,
+            0.587_844_4,
             false,
         );
     }
@@ -541,7 +542,6 @@ fn test_round_rect_basic(reporter: &mut Reporter) {
     reporter_assert!(reporter, empty != rr3);
     reporter_assert!(reporter, rr3 != rr5);
 }
-
 
 // Port of: tests/RoundRectTest.cpp#L292-L330 (chrome/m156), test_round_rect_rects
 fn test_round_rect_rects(reporter: &mut Reporter) {
@@ -664,6 +664,10 @@ fn test_round_rect_iffy_parameters(reporter: &mut Reporter) {
 // Move a small box from the start position by (stepX, stepY) 'numSteps' times
 // testing for containment in 'rr' at each step.
 // Port of: tests/RoundRectTest.cpp#L394-L411 (chrome/m156), test_direction
+// The `SkIntToScalar` of the step is an int-to-float cast, exact for these small steps.
+#[allow(clippy::cast_precision_loss)]
+// Mirrors the C++ signature of the helper.
+#[allow(clippy::too_many_arguments)]
 fn test_direction(
     reporter: &mut Reporter,
     rr: &RRect,
@@ -695,6 +699,10 @@ fn test_direction(
 // Move a point from the start position by (stepX, stepY) 'numSteps' times
 // testing for containment in 'rr' at each step.
 // Port of: tests/RoundRectTest.cpp#L413-L424 (chrome/m156), test_point_direction
+// The `SkIntToScalar` of the step is an int-to-float cast, exact for these small steps.
+#[allow(clippy::cast_precision_loss)]
+// Mirrors the C++ signature of the helper.
+#[allow(clippy::too_many_arguments)]
 fn test_point_direction(
     reporter: &mut Reporter,
     rr: &RRect,
@@ -714,10 +722,12 @@ fn test_point_direction(
     }
 }
 
-
 // Port of: tests/RoundRectTest.cpp#L426-L538 (chrome/m156), test_round_rect_contains_rect
+// Mirrors the single C++ test function; splitting it would not be a 1:1 port.
+#[allow(clippy::too_many_lines)]
 fn test_round_rect_contains_rect(reporter: &mut Reporter) {
     const K_NUM_RRECTS: usize = 4;
+    const K_NUM_STEPS: usize = 15;
     let g_radii: [[Vector; 4]; K_NUM_RRECTS] = [
         // rect
         [
@@ -777,7 +787,6 @@ fn test_round_rect_contains_rect(reporter: &mut Reporter) {
     // Now test non-trivial containment. For each compass
     // point walk a 1x1 rect in from the edge  of the bounding
     // rect
-    const K_NUM_STEPS: usize = 15;
     #[rustfmt::skip]
     let answers: [[[bool; K_NUM_STEPS]; 8]; K_NUM_RRECTS] = [
 // all the test rects are inside the degenerate rrect
@@ -844,21 +853,32 @@ fn test_round_rect_contains_rect(reporter: &mut Reporter) {
     ];
 
     for (i, rr) in rrects.iter().enumerate() {
-        test_direction(reporter, rr,     0.0,  1,     0.0,  1, K_NUM_STEPS, &answers[i][0]); // NW
-        test_direction(reporter, rr, 19.5,  0,     0.0,  1, K_NUM_STEPS, &answers[i][1]); // N
-        test_direction(reporter, rr,    40.0, -1,     0.0,  1, K_NUM_STEPS, &answers[i][2]); // NE
-        test_direction(reporter, rr,    40.0, -1, 19.5,  0, K_NUM_STEPS, &answers[i][3]); // E
-        test_direction(reporter, rr,    40.0, -1,    40.0, -1, K_NUM_STEPS, &answers[i][4]); // SE
-        test_direction(reporter, rr, 19.5,  0,    40.0, -1, K_NUM_STEPS, &answers[i][5]); // S
-        test_direction(reporter, rr,     0.0,  1,    40.0, -1, K_NUM_STEPS, &answers[i][6]); // SW
-        test_direction(reporter, rr,     0.0,  1, 19.5,  0, K_NUM_STEPS, &answers[i][7]); // W
+        test_direction(reporter, rr, 0.0, 1, 0.0, 1, K_NUM_STEPS, &answers[i][0]); // NW
+        test_direction(reporter, rr, 19.5, 0, 0.0, 1, K_NUM_STEPS, &answers[i][1]); // N
+        test_direction(reporter, rr, 40.0, -1, 0.0, 1, K_NUM_STEPS, &answers[i][2]); // NE
+        test_direction(reporter, rr, 40.0, -1, 19.5, 0, K_NUM_STEPS, &answers[i][3]); // E
+        test_direction(
+            reporter,
+            rr,
+            40.0,
+            -1,
+            40.0,
+            -1,
+            K_NUM_STEPS,
+            &answers[i][4],
+        ); // SE
+        test_direction(reporter, rr, 19.5, 0, 40.0, -1, K_NUM_STEPS, &answers[i][5]); // S
+        test_direction(reporter, rr, 0.0, 1, 40.0, -1, K_NUM_STEPS, &answers[i][6]); // SW
+        test_direction(reporter, rr, 0.0, 1, 19.5, 0, K_NUM_STEPS, &answers[i][7]); // W
     }
 }
 
-
 // Port of: tests/RoundRectTest.cpp#L540-L643 (chrome/m156), test_round_rect_contains_point
+// Mirrors the single C++ test function; splitting it would not be a 1:1 port.
+#[allow(clippy::too_many_lines)]
 fn test_round_rect_contains_point(reporter: &mut Reporter) {
     const K_NUM_RRECTS: usize = 4;
+    const K_NUM_STEPS: usize = 3;
     let g_radii: [[Vector; 4]; K_NUM_RRECTS] = [
         // rect
         [
@@ -913,7 +933,6 @@ fn test_round_rect_contains_point(reporter: &mut Reporter) {
         }
     }
 
-    const K_NUM_STEPS: usize = 3;
     #[rustfmt::skip]
     let answers: [[[bool; K_NUM_STEPS]; 8]; K_NUM_RRECTS] = [
 // for the rect we expect points on the left/top edges to be in, but
@@ -973,17 +992,16 @@ fn test_round_rect_contains_point(reporter: &mut Reporter) {
     ];
 
     for (i, rr) in rrects.iter().enumerate() {
-        test_point_direction(reporter, rr,  0.0,  5,  0.0,  5, &answers[i][0]); // TL
-        test_point_direction(reporter, rr, 20.0,  0,  0.0,  5, &answers[i][1]); // T
-        test_point_direction(reporter, rr, 40.0, -5,  0.0,  5, &answers[i][2]); // TR
-        test_point_direction(reporter, rr, 40.0, -5, 20.0,  0, &answers[i][3]); // R
+        test_point_direction(reporter, rr, 0.0, 5, 0.0, 5, &answers[i][0]); // TL
+        test_point_direction(reporter, rr, 20.0, 0, 0.0, 5, &answers[i][1]); // T
+        test_point_direction(reporter, rr, 40.0, -5, 0.0, 5, &answers[i][2]); // TR
+        test_point_direction(reporter, rr, 40.0, -5, 20.0, 0, &answers[i][3]); // R
         test_point_direction(reporter, rr, 40.0, -5, 40.0, -5, &answers[i][4]); // BR
-        test_point_direction(reporter, rr, 20.0,  0, 40.0, -5, &answers[i][5]); // B
-        test_point_direction(reporter, rr,  0.0,  5, 40.0, -5, &answers[i][6]); // BL
-        test_point_direction(reporter, rr,  0.0,  5, 20.0,  0, &answers[i][7]); // L
+        test_point_direction(reporter, rr, 20.0, 0, 40.0, -5, &answers[i][5]); // B
+        test_point_direction(reporter, rr, 0.0, 5, 40.0, -5, &answers[i][6]); // BL
+        test_point_direction(reporter, rr, 0.0, 5, 20.0, 0, &answers[i][7]); // L
     }
 }
-
 
 // Port of: tests/RoundRectTest.cpp#L644-L654 (chrome/m156), assert_transform_failure
 fn assert_transform_failure(reporter: &mut Reporter, orig: &RRect, matrix: &Matrix) {
@@ -1021,6 +1039,8 @@ impl Radii {
 
 // Called to test various transforms on a single SkRRect.
 // Port of: tests/RoundRectTest.cpp#L668-L900 (chrome/m156), test_transform_helper
+// Mirrors the single C++ helper; splitting it would not be a 1:1 port.
+#[allow(clippy::too_many_lines)]
 fn test_transform_helper(reporter: &mut Reporter, orig: &RRect) {
     // The identity matrix will duplicate the rrect.
     let mut dst = orig.transform(Matrix::i());
@@ -1388,7 +1408,6 @@ fn test_transform_helper(reporter: &mut Reporter, orig: &RRect) {
     reporter_assert!(reporter, dst2.is_some());
     reporter_assert!(reporter, dst == dst2);
 
-
     // -------------
 
     // a----b               a------b             d--a
@@ -1521,8 +1540,14 @@ fn test_transform_helper(reporter: &mut Reporter, orig: &RRect) {
         reporter_assert!(reporter, dd.ll.y == x_scale * o.ul.x);
     }
     // Width and height would get swapped, with the dst width half of the original height.
-    reporter_assert!(reporter, x_scale * orig.rect().width() == dst.expect("rrect").rect().height());
-    reporter_assert!(reporter, y_scale * orig.rect().height() == dst.expect("rrect").rect().width());
+    reporter_assert!(
+        reporter,
+        x_scale * orig.rect().width() == dst.expect("rrect").rect().height()
+    );
+    reporter_assert!(
+        reporter,
+        y_scale * orig.rect().height() == dst.expect("rrect").rect().width()
+    );
 
     // 90 CCW (270):
     // -------------
@@ -1663,7 +1688,6 @@ fn test_transform_helper(reporter: &mut Reporter, orig: &RRect) {
     reporter_assert!(reporter, y_scale * orig.rect().height() == d.rect().width());
 }
 
-
 // Port of: tests/RoundRectTest.cpp#L1264-L1294 (chrome/m156), test_round_rect_transform
 fn test_round_rect_transform(reporter: &mut Reporter) {
     let mut rrect = RRect::new();
@@ -1703,7 +1727,7 @@ fn test_round_rect_transform(reporter: &mut Reporter) {
 // Port of: tests/RoundRectTest.cpp#L1296-L1318 (chrome/m156), test_issue_2696
 fn test_issue_2696(reporter: &mut Reporter) {
     let mut rrect = RRect::new();
-    let r = Rect::new(28443.8594, 53.142_86, 28446.7148, 56.000_004);
+    let r = Rect::new(28443.86, 53.14286, 28446.715, 56.000_004);
     rrect.set_oval(r);
 
     let mut xform = Matrix::default();
@@ -1850,7 +1874,10 @@ fn test_read(reporter: &mut Reporter) {
     test_read_rrect(reporter, &rrect_memory_image(&rrect), &rrect, true);
     // `innerRadius`: the scalar at index 6 of the struct, which is `fRadii[1].fX`.
     let mut image = rrect_memory_image(&rrect);
-    debug_assert!(f32::from_ne_bytes(image[24..28].try_into().expect("4 bytes")) == 1.5);
+    debug_assert_eq!(
+        f32::from_ne_bytes(image[24..28].try_into().expect("4 bytes")),
+        1.5
+    );
     set_scalar_in_image(&mut image, 6, 400.0);
     test_read_rrect(reporter, &image, &rrect, false);
     set_scalar_in_image(&mut image, 6, f32::INFINITY);
@@ -1869,7 +1896,6 @@ fn set_rect_in_image(image: &mut [u8], rect: Rect) {
     set_scalar_in_image(image, 3, rect.bottom);
 }
 
-
 // Port of: tests/RoundRectTest.cpp#L1382-L1531 (chrome/m156), test_inner_bounds
 fn test_inner_bounds(reporter: &mut Reporter) {
     // Because InnerBounds() insets the computed bounds slightly to correct for numerical inaccuracy
@@ -1887,10 +1913,8 @@ fn test_inner_bounds(reporter: &mut Reporter) {
     reporter_assert!(reporter, rrect_priv::inner_bounds(&RRect::new_rect(r)) == r);
     // Test that a circle rrect has an inner bounds area equal to 2*radius^2
     let radius: f32 = 5.0;
-    let mut inner = rrect_priv::inner_bounds(&RRect::new_oval(Rect::from_wh(
-        2.0 * radius,
-        2.0 * radius,
-    )));
+    let mut inner =
+        rrect_priv::inner_bounds(&RRect::new_oval(Rect::from_wh(2.0 * radius, 2.0 * radius)));
     reporter_assert!(
         reporter,
         f32::nearly_equal(
@@ -1919,15 +1943,13 @@ fn test_inner_bounds(reporter: &mut Reporter) {
     let mut rr = RRect::new_rect_xy(r, 2.0 * radius, 0.1 * radius);
     reporter_assert!(
         reporter,
-        rrect_priv::inner_bounds(&rr)
-            == Rect::new(0.0, 0.1 * radius, width, height - 0.1 * radius)
+        rrect_priv::inner_bounds(&rr) == Rect::new(0.0, 0.1 * radius, width, height - 0.1 * radius)
     );
     // And vice versa with large y and small x radii
     rr = RRect::new_rect_xy(r, 0.1 * radius, 2.0 * radius);
     reporter_assert!(
         reporter,
-        rrect_priv::inner_bounds(&rr)
-            == Rect::new(0.1 * radius, 0.0, width - 0.1 * radius, height)
+        rrect_priv::inner_bounds(&rr) == Rect::new(0.1 * radius, 0.0, width - 0.1 * radius, height)
     );
 
     // Test a variety of complex round rects produce a non-empty rect that is at least contained,
@@ -2030,15 +2052,12 @@ fn verify_success(
         pick(bl).radii(Corner::LowerLeft),
     ];
     // `expected` is only set up in the C++ test too (its assertions use the PathOps result).
-    let mut _expected = RRect::new();
-    _expected.set_rect_radii(expected_bounds, &radii);
+    let mut expected = RRect::new();
+    expected.set_rect_radii(expected_bounds, &radii);
 
     let actual = rrect_priv::conservative_intersect(a, b);
     // Intersections are commutative so ba and ab should be the same
-    reporter_assert!(
-        reporter,
-        actual == rrect_priv::conservative_intersect(b, a)
-    );
+    reporter_assert!(reporter, actual == rrect_priv::conservative_intersect(b, a));
 
     // Intersection of the result with either A or B should remain the intersection
     reporter_assert!(
@@ -2090,6 +2109,8 @@ fn make_inset(r: &RRect, dx: scalar, dy: scalar) -> RRect {
 }
 
 // Port of: tests/RoundRectTest.cpp#L1533-L1631 (chrome/m156), test_conservative_intersection
+// Mirrors the single C++ test function; splitting it would not be a 1:1 port.
+#[allow(clippy::too_many_lines)]
 fn test_conservative_intersection(reporter: &mut Reporter) {
     use CornerChoice::{A as KA, B as KB, Rect as KRect};
 
@@ -2111,16 +2132,80 @@ fn test_conservative_intersection(reporter: &mut Reporter) {
     // A and B intersect as a rectangle
     verify_success(reporter, &a, &b, KRect, KRect, KRect, KRect);
     // Move A to intersect B on a vertical edge, preserving two corners of A inside B
-    verify_success(reporter, &a.with_offset((6.0, 0.0)), &b, KA, KRect, KRect, KA);
-    verify_success(reporter, &a.with_offset((-6.0, 0.0)), &b, KRect, KA, KA, KRect);
+    verify_success(
+        reporter,
+        &a.with_offset((6.0, 0.0)),
+        &b,
+        KA,
+        KRect,
+        KRect,
+        KA,
+    );
+    verify_success(
+        reporter,
+        &a.with_offset((-6.0, 0.0)),
+        &b,
+        KRect,
+        KA,
+        KA,
+        KRect,
+    );
     // Move B to intersect A on a horizontal edge, preserving two corners of B inside A
-    verify_success(reporter, &a, &b.with_offset((0.0, 6.0)), KB, KB, KRect, KRect);
-    verify_success(reporter, &a, &b.with_offset((0.0, -6.0)), KRect, KRect, KB, KB);
+    verify_success(
+        reporter,
+        &a,
+        &b.with_offset((0.0, 6.0)),
+        KB,
+        KB,
+        KRect,
+        KRect,
+    );
+    verify_success(
+        reporter,
+        &a,
+        &b.with_offset((0.0, -6.0)),
+        KRect,
+        KRect,
+        KB,
+        KB,
+    );
     // Move A to intersect B on a corner, preserving one corner of A and one of B
-    verify_success(reporter, &a.with_offset((-7.0, -8.0)), &b, KB, KRect, KA, KRect); // TL of B
-    verify_success(reporter, &a.with_offset((7.0, -8.0)), &b, KRect, KB, KRect, KA); // TR of B
-    verify_success(reporter, &a.with_offset((7.0, 8.0)), &b, KA, KRect, KB, KRect); // BR of B
-    verify_success(reporter, &a.with_offset((-7.0, 8.0)), &b, KRect, KA, KRect, KB); // BL of B
+    verify_success(
+        reporter,
+        &a.with_offset((-7.0, -8.0)),
+        &b,
+        KB,
+        KRect,
+        KA,
+        KRect,
+    ); // TL of B
+    verify_success(
+        reporter,
+        &a.with_offset((7.0, -8.0)),
+        &b,
+        KRect,
+        KB,
+        KRect,
+        KA,
+    ); // TR of B
+    verify_success(
+        reporter,
+        &a.with_offset((7.0, 8.0)),
+        &b,
+        KA,
+        KRect,
+        KB,
+        KRect,
+    ); // BR of B
+    verify_success(
+        reporter,
+        &a.with_offset((-7.0, 8.0)),
+        &b,
+        KRect,
+        KA,
+        KRect,
+        KB,
+    ); // BL of B
     // An inset is contained inside the original (note that SkRRect::inset modifies radii too) so
     // is returned unmodified when intersected.
     verify_success(reporter, &a, &make_inset(&a, 1.0, 1.0), KB, KB, KB, KB);
@@ -2204,4 +2289,3 @@ def_test!(RoundRect, |reporter| {
     test_inner_bounds(reporter);
     test_conservative_intersection(reporter);
 });
-

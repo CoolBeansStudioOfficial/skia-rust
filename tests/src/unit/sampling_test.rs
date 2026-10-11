@@ -15,6 +15,7 @@ use skia_rust_raster::surfaces;
 
 // Port of: tests/SamplingTest.cpp#L13-L44 (chrome/m156), sampling_with_identity_matrix
 def_test!(sampling_with_identity_matrix, |r| {
+    const N: usize = 30; // try a bunch of random values
     let names = ["images/mandrill_128.png", "images/color_wheel.jpg"];
 
     let mut rand = Random::default();
@@ -23,18 +24,15 @@ def_test!(sampling_with_identity_matrix, |r| {
         let mut surf = surfaces::raster_n32_premul((src.width(), src.height())).expect("surface");
 
         let dotest = |surf: &mut skia_rust_raster::surface::Surface<'_>,
-                          r: &mut Reporter,
-                          sampling: SamplingOptions,
-                          expect_same: bool| {
+                      r: &mut Reporter,
+                      sampling: SamplingOptions,
+                      expect_same: bool| {
             surf.canvas().clear(0u32);
             surf.canvas()
                 .draw_image_with_sampling_options(&src, (0, 0), sampling, None);
             let dst = surf.image_snapshot().expect("snapshot");
 
-            reporter_assert!(
-                r,
-                no_change_with_identity_matrix(&sampling) == expect_same
-            );
+            reporter_assert!(r, no_change_with_identity_matrix(&sampling) == expect_same);
             reporter_assert!(r, equal_pixels_image(&src, &dst) == expect_same);
         };
 
@@ -53,7 +51,6 @@ def_test!(sampling_with_identity_matrix, |r| {
         }
 
         // Exercise cubic variants with B zero and non-zero
-        const N: usize = 30; // try a bunch of random values
         for _ in 0..N {
             let c = rand.next_f();
             dotest(

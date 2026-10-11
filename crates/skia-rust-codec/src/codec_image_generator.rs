@@ -13,9 +13,9 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::data::Data;
+use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
 use skia_rust_core::image_generator::{ImageGenerator, generator_unique_id};
-use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::stream::MemoryStream;

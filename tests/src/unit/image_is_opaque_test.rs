@@ -48,7 +48,9 @@ fn make_picture() -> Picture {
     let mut recorder = PictureRecorder::new();
     let canvas = recorder.begin_recording(Rect::new(0.0, 0.0, 10.0, 10.0), false);
     canvas.draw_color(Color::RED, None);
-    recorder.finish_recording_as_picture(None).expect("a picture")
+    recorder
+        .finish_recording_as_picture(None)
+        .expect("a picture")
 }
 
 // Port of: tests/ImageIsOpaqueTest.cpp#L71-L95 (chrome/m156), Image_isAlphaOnly
@@ -74,7 +76,7 @@ def_test!(Image_isAlphaOnly, |reporter| {
     ];
     for image in images {
         let image = image.expect("image");
-        reporter_assert!(reporter, image.is_alpha_only() == false);
+        reporter_assert!(reporter, !image.is_alpha_only());
     }
 
     let a8_info = ImageInfo::new((1, 1), ColorType::Alpha8, AlphaType::Premul, None);
@@ -82,5 +84,5 @@ def_test!(Image_isAlphaOnly, |reporter| {
         &Pixmap::new_readonly(&a8_info, &pm_bytes[..1], 1).expect("a8 pixmap"),
     )
     .expect("a8 image");
-    reporter_assert!(reporter, a8.is_alpha_only() == true);
+    reporter_assert!(reporter, a8.is_alpha_only());
 });
