@@ -51386,8 +51386,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L136-L316"
 module = "gpu"
-status = "todo"
-reason = "portable now (SkImages::WrapTexture is image_factories::wrap_texture); not ported in this sweep (about 200 C++ lines of format and swizzle assertions)"
+status = "passing"
 span_hash = "f6fd396359b3b5c2b041d88b4793701ae6b457d820e617f8cfea3862cdb3b2bc"
 
 [[test]]
