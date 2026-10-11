@@ -23621,7 +23621,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/pictureshader.cpp#L239-L306"
 module = "effects"
 status = "failing"
-reason = "f16 mismatch: 27 px at the perspective text edges; see notes/gm_pictureshader_cpp_pictureshader_persp.md"
+reason = "blocked on libm: glibc tanf(pi/6) is 1 ulp above the UCRT value used by the oracle (SkM44::Perspective cot); passes on every tier with the UCRT value (port/libm). See notes/gm_pictureshader_cpp_pictureshader_persp.md"
 span_hash = "f0ac1763cc55e0128c976cc379a7e2e53b0a2dbdfaf09c99f580111842281a2e"
 
 [[test]]
