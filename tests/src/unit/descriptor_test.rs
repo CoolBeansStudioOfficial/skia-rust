@@ -5,9 +5,12 @@
 
 #![cfg(test)]
 
-use skia_rust_core::descriptor::{Descriptor, EFFECTS_TAG, REC_TAG};
+use skia_rust_core::checksum::hash32;
+use skia_rust_core::descriptor::{AutoDescriptor, Descriptor, EFFECTS_TAG, REC_TAG};
 use skia_rust_core::font_types::set_four_byte_tag;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scaler_context::{SCALER_CONTEXT_REC_SIZE, ScalerContextRec};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::{def_test, reporter_assert};
 
@@ -119,4 +122,93 @@ def_test!(Descriptor_entry_over_end, |reporter| {
     desc.set_length_for_testing(36);
     desc.set_count_for_testing(2);
     reporter_assert!(reporter, !desc.is_valid());
+});
+
+/// The bytes of `words`, as the native-endian stream `SkReadBuffer` reads them from.
+fn ne_bytes(words: &[u32]) -> Vec<u8> {
+    words.iter().flat_map(|w| w.to_ne_bytes()).collect()
+}
+
+// Port of: tests/DescriptorTest.cpp#L140-L199 (chrome/m156)
+def_test!(Descriptor_flatten_unflatten, |r| {
+    {
+        let mut writer = BinaryWriteBuffer::new();
+        let mut desc = Descriptor::alloc(Descriptor::compute_overhead(0));
+        desc.compute_checksum();
+        desc.flatten(&mut writer);
+        let data = writer.snapshot_as_data();
+        let mut reader = ReadBuffer::new(data.as_bytes());
+        let ad = AutoDescriptor::make_from_buffer(&mut reader);
+        reporter_assert!(r, ad.is_some());
+        reporter_assert!(r, ad.as_ref().is_some_and(|ad| ad.get_desc().is_valid()));
+    }
+
+    {
+        // broken header
+        let mut writer = BinaryWriteBuffer::new();
+        writer.write_int(0); // fChecksum
+        let data = writer.snapshot_as_data();
+        let mut reader = ReadBuffer::new(data.as_bytes());
+        reporter_assert!(r, AutoDescriptor::make_from_buffer(&mut reader).is_none());
+    }
+
+    {
+        // length too big
+        let mut writer = BinaryWriteBuffer::new();
+        // Simulate a broken header
+        writer.write_int(0); // fChecksum
+        writer.write_int(4000); // fLength
+        writer.write_int(0); // fCount
+        let data = writer.snapshot_as_data();
+        let mut reader = ReadBuffer::new(data.as_bytes());
+        reporter_assert!(r, AutoDescriptor::make_from_buffer(&mut reader).is_none());
+    }
+
+    {
+        // length too small
+        let mut writer = BinaryWriteBuffer::new();
+        // Simulate a broken header
+        writer.write_int(0); // fChecksum
+        writer.write_int(3); // fLength
+        writer.write_int(0); // fCount
+        let data = writer.snapshot_as_data();
+        let mut reader = ReadBuffer::new(data.as_bytes());
+        reporter_assert!(r, AutoDescriptor::make_from_buffer(&mut reader).is_none());
+    }
+
+    {
+        // garbage in count
+        let mut writer = BinaryWriteBuffer::new();
+        // Simulate a broken header
+        writer.write_int(0); // fChecksum
+        writer.write_int(20); // fLength
+        writer.write_int(10); // fCount
+        writer.write_int(0);
+        writer.write_int(0);
+        let data = writer.snapshot_as_data();
+        let mut reader = ReadBuffer::new(data.as_bytes());
+        reporter_assert!(r, AutoDescriptor::make_from_buffer(&mut reader).is_none());
+    }
+
+    {
+        // unaligned length
+        // SkDescriptor + entry tag + entry len + entry data(3 bytes only)
+        let datalen = u32::try_from(Descriptor::compute_overhead(0) + 11)
+            .expect("the test length fits in u32");
+        let mut data32 = [
+            // SkDescriptor
+            0,       // checksum
+            datalen, // desc.fLength
+            1,       // desc.fCount
+            // payload
+            1, // entry tag
+            3, // entry len
+            0, // entry data
+        ];
+        let bytes = ne_bytes(&data32);
+        data32[0] = hash32(&bytes[4..datalen as usize], 0);
+        let raw = ne_bytes(&data32);
+        let mut reader = ReadBuffer::new(&raw);
+        reporter_assert!(r, AutoDescriptor::make_from_buffer(&mut reader).is_none());
+    }
 });
