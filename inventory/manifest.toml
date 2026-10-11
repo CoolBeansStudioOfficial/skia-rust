@@ -29084,8 +29084,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/AtlasOobTest.cpp#L188-L206"
 module = "gpu"
-status = "todo"
-reason = "needs the remote glyph cache (SkStrikeServer/Client, SkTypeface_remote, T23) and Slug deserialization; the GPU text path itself (G12b) is ported"
+status = "passing"
 span_hash = "872884cecb642129429263c6cbc8401f287f0901417123a4f91c5de1667099dc"
 
 [[test]]
@@ -34065,8 +34064,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrGlyphVectorTest.cpp#L85-L136"
 module = "text"
-status = "todo"
-reason = "needs src/text/gpu GlyphVector (serialized glyph vectors over StrikeForGPU) and SubRunAllocator, not ported (Ganesh text sub-run infrastructure)"
+status = "passing"
 span_hash = "a044ec2329c2bbd7ac4fc0f14aa3c2cd36e3b6416978cc66bf104062c2e8cf85"
 
 [[test]]
@@ -34075,8 +34073,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrGlyphVectorTest.cpp#L49-L83"
 module = "text"
-status = "todo"
-reason = "needs src/text/gpu GlyphVector (serialized glyph vectors over StrikeForGPU) and SubRunAllocator, not ported (Ganesh text sub-run infrastructure)"
+status = "passing"
 span_hash = "1ce158a34c553825a7845f4abbe7fa7a53f9c2d6d068f5c06ec24e26a7519e68"
 
 [[test]]
@@ -34455,8 +34452,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrTextBlobTest.cpp#L190-L244"
 module = "text"
-status = "todo"
-reason = "needs the src/text/gpu SubRunAllocator and GrTextBlob key/BagOfBytes machinery, not ported (Ganesh text sub-run infrastructure)"
+status = "excluded"
+reason = "tests Skia's BagOfBytes arena (SubRunAllocator.h); Rust owns the sub run data (ownership/Vec)"
 span_hash = "d2a23fd88d513a49c002d41525078e93352f7fad02e24d2132beaeb6392820c2"
 
 [[test]]
@@ -34485,8 +34482,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrTextBlobTest.cpp#L356-L386"
 module = "text"
-status = "todo"
-reason = "needs the src/text/gpu SubRunAllocator and GrTextBlob key/BagOfBytes machinery, not ported (Ganesh text sub-run infrastructure)"
+status = "passing"
 span_hash = "d1ccd5ee8540605de7f901547811e835f82540e3f8a112cfc01adbc0a53cf106"
 
 [[test]]
@@ -34495,8 +34491,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrTextBlobTest.cpp#L246-L352"
 module = "text"
-status = "todo"
-reason = "needs the src/text/gpu SubRunAllocator and GrTextBlob key/BagOfBytes machinery, not ported (Ganesh text sub-run infrastructure)"
+status = "excluded"
+reason = "tests Skia's SubRunAllocator arena; Rust owns the sub run data (ownership/Vec)"
 span_hash = "6c52a3746b99979f1bd32c9fd2771920db485ec8afc691eee6eefc95d01481d9"
 
 [[test]]
@@ -43313,7 +43309,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L465-L498"
 module = "text"
 status = "todo"
-reason = "needs SkReadBuffer's allow-SkSL flag (setAllowSkSL/isAllowSkSL, not ported), and SkPictureBackedGlyphDrawable::MakeFromBuffer must reject SkSL pictures"
+reason = "SkReadBuffer's allow-SkSL flag (and SkDeserialProcs::fAllowSkSL, set by SkPictureBackedGlyphDrawable::MakeFromBuffer) is ported; the test needs SkRuntimeShader/SkRuntimeColorFilter/SkRuntimeBlender/RuntimeShader image filter flatten and unflatten (picture serialization of runtime effects), not ported"
 span_hash = "c4da3936b011501e75a2e716fecf8a7a69f74d245d9063f44c8205b10abd5da1"
 
 [[test]]
@@ -44916,8 +44912,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L812-L838"
 module = "text"
-status = "todo"
-reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
+status = "passing"
 span_hash = "2b02ffae659d902643c27ba60dd2054985090dd4c13904ec893220ba991a6b81"
 
 [[test]]
@@ -44966,8 +44961,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L840-L884"
 module = "text"
-status = "todo"
-reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
+status = "passing"
 span_hash = "e71a56063965e018768f8339128b99b8db17add9e778a4c722af828442d0aae7"
 
 [[test]]
@@ -45006,8 +45000,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L737-L770"
 module = "text"
-status = "todo"
-reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
+status = "passing"
 span_hash = "73051cba0d33135d10aa6eda724f5da3319013554579025b4403a348bfdd44ef"
 
 [[test]]
@@ -45016,8 +45009,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L703-L735"
 module = "text"
-status = "todo"
-reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
+status = "passing"
 span_hash = "19538c7f2027572597d10e5d480fab0d80daeea7584d6886d95098eeab0a02b8"
 
 [[test]]
@@ -45026,8 +45018,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L772-L810"
 module = "text"
-status = "todo"
-reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
+status = "passing"
 span_hash = "2ead663c3ae08a9fa12ba7115649ea8bf1e01f3052a910a4f2e96d7679b4ae9d"
 
 [[test]]
@@ -45106,8 +45097,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L1414-L1494"
 module = "text"
-status = "todo"
-reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
+status = "passing"
 span_hash = "d3b0312f4eb5f2f4473fc3a0d8bf9116c5dea98c38ec90957eb61aeb72569125"
 
 [[test]]
@@ -45116,8 +45106,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L1375-L1401"
 module = "text"
-status = "todo"
-reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
+status = "passing"
 span_hash = "5c9fb8a0f3500c5b8093a19627d058cf20b466f2ef7a7c29cacb599f6dcd07cc"
 
 [[test]]
@@ -48323,8 +48312,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkStrikeTest.cpp#L200-L295"
 module = "text"
-status = "todo"
-reason = "T23: SkStrike::FlattenGlyphsByType and mergeFromBuffer (remote strike flattening) not ported"
+status = "passing"
 span_hash = "d14dc33247823ab02f49c3095708c1e3c19cf4d6ada2eac09802a1dad829dde1"
 
 [[test]]
@@ -48845,8 +48833,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrikeForGPUTest.cpp#L27-L61"
 module = "text"
-status = "todo"
-reason = "SkStrikePromise (flatten/MakeFromBuffer over a strike cache) not ported (T8 strike promise, T23 flattening)"
+status = "passing"
 span_hash = "2f1bd011453b797e9412e8b8324c69942e1d1d114a9e6ffd03132376d426c35d"
 
 [[test]]

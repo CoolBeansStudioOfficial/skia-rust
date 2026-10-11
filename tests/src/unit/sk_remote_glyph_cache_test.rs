@@ -36,7 +36,7 @@ use skia_rust_gpu::text_gpu::chrome_remote_glyph_cache::{
     CacheMissType, DiscardableHandleId, StrikeClient, StrikeClientDiscardableHandleManager,
     StrikeServer, StrikeServerDiscardableHandleManager,
 };
-use skia_rust_gpu::text_gpu::typeface_remote::TypefaceProxyPrototype;
+use skia_rust_gpu::text_gpu::typeface_remote::{TypefaceProxy, TypefaceProxyPrototype};
 use skia_rust_tools::font_tool_utils::create_test_typeface;
 
 use crate::{def_test, reporter_assert};
@@ -362,8 +362,41 @@ def_test!(SkRemoteGlyphCache_PurgesServerEntries, |reporter| {
     discardable_manager.unlock_and_delete_all();
 });
 
-// Port of: tests/SkRemoteGlyphCacheTest.cpp#L1395-L1401 (chrome/m156)
+// Port of: tests/SkRemoteGlyphCacheTest.cpp#L1375-L1401 (chrome/m156)
 def_test!(SkTypefaceProxy_Basic_Serial, |reporter| {
+    let typeface = monospace();
+    let discardable_manager = Arc::new(DiscardableManager::new());
+    let src_proto = TypefaceProxyPrototype::new(&typeface);
+
+    let mut write_buffer = BinaryWriteBuffer::new();
+    src_proto.flatten(&mut write_buffer);
+
+    let data = write_buffer.snapshot_as_data();
+    let mut read_buffer = ReadBuffer::new(data.as_bytes());
+    let dst_proto = TypefaceProxyPrototype::make_from_buffer(&mut read_buffer);
+    reporter_assert!(reporter, dst_proto.is_some());
+    let Some(dst_proto) = dst_proto else { return };
+    let proxy = Arc::new(TypefaceProxy::from_prototype(
+        &dst_proto,
+        discardable_manager,
+        false,
+    ));
+    let proxy_typeface = Typeface::new(proxy.clone());
+    reporter_assert!(reporter, typeface.unique_id() == proxy.remote_typeface_id());
+    reporter_assert!(reporter, typeface.unique_id() != proxy_typeface.unique_id());
+    reporter_assert!(
+        reporter,
+        typeface.count_glyphs() == proxy_typeface.count_glyphs()
+    );
+    reporter_assert!(
+        reporter,
+        typeface.font_style() == proxy_typeface.font_style()
+    );
+    reporter_assert!(
+        reporter,
+        typeface.is_fixed_pitch() == proxy_typeface.is_fixed_pitch()
+    );
+
     // Must be multiple of 4 bytes or the buffer will be invalid.
     let broken_bytes: [u8; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
     let mut broken_buffer = ReadBuffer::new(&broken_bytes);
@@ -463,7 +496,11 @@ def_test!(SkRemoteGlyphCache_b513780208, |reporter| {
 
     let cache = StrikeCache::new();
     let discardable_manager = Arc::new(DiscardableManager::new());
-    let mut client = StrikeClient::new(discardable_manager, /* is_logging */ false, Some(&cache));
+    let mut client = StrikeClient::new(
+        discardable_manager,
+        /* is_logging */ false,
+        Some(&cache),
+    );
 
     // This should fail to read the strike data because SkGlyph::addPathFromBuffer
     // now validates that path glyphs have an expected mask format.

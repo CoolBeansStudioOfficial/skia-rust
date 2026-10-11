@@ -123,7 +123,7 @@ impl GlyphVector {
     // Port of: src/text/gpu/GlyphVector.cpp#L93-L109 (chrome/m156)
     pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
         // There should never be a glyph vector with zero glyphs.
-        debug_assert!(!self.packed_ids.is_empty());
+        debug_assert_ne!(self.packed_ids.len(), 0);
         self.strike_promise().flatten(buffer);
 
         // Write out the span of packedGlyphIDs.

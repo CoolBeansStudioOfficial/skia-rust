@@ -733,10 +733,10 @@ impl StrikePromise {
 
         // If there is a client, then this from a different process. Translate the SkTypefaceID
         // from the strike server (Renderer) process to strike client (GPU) process.
-        if let Some(client) = client {
-            if !client.translate_typeface_id(&mut descriptor) {
-                return None;
-            }
+        if let Some(client) = client
+            && !client.translate_typeface_id(&mut descriptor)
+        {
+            return None;
         }
 
         // C++ has SkASSERT(strike != nullptr) here, which aborts a debug build on a descriptor

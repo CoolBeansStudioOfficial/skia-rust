@@ -132,7 +132,7 @@ COLR code is tested separately (T21, unit tests, a future Fontations oracle).
 | Random scaler context | `tools/fonts/RandomScalerContext.cpp` | tools | remote glyph cache tests |
 | Custom (user) typeface | `src/utils/SkCustomTypeface.cpp` | text | `user_typeface`, `SampleUserTypeface` |
 | Fontations | `src/ports/SkTypeface_fontations.cpp`, `SkFontScanner_fontations.cpp`, `SkFontMgr_fontations_empty.cpp`, `src/ports/fontations/src/*.rs` | text | PLAN decision; the only real-font backend in scope |
-| Remote/proxy | `src/core/SkTypeface_remote.cpp`, `src/text/gpu/SkChromeRemoteGlyphCache.cpp` | text | non-Ganesh `SkRemoteGlyphCacheTest` entries |
+| Remote/proxy | `src/core/SkTypeface_remote.cpp`, `src/text/gpu/SkChromeRemoteGlyphCache.cpp` | gpu | non-Ganesh `SkRemoteGlyphCacheTest` entries. The server draws on an analysis canvas through the GPU sub run code, so both live in `skia_rust_gpu::text_gpu::{chrome_remote_glyph_cache, typeface_remote}` (ported in T23) |
 
 ### 2.2 Fontations: dependency, not port
 
@@ -197,7 +197,7 @@ nothing. Benches with system fonts (`ShaperBench`, 34) belong to the shaper modu
 | `SkDrawable.cpp`, `SkPictureBackedGlyphDrawable` (in `SkGlyph.cpp`) | `core::{drawable, glyph::PictureBackedGlyphDrawable}` | if not already ported |
 | `SkCanvas.cpp` text entry points, `SkDevice.cpp#L424-L488` | `core::canvas`, `core::device` | |
 | `SkGlyphRunPainter.cpp` (`skcpu::GlyphRunListPainter`), `SkDraw_text.cpp`, `SkBitmapDevice.cpp#L540-L545`, `SkScalerContext::GenerateImageFromPath` + its static helpers (`SkScalerContext.cpp#L316-L697`) | `skia_rust_raster::{glyph_run_painter, draw_text, bitmap_device, glyph_image}` | needs `Draw`, A8 blitter, `RasterClip` |
-| `src/utils/SkCustomTypeface.cpp`, `src/ports/*fontations*`, `src/core/SkTypeface_remote.cpp`, `src/text/gpu/SkChromeRemoteGlyphCache.cpp` | `skia_rust_text::{utils::custom_typeface, ports::fontations, remote_glyph_cache}` | backends |
+| `src/utils/SkCustomTypeface.cpp`, `src/ports/*fontations*`, `src/core/SkTypeface_remote.cpp`, `src/text/gpu/SkChromeRemoteGlyphCache.cpp` | `skia_rust_text::{utils::custom_typeface, ports::fontations}`, and `skia_rust_gpu::text_gpu::{chrome_remote_glyph_cache, typeface_remote}` for the remote glyph cache | backends |
 | `tools/fonts/*`, `FontToolUtils`, `tools/Resources.cpp` | `skia-rust-tools` (`tests/tools`, `publish = false`) | test-only |
 
 Layering after this note: `simd → core → skcms/raster → effects → (codec) → text → gpu → …`.
