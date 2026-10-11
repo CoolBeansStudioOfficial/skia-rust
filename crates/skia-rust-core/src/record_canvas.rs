@@ -33,9 +33,9 @@ use crate::point::Point;
 use crate::record::Record;
 use crate::records::{
     ClipOpAndAA, ClipPath, ClipRRect, ClipRect, ClipRegion, ClipShader, Concat44, DrawArc,
-    DrawDRRect, DrawDrawable, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint, DrawPath, DrawPicture,
-    DrawPoints, DrawRRect, DrawRect, DrawRegion, DrawTextBlob, ResetClip, Restore, Save, SaveLayer,
-    Scale, SetM44, Translate,
+    DrawDRRect, DrawDrawable, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint, DrawPath,
+    DrawPicture, DrawPoints, DrawRRect, DrawRect, DrawRegion, DrawTextBlob, ResetClip, Restore,
+    Save, SaveLayer, Scale, SetM44, Translate,
 };
 use crate::rect::{IRect, Rect, RoundOut};
 use crate::region::Region;
@@ -274,17 +274,29 @@ impl CanvasHooks for RecordHooks {
     }
 
     // Port of: src/core/SkRecordCanvas.cpp#L277-L285 (chrome/m156), onDrawGlyphRunList
-    fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) -> bool {
+    fn on_draw_glyph_run_list(
+        &mut self,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+        total_matrix: &Matrix,
+    ) -> bool {
         // (the list's own blob is not kept, so one is made from its runs)
         if let Some(blob) = list.make_blob() {
             let origin = list.origin();
-            self.on_draw_text_blob(&blob, origin.x, origin.y, paint);
+            self.on_draw_text_blob(&blob, origin.x, origin.y, paint, total_matrix);
         }
         true
     }
 
     // Port of: src/core/SkRecordCanvas.cpp#L266-L271 (chrome/m156), onDrawTextBlob
-    fn on_draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) -> bool {
+    fn on_draw_text_blob(
+        &mut self,
+        blob: &TextBlob,
+        x: scalar,
+        y: scalar,
+        paint: &Paint,
+        _total_matrix: &Matrix,
+    ) -> bool {
         self.append(DrawTextBlob {
             paint: paint.clone(),
             blob: blob.clone(),

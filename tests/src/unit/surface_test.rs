@@ -7,8 +7,6 @@
 // * `SurfaceCopyOnWrite`: its last step is `drawString` (text, Phase 3).
 // * `surface_image_unity`: builds an `SkPixmap` over a one-byte address with a huge row-bytes,
 //   which a safe `Pixmap` cannot express.
-// * `Surface_null`: `SkSurfaces::Null` and `makeImageSnapshot() == nullptr`.
-// * `OverdrawSurface_Raster`: `SkOverdrawCanvas`/`SkOverdrawColorFilter`.
 // The Ganesh/Graphite tests are excluded.
 
 #![cfg(test)]
@@ -16,9 +14,11 @@
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::canvas::ContentChangeMode;
 use skia_rust_core::color::{Color, pre_multiply_color};
+use skia_rust_core::color_priv::get_packed_a32;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
+use skia_rust_raster::overdraw_canvas::OverdrawCanvas;
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
 
@@ -257,4 +257,38 @@ def_tier_test!(surface_rowbytes, |reporter| {
     reporter_assert!(reporter, s.is_none());
     let s = surfaces::raster(&info, usize::MAX, None);
     reporter_assert!(reporter, s.is_none());
+});
+
+// Port of: tests/SurfaceTest.cpp#L1294-L1302 (chrome/m156)
+fn test_overdraw_surface(r: &mut Reporter, surface: &mut Surface<'_>) {
+    // SkOverdrawCanvas canvas(surface->getCanvas());
+    let canvas = OverdrawCanvas::new(surface.shared_canvas());
+    canvas.draw_paint(&Paint::default());
+    let image = surface.image_snapshot().expect("image");
+
+    let bitmap = image.as_legacy_bitmap().expect("bitmap");
+    for y in 0..10 {
+        for x in 0..10 {
+            reporter_assert!(r, 1 == get_packed_a32(bitmap.get_addr32(x, y)));
+        }
+    }
+}
+
+// Port of: tests/SurfaceTest.cpp#L1304-L1307 (chrome/m156)
+def_tier_test!(OverdrawSurface_Raster, |r| {
+    let mut surface = create_surface(AlphaType::Premul, None);
+    test_overdraw_surface(r, &mut surface);
+});
+
+// Port of: tests/SurfaceTest.cpp#L1320-L1330 (chrome/m156)
+def_tier_test!(Surface_null, |r| {
+    reporter_assert!(r, surfaces::null(0, 0).is_none());
+
+    let w = 37;
+    let h = 1000;
+    let mut surf = surfaces::null(w, h).expect("surface");
+    let canvas = surf.canvas();
+
+    canvas.draw_paint(&Paint::default()); // should not crash, but don't expect anything to draw
+    reporter_assert!(r, surf.image_snapshot().is_none());
 });

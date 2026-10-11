@@ -49176,8 +49176,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L1304-L1307"
 module = "core"
-status = "todo"
-reason = "needs SkOverdrawCanvas, which is not on main (only the overdraw color filter is)"
+status = "passing"
 span_hash = "d52b42e066459557348cd642608266d67da889dcc2cfc9ada57b736dac94cb7d"
 
 [[test]]
@@ -49420,8 +49419,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L1320-L1330"
 module = "core"
-status = "todo"
-reason = "needs SkSurfaces::Null (SkNullSurface), which is not on main"
+status = "passing"
 span_hash = "f9849cb9ceed7786cb68017615ac050040226f866c14fdd45fcb9b2f1b56d3a4"
 
 [[test]]

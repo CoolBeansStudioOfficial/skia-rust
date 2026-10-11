@@ -110,7 +110,13 @@ pub fn make_picture(
 #[doc(alias = "MakeEmptyPicture")]
 #[must_use]
 pub fn make_empty_picture() -> Picture {
-    make_picture(Rect::new_empty(), Some(Arc::new(Record::new())), None, None, 0)
+    make_picture(
+        Rect::new_empty(),
+        Some(Arc::new(Record::new())),
+        None,
+        None,
+        0,
+    )
 }
 
 /// The commands of `pic`; `None` for a placeholder (`GetRecord`).

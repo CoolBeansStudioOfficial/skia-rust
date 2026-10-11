@@ -53,16 +53,36 @@ use crate::utils::patch_utils;
 use crate::vertices::Vertices;
 
 /// The canvases an n-way canvas forwards to (`SkNWayCanvas::fList`).
-pub(crate) type CanvasList = Rc<RefCell<Vec<Rc<Canvas>>>>;
+pub type CanvasList = Rc<RefCell<Vec<Rc<Canvas>>>>;
 
-/// The overrides of `SkNWayCanvas`. When `stack` is set, they are those of `SkCanvasStack`,
-/// which derives from `SkNWayCanvas` and changes the matrix and clip calls.
-struct NWayHooks {
+/// The overrides of `SkNWayCanvas`: the hooks of an [`NWayCanvas`]. A canvas that derives from
+/// `SkNWayCanvas` (`SkOverdrawCanvas`) holds these and calls them for the virtuals it does not
+/// override (`INHERITED::onDrawMesh`). When `stack` is set, they are those of `SkCanvasStack`,
+/// which also derives from `SkNWayCanvas` and changes the matrix and clip calls.
+pub struct NWayHooks {
     list: CanvasList,
     stack: Option<Rc<RefCell<Vec<CanvasData>>>>,
 }
 
+impl std::fmt::Debug for NWayHooks {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NWayHooks").finish_non_exhaustive()
+    }
+}
+
 impl NWayHooks {
+    /// The hooks of an n-way canvas over `list`.
+    #[must_use]
+    pub fn new(list: CanvasList) -> NWayHooks {
+        NWayHooks { list, stack: None }
+    }
+
+    /// The first canvas of the list (`fList[0]`).
+    #[must_use]
+    pub fn first_canvas(&self) -> Option<Rc<Canvas>> {
+        self.list.borrow().first().map(Rc::clone)
+    }
+
     // `SkNWayCanvas::Iter`: visits the canvases in the order they were added.
     // Port of: src/utils/SkNWayCanvas.cpp#L65-L84 (chrome/m156)
     fn each(&self, mut f: impl FnMut(&Canvas)) {
@@ -278,13 +298,25 @@ impl CanvasHooks for NWayHooks {
     }
 
     // Port of: src/utils/SkNWayCanvas.cpp#L309-L314 (chrome/m156)
-    fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) -> bool {
+    fn on_draw_glyph_run_list(
+        &mut self,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+        _total_matrix: &Matrix,
+    ) -> bool {
         self.each(|c| c.draw_glyph_run_list(list, paint));
         true
     }
 
     // Port of: src/utils/SkNWayCanvas.cpp#L316-L322 (chrome/m156)
-    fn on_draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) -> bool {
+    fn on_draw_text_blob(
+        &mut self,
+        blob: &TextBlob,
+        x: scalar,
+        y: scalar,
+        paint: &Paint,
+        _total_matrix: &Matrix,
+    ) -> bool {
         self.each(|c| {
             c.draw_text_blob(blob, (x, y), paint);
         });
@@ -499,6 +531,20 @@ impl NWayCanvas {
         NWayCanvas { canvas, list }
     }
 
+    /// An n-way canvas whose hooks are made by `make_hooks` from the n-way hooks, for a class
+    /// that derives from `SkNWayCanvas` and overrides some of its virtuals
+    /// (`SkOverdrawCanvas`).
+    pub fn with_hooks(
+        width: i32,
+        height: i32,
+        make_hooks: impl FnOnce(NWayHooks) -> Box<dyn CanvasHooks>,
+    ) -> NWayCanvas {
+        let canvas = Canvas::new_no_pixels_irect(&IRect::from_wh(width, height), None);
+        let list: CanvasList = Rc::new(RefCell::new(Vec::new()));
+        canvas.set_hooks(Some(make_hooks(NWayHooks::new(Rc::clone(&list)))));
+        NWayCanvas { canvas, list }
+    }
+
     /// An n-way canvas of `width` by `height` with no canvases (`SkNWayCanvas(int, int)`).
     #[must_use]
     pub fn new(width: i32, height: i32) -> NWayCanvas {
@@ -576,10 +622,7 @@ mod tests {
         for c in [&a, &b] {
             assert_eq!(c.save_count(), 2);
             assert_eq!(c.total_matrix(), Matrix::translate(Vector::new(3.0, 4.0)));
-            assert_eq!(
-                c.device_clip_bounds(),
-                Some(IRect::new(3, 4, 8, 9))
-            );
+            assert_eq!(c.device_clip_bounds(), Some(IRect::new(3, 4, 8, 9)));
         }
         nway.restore();
         assert_eq!(a.save_count(), 1);
