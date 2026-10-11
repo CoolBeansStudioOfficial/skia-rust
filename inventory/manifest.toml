@@ -23779,7 +23779,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/rasterhandleallocator.cpp#L276-L308"
 module = "raster"
 status = "todo"
-reason = "needs SkRasterHandleAllocator (the canvas raster-handle allocator; device.rs notes it is not ported)"
+reason = "needs SkRasterHandleAllocator (MakeCanvas, allocBitmap, accessTopRasterHandle, updateHandle; fAllocator and fRasterHandle on SkBitmapDevice). Skia's raster handle is a raw SkCanvas* owned by the allocator, with no safe Rust form here (no unsafe outside skia-rust-simd), so this is not a small port"
 span_hash = "5afd0e0a19db99156439684604da1ac4b568aa96452c74f7dc99a6219a0f5989"
 
 [[test]]
