@@ -5,13 +5,13 @@
 
 use crate::prelude::*;
 use skia_rust_core::bitmap::Bitmap;
-use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::sampling_options::{CubicResampler, FilterMode, MipmapMode, SamplingOptions};
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_tools::font_tool_utils::default_portable_font;
 
 use crate::tool_utils::color_to_565;
@@ -23,9 +23,7 @@ struct BmpFilterQualityRepeatGm {
 
 impl BmpFilterQualityRepeatGm {
     fn new() -> Self {
-        Self {
-            bmp: Bitmap::new(),
-        }
+        Self { bmp: Bitmap::new() }
     }
 
     // Port of: gm/bmpfilterqualityrepeat.cpp#L49-L79 (chrome/m156), drawAll

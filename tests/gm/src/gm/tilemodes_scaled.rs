@@ -30,6 +30,8 @@ use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_tools::font_tool_utils::default_portable_font;
 
+use crate::tool_utils::{color_to_565, int_to_scalar};
+
 // Port of: gm/tilemodes_scaled.cpp#L8-L17 (chrome/m156), gSamplings
 fn samplings() -> [SamplingOptions; 5] {
     [
@@ -210,17 +212,53 @@ fn make_bm(tx: TileMode, ty: TileMode) -> Option<Shader> {
     bm.to_shader((tx, ty), SamplingOptions::default(), None)
 }
 
-// Port of: gm/tilemodes_scaled.cpp#L206-L273 (chrome/m156), class ScaledTiling2GM (make_bm)
-#[derive(Debug)]
-pub struct ScaledTiling2Gm {
+// Port of: gm/tilemodes_scaled.cpp#L184-L202 (chrome/m156), make_grad
+fn make_grad(tx: TileMode, ty: TileMode) -> Option<Shader> {
+    let pts = [
+        Point::new(0.0, 0.0),
+        Point::new(int_to_scalar(G_WIDTH), int_to_scalar(G_HEIGHT)),
+    ];
+    let center = Point::new(int_to_scalar(G_WIDTH) / 2.0, int_to_scalar(G_HEIGHT) / 2.0);
+    let rad = int_to_scalar(G_WIDTH) / 2.0;
+    let colors = [
+        Color4f::new(1.0, 0.0, 0.0, 1.0),
+        Color4f::from_color(color_to_565(Color::from(0xFF00_44FF))),
+    ];
+    let grad = Gradient::new(
+        Colors::new(&colors, None, tx, None),
+        Interpolation::default(),
+    );
+
+    // `int index = (int)ty;` for the modes this GM uses (kClamp, kRepeat, kMirror).
+    let index = match ty {
+        TileMode::Clamp => 0,
+        TileMode::Repeat => 1,
+        TileMode::Mirror => 2,
+        TileMode::Decal => 3,
+    };
+    match index % 3 {
+        0 => shaders::linear_gradient((pts[0], pts[1]), &grad, None),
+        1 => shaders::radial_gradient((center, rad), &grad, None),
+        2 => shaders::sweep_gradient(center, (135.0, 225.0), &grad, None),
+        _ => None,
+    }
+}
+
+/// `ShaderProc`: builds the shader for a pair of tile modes.
+// Port of: gm/tilemodes_scaled.cpp#L204 (chrome/m156), typedef ShaderProc
+type ShaderProc = fn(TileMode, TileMode) -> Option<Shader>;
+
+// Port of: gm/tilemodes_scaled.cpp#L206-L273 (chrome/m156), class ScaledTiling2GM
+struct ScaledTiling2Gm {
+    proc: ShaderProc,
     name: &'static str,
 }
 
 impl ScaledTiling2Gm {
     // Port of: gm/tilemodes_scaled.cpp#L208 (chrome/m156), ScaledTiling2GM(ShaderProc, const char*)
     #[must_use]
-    pub fn new(name: &'static str) -> Self {
-        Self { name }
+    fn new(proc: ShaderProc, name: &'static str) -> Self {
+        Self { proc, name }
     }
 }
 
@@ -280,7 +318,7 @@ impl GM for ScaledTiling2Gm {
             x += 50.0;
             for kx in 0..modes.len() {
                 let mut paint = Paint::default();
-                paint.set_shader(make_bm(modes[kx], modes[ky]));
+                paint.set_shader((self.proc)(modes[kx], modes[ky]));
 
                 canvas.save();
                 canvas.translate((x, y));
@@ -307,5 +345,10 @@ crate::def_gm!(
 // Port of: gm/tilemodes_scaled.cpp#L276-L276 (chrome/m156), DEF_GM( return new ScaledTiling2GM(make_bm, ...); )
 crate::def_gm!(
     ScaledTiling2GM_bitmap = "ScaledTiling2GM(make_bm, \"scaled_tilemode_bitmap\")",
-    ScaledTiling2Gm::new("scaled_tilemode_bitmap")
+    ScaledTiling2Gm::new(make_bm, "scaled_tilemode_bitmap")
+);
+// Port of: gm/tilemodes_scaled.cpp#L277-L277 (chrome/m156), DEF_GM( return new ScaledTiling2GM(make_grad, ...); )
+crate::def_gm!(
+    ScaledTiling2GM_gradient = "ScaledTiling2GM(make_grad, \"scaled_tilemode_gradient\")",
+    ScaledTiling2Gm::new(make_grad, "scaled_tilemode_gradient")
 );

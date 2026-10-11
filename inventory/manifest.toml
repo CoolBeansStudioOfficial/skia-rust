@@ -16116,8 +16116,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/aaxfermodes.cpp#L283-L283"
 module = "raster"
-status = "todo"
-reason = "needs ToolUtils::draw_checkerboard, which is not ported"
+status = "passing"
 span_hash = "1f1216ba1e8f19bcc85739ddea202fc0844bc99ac45e594e9ba293dc85c72b79"
 
 [[test]]
@@ -16486,6 +16485,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L507-L513"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "050520a4ae95bd2322529cd8884575c3ca7e4d89f960bcfed9a58f757e69d5f0"
 
 [[test]]
@@ -16495,6 +16495,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L515-L521"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "b077c0f1394e2ac07d5799531a45dec38b1ca7bfa1809f153992f9917130025e"
 
 [[test]]
@@ -16504,6 +16505,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L523-L529"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "a38529b2ccf21bffc37dcee2b6176743b6617f25f32f4a218369923241423ca1"
 
 [[test]]
@@ -16513,6 +16515,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L531-L537"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "69dea62989952f64a3a991dabfd8bfe440dd8150bd82537ba1d1479021ed1939"
 
 [[test]]
@@ -16522,6 +16525,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L539-L545"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "ea8d5b9cfa4a3cc414c744780d0e59ef1f4a0e48da4e66943a497e86a85d99ea"
 
 [[test]]
@@ -16531,6 +16535,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L483-L489"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "c20c68c8ff2779eb0ecbd4fd15157002c23a2d63b9ae7a23fbf4e5fa5d58da04"
 
 [[test]]
@@ -16540,6 +16545,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L491-L497"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "59cb3f4b6de73888618938253e0b6da6b3d2d0679009c532000efeda1ced7ead"
 
 [[test]]
@@ -16549,6 +16555,7 @@ macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L499-L505"
 module = "codec"
 status = "todo"
+reason = "needs SkSurface/SkImage::asyncRescaleAndReadPixels (the GM's CPU readback path), which is not ported"
 span_hash = "6aa09cbd3de950255007f8b179bee644c6e94255bfb9e345e8c703dbf64db457"
 
 [[test]]
@@ -16804,8 +16811,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmapcopy.cpp#L157-L157"
 module = "raster"
-status = "todo"
-reason = "needs ToolUtils::copy_to (bitmap colour-type conversion to 565/4444), which is not ported"
+status = "passing"
 span_hash = "40180e4c46fc4e3515c6ca19d78404dbf957a2b8281e4a6b62987cb4ec0c3db6"
 
 [[test]]
@@ -17594,7 +17600,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/clipshader.cpp#L22-L61"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "62cfab3dc9700b78969acdef78be0d3dba6d196a7d324294451744847b7750ed"
 
 [[test]]
@@ -17829,7 +17835,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/colorspace.cpp#L118-L120"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "1ed70dc6fe322ae27290fefdd0350419fffdeef9eb47edc1ad26d8c10147265a"
 
 [[test]]
@@ -17838,7 +17844,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/colorspace.cpp#L122-L124"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "71ec1602a288e2dd2269b48e3d049ff8d12a9c0f6ebe621b153b6d858173c2fc"
 
 [[test]]
@@ -18478,6 +18484,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L217-L252"
 module = "effects"
 status = "todo"
+reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
 span_hash = "9a227536ce82bd3b777ba2211c8648dbeb55e65e89090865eefbcd968387f5a5"
 
 [[test]]
@@ -18486,7 +18493,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L486-L547"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "af9d0b426f9af10f9d9ed66147f73fcc5c0f5e8cbcc7acbea3a5754cd209a71b"
 
 [[test]]
@@ -18505,6 +18512,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L270-L332"
 module = "effects"
 status = "todo"
+reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
 span_hash = "13109a333ef7c60d740d02a953da9f79c47a27e79d6c7f6d4929e71e1bd24ffe"
 
 [[test]]
@@ -18514,6 +18522,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L391-L484"
 module = "effects"
 status = "todo"
+reason = "combining two clip shaders needs SkShaders::Blend (SkBlendShader): SkRasterClip::op_shader panics on the second clipShader, and SkBlendShader is not ported"
 span_hash = "7c8b35a69e977c06929283db1a7222bfed66adf5dbeaa6d75ce025d14f101209"
 
 [[test]]
@@ -19128,8 +19137,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_905548.cpp#L20-L41"
 module = "raster"
-status = "todo"
-reason = "needs SkImageFilters::Erode and SkImageFilters::Arithmetic, which are not ported"
+status = "passing"
 span_hash = "83c5df95bb7fbe23a7cdc96c1fbe3f6517debb9d1f1406f1a91bd3b71352503c"
 
 [[test]]
@@ -19656,8 +19664,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/displacement.cpp#L169-L169"
 module = "raster"
-status = "todo"
-reason = "needs ToolUtils::CreateStringImage and create_checkerboard_image (tools helpers), which are not ported"
+status = "passing"
 span_hash = "3cea9ce4cbedf9152aba5248b97a505e8bf5f27f1c5f0d550efd9f81a46659f5"
 
 [[test]]
@@ -19885,6 +19892,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/dropshadowimagefilter.cpp#L85-L127"
 module = "effects"
 status = "todo"
+reason = "needs SkColorSpace::makeColorSpin (not ported) for the DropShadow overload that takes a colour space"
 span_hash = "14564fc8f4648e343f9278188f7471b3861a7851ec0c1d7f0ba97f1582c7b718"
 
 [[test]]
@@ -20033,7 +20041,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_platform.cpp#L116-L116"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "c2e702a4e59e52b8070a31e9613cea5ec734c86126ba8a1d588a2f04f5081a3b"
 
 [[test]]
@@ -21607,6 +21615,7 @@ macro = "DEF_GM"
 source = "gm/hdr_pip_blur.cpp#L199-L199"
 module = "effects"
 status = "todo"
+reason = "needs colour-managed offscreen surfaces (canvas makeSurface with Rec2020/PQ colour spaces) and SkImage::makeColorSpace on raster images; not ported"
 span_hash = "32e3564d88a9e68bf785432ec2bda3fc35e99bd25ac14df9217f0d51fe3cef6b"
 
 [[test]]
@@ -22197,8 +22206,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagesource.cpp#L97-L97"
 module = "raster"
-status = "todo"
-reason = "needs ToolUtils::CreateStringImage (tools helper), which is not ported"
+status = "passing"
 span_hash = "4b893556eafec526bc79056a884d1b9e6a92b7d8de893e9032457437a5c966bb"
 
 [[test]]
@@ -22596,6 +22604,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/makecolorspace.cpp#L66-L97"
 module = "skcms"
 status = "todo"
+reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
 span_hash = "630226c8aec6e99b7a83362ecd99bd98bbd12972153dcdd0a3b96a9615601622"
 
 [[test]]
@@ -22605,6 +22614,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/makecolorspace.cpp#L99-L164"
 module = "skcms"
 status = "todo"
+reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
 span_hash = "89ec913c798f7b3f664ad7c968c9056a99ee22b8190dbc56b23d372f9f104413"
 
 [[test]]
@@ -22614,6 +22624,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/makecolorspace.cpp#L166-L231"
 module = "skcms"
 status = "todo"
+reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
 span_hash = "2a15a3367f9c9325eec4c7bf6e992ff40ce0b6b1289ee406e0e511a3bf8da4a8"
 
 [[test]]
@@ -23122,7 +23133,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/palette.cpp#L170-L170"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "976686fb54f417a46018d5908ad445fa8fd0eaab7e5ff83d45db1c8f57f1e01d"
 
 [[test]]
@@ -23131,7 +23142,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/palette.cpp#L168-L168"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0d201fc57e0817b20df18d7b42ac52183c41d8eb4fd769c5208450cb243b189a"
 
 [[test]]
@@ -23140,7 +23151,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/palette.cpp#L166-L166"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3ee799324f550fe6f8bc0daef05f640061f1ff55010110f19a57d12421103070"
 
 [[test]]
@@ -23149,7 +23160,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/palette.cpp#L167-L167"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d7a2ea5322a0dd4a8f2d015a6043431b8a05b1cfc6431f4efeb1feb8159f3760"
 
 [[test]]
@@ -23158,7 +23169,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/palette.cpp#L169-L169"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e864e54bbcbe5911a557abbb44ecc262d40f9e6b633ad2cadc2f25a051cbac52"
 
 [[test]]
@@ -23596,6 +23607,7 @@ macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L205-L205"
 module = "effects"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not on main"
 span_hash = "db76d71347c8892590bfa7b9d9ab0f4df4f2cfd428329ca7a36fb2b463ffb02e"
 
 [[test]]
@@ -23605,6 +23617,7 @@ macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L207-L207"
 module = "effects"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not on main"
 span_hash = "217f121bd485057830d1141367817a99b11108b2c1802e32332417673b653f98"
 
 [[test]]
@@ -23614,6 +23627,7 @@ macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L206-L206"
 module = "effects"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not on main"
 span_hash = "918f0190ff903e17d4ddc44d55c6b4f4165c11c0c90bed67fa3641cbccaaafce"
 
 [[test]]
@@ -23623,6 +23637,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/pictureshader.cpp#L239-L306"
 module = "effects"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not on main"
 span_hash = "f0ac1763cc55e0128c976cc379a7e2e53b0a2dbdfaf09c99f580111842281a2e"
 
 [[test]]
@@ -23632,6 +23647,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/pictureshader.cpp#L209-L237"
 module = "effects"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not on main"
 span_hash = "53e679b28350fc501e1d6e708cb660d117d34bf6a4323475b86c8e7adaf7f115"
 
 [[test]]
@@ -23641,6 +23657,7 @@ macro = "DEF_GM"
 source = "gm/pictureshadercache.cpp#L96-L96"
 module = "effects"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not on main"
 span_hash = "6dbf4df69ab3b21ca535c4c43e74a3283213b1f5667432e890ad6d6f74b1bd91"
 
 [[test]]
@@ -23650,6 +23667,7 @@ macro = "DEF_GM"
 source = "gm/pictureshadertile.cpp#L161-L161"
 module = "effects"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not on main"
 span_hash = "3f514a4e65b4ed698948ac44194cf0098c43fc50120b617659615dc1aec28455"
 
 [[test]]
@@ -23786,6 +23804,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/rasterhandleallocator.cpp#L276-L308"
 module = "raster"
 status = "todo"
+reason = "needs SkRasterHandleAllocator (the canvas raster-handle allocator; device.rs notes it is not ported)"
 span_hash = "5afd0e0a19db99156439684604da1ac4b568aa96452c74f7dc99a6219a0f5989"
 
 [[test]]
@@ -23969,6 +23988,7 @@ macro = "DEF_GM"
 source = "gm/rrects.cpp#L296-L296"
 module = "effects"
 status = "todo"
+reason = "GPU-only: the kEffect_Type variant draws through the GPU round-rect effect; no raster result"
 span_hash = "2be6613e3d8212ba140e59eb5dbf55028d6fd77a4c3af609a98dda148d458eef"
 
 [[test]]
@@ -25608,7 +25628,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/tilemodes.cpp#L276-L276"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3d1bd06e7794bd2ac7ffab9991eb7c9269293f522a707742fdf39be72f01c5bd"
 
 [[test]]
@@ -25662,7 +25682,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/tilemodes_scaled.cpp#L277-L277"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d34c8ebc4df3effed1524fca484d43df15fda9eafa8184eac36814c7ef5940de"
 
 [[test]]
@@ -26083,7 +26103,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/windowrectangles.cpp#L105-L105"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "ff8a33c80cc6e7747e9e2c05460b5ef6090d56859fc0377c507343ddde6e48e1"
 
 [[test]]
@@ -26156,6 +26176,7 @@ macro = "DEF_GM"
 source = "gm/ycbcrimage.cpp#L198-L198"
 module = "raster"
 status = "todo"
+reason = "GPU-only: YUV textures via SkImages::BorrowTextureFrom / WrapTexture; no raster result"
 span_hash = "87836860a3ca9d8b362c7f7e1aab3fe489cdbb5d24cac1b91bdbbfbd90904985"
 
 [[test]]
