@@ -645,6 +645,9 @@ Open questions for the coordinator:
    codecs and its Rust EXIF/ICC parsers in scope as wave C-R, exclude BMP/ICO-Rust (34) until
    `image` publishes the needed revision, and record the dependencies like skrifa? (Recommended:
    yes. These tests are self-checking and the crates are Skia's own implementation.)
+   **Status: proceeding per recommendation, pending maintainer confirmation.** The PNG part is
+   ported in `port/codec-cr-png` (`png =0.18.1`, the version Skia's `MODULE.bazel` pins); the
+   default (non-`for_android`) build is the one ported, so Q5's patch is not needed for it.
 2. **Q2 — `dm-image` goldens.** The Windows oracle host is gone. Options: (a) leave 217 entries
    `todo` until a host exists (default); (b) build a CPU-only Linux DM (no Dawn, no fonts) and
    render `--src image` for `8888`/`565`/`f16`. First compare a sample of `--src gm` outputs
