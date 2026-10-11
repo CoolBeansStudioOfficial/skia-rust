@@ -324,7 +324,7 @@ crate::def_simple_gm!(tiled_picture_shader, canvas, 400, 400, {
 
 // Port of: gm/pictureshader.cpp#L239-L306 (chrome/m156), pictureshader_persp
 crate::def_simple_gm!(
-    #[ignore = "f16 mismatch: see notes/gm_pictureshader_cpp_pictureshader_persp.md"]
+    #[ignore = "f16 mismatch from host libm tanf (glibc vs UCRT): see notes/gm_pictureshader_cpp_pictureshader_persp.md"]
     pictureshader_persp,
     canvas,
     215,
