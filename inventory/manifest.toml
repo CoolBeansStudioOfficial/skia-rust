@@ -19689,7 +19689,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawable.cpp#L39-L52"
 module = "raster"
 status = "todo"
-reason = "needs SkCanvas::drawDrawable, which is not ported"
+reason = "SkCanvas::drawDrawable is ported; the GM itself (MyDrawable) is not ported yet"
 span_hash = "d2447b3cbe180175fd3fe3565dc0eea935af656c9cc172539bd92869ce78b566"
 
 [[test]]
@@ -23066,7 +23066,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/overdrawcanvas.cpp#L33-L59"
 module = "raster"
 status = "todo"
-reason = "needs SkOverdrawCanvas and SkOverdrawColorFilter; not ported"
+reason = "SkOverdrawCanvas (skia_rust_raster::overdraw_canvas) and SkOverdrawColorFilter are ported; the GM is not ported yet, and its text is not verified against the goldens"
 span_hash = "16b0ee844c3b6ff17820cc99e9e7c8902bf0899deb06cd480c1119c29edac37e"
 
 [[test]]
@@ -23076,7 +23076,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/overdrawcanvas.cpp#L93-L98"
 module = "text"
 status = "todo"
-reason = "needs SkOverdrawCanvas / SkOverdrawColorFilter (not ported)"
+reason = "SkOverdrawCanvas is ported, but not the overdraw of a glyph run list with RSXforms (nothing is drawn for it), which this GM draws; the GM is not ported yet"
 span_hash = "8bdae51cfab52ddf0fa1ad9dda66300afc5d1358c898ec3838ffde9942b033b6"
 
 [[test]]
@@ -42615,7 +42615,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L843-L1055"
 module = "core"
 status = "todo"
-reason = "picture parts still need image filters (SkImageFilters::Blend/Image, not ported) in paints and save layers, clip shaders, nested pictures, drawables and annotations (Canvas::draw_annotation is not ported); shaders, color filters, blenders and regions are encoded now, notes/picture-serialization.md"
+reason = "picture parts still need image filters (SkImageFilters::Blend/Image, not ported) in paints and save layers, clip shaders and drawables (nested pictures and annotations are encoded now); shaders, color filters, blenders and regions are encoded now, notes/picture-serialization.md"
 span_hash = "6d124b55ad7562cd056255f1a92b9991f33cf9ceef9b3857c36938a54c994820"
 
 [[test]]
