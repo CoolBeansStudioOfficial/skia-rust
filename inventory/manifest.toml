@@ -30146,8 +30146,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L213-L231"
 module = "core"
-status = "todo"
-reason = "needs SkSurface/SkCanvas/SkPathBuilder"
+status = "passing"
 span_hash = "1d79b8fb638636aa1a5cf35929aec7347754573ce6ec530f38106491f9201e72"
 
 [[test]]
@@ -30156,8 +30155,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L175-L211"
 module = "core"
-status = "todo"
-reason = "needs SkSurface/SkCanvas/SkPathBuilder"
+status = "passing"
 span_hash = "7646cf3c7fb754eef2e29b01466c36d317e3601f0e65538be12dac3a3e07b878"
 
 [[test]]
