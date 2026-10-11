@@ -63,6 +63,8 @@ impl GM for TileImageFilterGm {
     }
 
     // Port of: gm/tileimagefilter.cpp#L35-L121 (chrome/m156), onDraw
+    // Mirrors the C++ onDraw as one function.
+    #[allow(clippy::too_many_lines)]
     fn on_draw(&mut self, canvas: &Canvas) {
         let bitmap = self
             .bitmap

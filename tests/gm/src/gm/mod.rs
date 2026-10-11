@@ -274,6 +274,8 @@ pub mod patheffects;
 pub mod pathfill;
 pub mod pathinterior;
 pub mod pathmaskcache;
+pub mod pathopsblend;
+pub mod pathopsinverse;
 pub mod pathreverse;
 pub mod pdf_never_embed;
 pub mod perlinnoise;

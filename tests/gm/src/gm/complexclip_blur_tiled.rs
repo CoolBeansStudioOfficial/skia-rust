@@ -3,6 +3,9 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/complexclip_blur_tiled.cpp (chrome/m156)
 
+// Binding names mirror the C++ GM (rect and rrect).
+#![allow(clippy::similar_names)]
+
 use crate::prelude::*;
 use crate::tool_utils::{int_to_scalar, make_surface};
 use skia_rust_core::canvas::SaveLayerRec;
@@ -54,7 +57,7 @@ impl GM for ComplexClipBlurTiledGm {
                     tile_canvas
                         .save_layer(&SaveLayerRec::default().bounds(&rect).paint(&blur_paint));
                     let rrect = RRect::new_rect_xy(rect.with_inset((20.0, 20.0)), 25.0, 25.0);
-                    tile_canvas.clip_rrect(&rrect, ClipOp::Difference, true);
+                    tile_canvas.clip_rrect(rrect, ClipOp::Difference, true);
                     let paint = Paint::default();
                     tile_canvas.draw_rect(rect, &paint);
                     tile_canvas.restore();

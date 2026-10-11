@@ -3,6 +3,9 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/bmpfilterqualityrepeat.cpp (chrome/m156)
 
+// Binding names mirror the C++ GM (text paint and bitmap paint).
+#![allow(clippy::similar_names)]
+
 use crate::prelude::*;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::font_types::TextEncoding;
@@ -92,13 +95,13 @@ impl GM for BmpFilterQualityRepeatGm {
 
             color_bmp.alloc_n32_pixels((20, 20), true);
             color_bmp.erase_color(Color::from(0xFFFF_0000));
-            canvas.draw_image(&color_bmp.as_image().expect("an image"), (0.0, 0.0), None);
+            canvas.draw_image(color_bmp.as_image().expect("an image"), (0.0, 0.0), None);
             color_bmp.erase_color(color_to_565(Color::from(0xFF00_8200)));
-            canvas.draw_image(&color_bmp.as_image().expect("an image"), (20.0, 0.0), None);
+            canvas.draw_image(color_bmp.as_image().expect("an image"), (20.0, 0.0), None);
             color_bmp.erase_color(color_to_565(Color::from(0xFFFF_9000)));
-            canvas.draw_image(&color_bmp.as_image().expect("an image"), (0.0, 20.0), None);
+            canvas.draw_image(color_bmp.as_image().expect("an image"), (0.0, 20.0), None);
             color_bmp.erase_color(color_to_565(Color::from(0xFF20_00FF)));
-            canvas.draw_image(&color_bmp.as_image().expect("an image"), (20.0, 20.0), None);
+            canvas.draw_image(color_bmp.as_image().expect("an image"), (20.0, 20.0), None);
         }
     }
 

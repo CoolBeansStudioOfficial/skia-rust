@@ -1187,6 +1187,7 @@ dependencies = [
  "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-resources",
  "skia-rust-simd",

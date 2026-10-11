@@ -8,6 +8,9 @@
 // returns `DrawResult::Skip` in `onDraw`, as it did when the goldens were made. The drawing
 // code is not ported, because it can never run here; a non-null typeface panics.
 
+// Literals are kept verbatim from the C++ source (the descriptions of the test font).
+#![allow(clippy::unreadable_literal)]
+
 use crate::prelude::*;
 use skia_rust_core::typeface::Typeface;
 use skia_rust_tools::font_tool_utils::create_typeface_from_resource;

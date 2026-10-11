@@ -333,7 +333,9 @@ crate::def_simple_gm!(clip_shader_difference, canvas, 512, 512, {
     path.line_to((128.0, 256.0));
     path.line_to((256.0, 128.0));
     path.line_to((128.0, 0.0));
-    let d = 64.0_f32 * 1.414_213_56_f32; // SK_ScalarSqrt2
+    // SK_ScalarSqrt2 (the C literal `1.41421356f`, same f32).
+    #[allow(clippy::approx_constant)]
+    let d = 64.0_f32 * 1.414_213_5_f32;
     path.move_to((128.0 - d, 128.0 - d));
     path.line_to((128.0 - d, 128.0 + d));
     path.line_to((128.0 + d, 128.0 + d));

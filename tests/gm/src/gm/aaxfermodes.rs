@@ -3,6 +3,14 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/aaxfermodes.cpp (chrome/m156)
 
+// Mirrors the C++ int/scalar casts and sizes of the GM: the values are small constants.
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
+
 use crate::prelude::*;
 use crate::tool_utils::draw_checkerboard;
 use skia_rust_core::blend_mode::BlendMode;
@@ -148,7 +156,9 @@ impl AaxfermodesGm {
 
                     canvas.save();
                     for &shape in &K_SHAPES {
-                        if drawing_pass != DrawingPass::Shape {
+                        if drawing_pass == DrawingPass::Shape {
+                            self.draw_shape(canvas, shape, &paint, mode);
+                        } else {
                             canvas.save();
                             canvas.clip_rect(clip_rect, None, None);
                             if drawing_pass == DrawingPass::Checkerboard {
@@ -162,8 +172,6 @@ impl AaxfermodesGm {
                                 canvas.draw_color(Color::from(K_BG_COLOR), BlendMode::Src);
                             }
                             canvas.restore();
-                        } else {
-                            self.draw_shape(canvas, shape, &paint, mode);
                         }
                         canvas.translate((K_SHAPE_TYPE_SPACING as f32, 0.0));
                     }
@@ -277,15 +285,15 @@ fn setup_shape_paint(canvas: &Canvas, color: Color, mode: BlendMode, paint: &mut
             let mut dim_paint = Paint::default();
             dim_paint.set_anti_alias(false);
             dim_paint.set_blend_mode(BlendMode::DstIn);
-            if paint.alpha() != 255 {
+            if paint.alpha() == 255 {
+                // Just clear the dst, we need to preserve the paint's opacity.
+                dim_paint.set_argb(0, 0, 0, 0);
+            } else {
                 // Dim the src and dst colors.
                 let dim = (255 * 255 / max_sum) as u8;
                 dim_paint.set_argb(dim, 0, 0, 0);
                 let alpha = (255 * i32::from(paint.alpha()) / max_sum) as u8;
                 paint.set_alpha(alpha);
-            } else {
-                // Just clear the dst, we need to preserve the paint's opacity.
-                dim_paint.set_argb(0, 0, 0, 0);
             }
             let half = K_SHAPE_SPACING / 2;
             canvas.draw_rect(
