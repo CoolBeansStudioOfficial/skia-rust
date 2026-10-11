@@ -21792,8 +21792,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image_shader.cpp#L168-L168"
 module = "effects"
-status = "todo"
-reason = "draws picture, encoded and texture images: not ported"
+status = "passing"
 span_hash = "87752d8778cea41be42db95db4d069f91b723ecc2b45db97d62f6a794869ebc6"
 
 [[test]]
