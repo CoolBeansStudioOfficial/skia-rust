@@ -35,4 +35,5 @@ pub mod texture_proxy_test;
 pub mod transform_test;
 pub mod uniform_manager_test;
 pub mod uniform_offset_calculator_test;
+pub mod update_backend_texture_test;
 pub mod upload_buffer_manager_test;

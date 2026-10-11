@@ -7,8 +7,10 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::color::Color4f;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image::Image;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
 
@@ -76,6 +78,59 @@ pub fn decode_data_to_bitmap(data: Option<skia_rust_core::data::Data>) -> Option
 pub fn get_resource_as_bitmap(resource: &str) -> Option<Bitmap> {
     let data = crate::resources::get_resource_as_data(resource)?;
     decode_data_to_bitmap(Some(skia_rust_core::data::Data::new_from_vec(data)))
+}
+
+/// One mip level made by [`make_pixmaps`]: its info, row bytes and pixels. Each level owns its
+/// pixels (Skia makes them one allocation, which nothing observes).
+#[derive(Debug, Clone)]
+pub struct PixmapLevel {
+    pub info: ImageInfo,
+    pub row_bytes: usize,
+    pub pixels: Vec<u8>,
+}
+
+impl PixmapLevel {
+    /// The level as a read-only pixmap.
+    #[must_use]
+    pub fn pixmap(&self) -> Pixmap<'_> {
+        Pixmap::new_readonly(&self.info, &self.pixels, self.row_bytes)
+            .expect("a level's pixels hold its info")
+    }
+}
+
+/// `ToolUtils::make_pixmaps`: makes the (up to six) mip levels of a `ct` texture, each filled
+/// with its entry of `colors`. Levels with an even index get row bytes that are not tight, so
+/// the tests exercise row bytes that differ from the minimum.
+// Port of: tools/ToolUtils.cpp#L184-L214 (chrome/m156)
+#[must_use]
+pub fn make_pixmaps(
+    ct: ColorType,
+    at: AlphaType,
+    with_mips: bool,
+    colors: &[Color4f; 6],
+) -> Vec<PixmapLevel> {
+    let mut level_size: i32 = 32;
+    let num_mip_levels: usize = if with_mips { 6 } else { 1 };
+    let mut levels = Vec::with_capacity(num_mip_levels);
+    for (level, color) in colors.iter().enumerate().take(num_mip_levels) {
+        let info = ImageInfo::new((level_size, level_size), ct, at, None);
+        let mut row_bytes = info.min_row_bytes();
+        // Make sure we test row bytes that aren't tight.
+        if level % 2 == 0 {
+            row_bytes += (level + 1) * ct.bytes_per_pixel();
+        }
+        let mut pixels = vec![0u8; row_bytes * level_size as usize];
+        if let Some(mut pixmap) = Pixmap::new(&info, &mut pixels, row_bytes) {
+            pixmap.erase_4f(color, None);
+        }
+        levels.push(PixmapLevel {
+            info,
+            row_bytes,
+            pixels,
+        });
+        level_size /= 2;
+    }
+    levels
 }
 
 /// `ToolUtils::alphatype_name`.
