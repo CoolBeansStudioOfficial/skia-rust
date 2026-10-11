@@ -46,7 +46,7 @@ fn get_endian_short(data: &[u8], little_endian: bool) -> u16 {
 
 /// Port of `SkCodecPriv::GetEndianInt`.
 // Port of: src/codec/SkCodecPriv.h#L287-L293 (GetEndianInt)
-fn get_endian_int(data: &[u8], little_endian: bool) -> u32 {
+pub(crate) fn get_endian_int(data: &[u8], little_endian: bool) -> u32 {
     if little_endian {
         (u32::from(data[3]) << 24)
             | (u32::from(data[2]) << 16)

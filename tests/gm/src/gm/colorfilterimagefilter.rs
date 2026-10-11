@@ -8,13 +8,21 @@
 use crate::prelude::*;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{AutoCanvasRestore, SaveLayerRec};
+use skia_rust_core::color::colors;
 use skia_rust_core::color_filter::ColorFilter;
 use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color_matrix::ColorMatrix;
 use skia_rust_core::image_filter::ImageFilter;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::shader::Shader;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
 use skia_rust_effects::image_filters::{blur, color_filter};
+
+use crate::tool_utils::get_resource_as_image;
 
 const FILTER_WIDTH: f32 = 30.0;
 const FILTER_HEIGHT: f32 = 30.0;
@@ -175,4 +183,97 @@ crate::def_simple_gm!(colorfilterimagefilter_layer, canvas, 32, 32, {
     p.set_image_filter(color_filter(cf, None, None));
     guard.save_layer(&SaveLayerRec::default().paint(&p));
     guard.clear(Color::RED);
+});
+
+// Port of: gm/colorfilterimagefilter.cpp#L86-L89 (chrome/m156), sh_make_lineargradient0
+fn sh_make_lineargradient0() -> Option<Shader> {
+    let pts = [Point::new(0.0, 0.0), Point::new(100.0, 100.0)];
+    let colors = [colors::RED, colors::GREEN, colors::BLUE];
+    shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &Gradient::new(
+            Colors::new(&colors, None, TileMode::Repeat, None),
+            Interpolation::default(),
+        ),
+        None,
+    )
+}
+
+// Port of: gm/colorfilterimagefilter.cpp#L91-L97 (chrome/m156), sh_make_lineargradient1
+fn sh_make_lineargradient1() -> Option<Shader> {
+    let pts = [Point::new(0.0, 0.0), Point::new(100.0, 100.0)];
+    let colors = [colors::RED, Color4f::new(0.0, 1.0, 0.0, 0.0), colors::BLUE];
+    shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &Gradient::new(
+            Colors::new(&colors, None, TileMode::Repeat, None),
+            Interpolation::default(),
+        ),
+        None,
+    )
+}
+
+// Port of: gm/colorfilterimagefilter.cpp#L99-L105 (chrome/m156), sh_make_image
+fn sh_make_image() -> Option<Shader> {
+    let image = get_resource_as_image("images/mandrill_128.png")?;
+    image.to_shader(
+        (TileMode::Repeat, TileMode::Repeat),
+        SamplingOptions::default(),
+        None,
+    )
+}
+
+// Port of: gm/colorfilterimagefilter.cpp#L107-L122 (chrome/m156), sk_gm_get_shaders
+fn sk_gm_get_shaders() -> Vec<Shader> {
+    let mut array = Vec::new();
+    array.extend(sh_make_lineargradient0());
+    array.extend(sh_make_lineargradient1());
+    array.extend(sh_make_image());
+    array
+}
+
+// Port of: gm/colorfilterimagefilter.cpp#L63-L68 (chrome/m156), sk_gm_get_colorfilters
+fn sk_gm_get_colorfilters() -> Vec<ColorFilter> {
+    let mut array = Vec::new();
+    array.extend(cf_make_brightness(0.5, Clamp::Yes));
+    array.extend(cf_make_grayscale());
+    array.extend(cf_make_colorize(Color::BLUE));
+    array
+}
+
+// Port of: gm/colorfilterimagefilter.cpp#L217-L247 (chrome/m156), colorfiltershader
+crate::def_simple_gm!(colorfiltershader, canvas, 610, 610, {
+    let filters = sk_gm_get_colorfilters();
+
+    let mut shaders_list = sk_gm_get_shaders();
+    let colors = [colors::RED, colors::BLUE];
+    shaders_list.extend(shaders::two_point_conical_gradient(
+        ((0.0, 0.0), 50.0),
+        ((0.0, 0.0), 150.0),
+        &Gradient::new(
+            Colors::new(&colors, None, TileMode::Clamp, None),
+            Interpolation::default(),
+        ),
+        None,
+    ));
+
+    let mut paint = Paint::default();
+    let r = Rect::from_wh(120.0, 120.0);
+
+    canvas.translate((20.0, 20.0));
+    for shader in &shaders_list {
+        canvas.save();
+        // `None` is the C++ `nullptr` filter: the shader is used unchanged.
+        let filter_iter = std::iter::once(None).chain(filters.iter().cloned().map(Some));
+        for filter in filter_iter {
+            paint.set_shader(match filter {
+                Some(f) => shader.with_color_filter(f),
+                None => shader.clone(),
+            });
+            canvas.draw_rect(r, &paint);
+            canvas.translate((150.0, 0.0));
+        }
+        canvas.restore();
+        canvas.translate((0.0, 150.0));
+    }
 });

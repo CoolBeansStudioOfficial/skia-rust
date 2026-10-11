@@ -22,6 +22,7 @@
 use std::fmt;
 
 pub mod codec_priv;
+pub mod gainmap_test_common;
 #[cfg(test)]
 pub mod modules;
 pub mod resources;
