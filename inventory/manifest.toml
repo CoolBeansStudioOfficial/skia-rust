@@ -36677,8 +36677,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L39-L74"
 module = "effects"
-status = "todo"
-reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
+status = "passing"
 span_hash = "0d42bcac0c6de3beda7b36e163ef9673800f86c8beff43a84e8026be74f19f30"
 
 [[test]]
@@ -36687,8 +36686,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L76-L110"
 module = "effects"
-status = "todo"
-reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
+status = "passing"
 span_hash = "62af44fbf4e58e5c1e1594cd42cf0792eed48ea451d8a6f56c72964c66b4066d"
 
 [[test]]
