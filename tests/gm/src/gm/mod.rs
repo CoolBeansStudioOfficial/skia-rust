@@ -393,6 +393,7 @@ pub mod typeface;
 pub mod unpremul;
 pub mod userfont;
 pub mod variedtext;
+pub mod verylargebitmap;
 pub mod vertices;
 pub mod wacky_yuv_formats;
 pub mod widebuttcaps;
