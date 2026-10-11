@@ -16380,8 +16380,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/annotated_text.cpp#L38-L53"
 module = "text"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawAnnotation) is stale because drawAnnotation has landed; SkAnnotateRectWithURL still needs checking"
+status = "passing"
 span_hash = "5e76b934fce5941e1feef6e78eca1638a662e0d0f457096816a44d522db27794"
 
 [[test]]
@@ -22168,8 +22167,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagemasksubset.cpp#L96-L114"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (DeferredFromGenerator) is stale because images::deferred_from_generator is on main; re-check the generator subclass"
+status = "passing"
 span_hash = "d0a004b20d2d57273739a62945bceb673d55a05def23780a3da3cf59b747387f"
 
 [[test]]
@@ -23566,8 +23564,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureimagefilter.cpp#L159-L159"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
+status = "passing"
 span_hash = "93554f90877793b02dc492e2db40d726b3eb38ad1f2a9b7399ca81f6beee5183"
 
 [[test]]
@@ -24039,8 +24036,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L267-L318"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "dd098ded396b100e48be8e2f458eb32b103383ae81576ff9f9c91bfe800865c6"
 
 [[test]]
@@ -24059,8 +24055,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L238-L264"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "eab99248a8d97aabd7eaeab47f7d2d7f5219f70165478f55757e292a7472d5fa"
 
 [[test]]
@@ -24069,8 +24064,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L382-L415"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "b087a0d1ab68e8b8e4e25a8ee958680b73af987bc97a275d4e636ff03e39c8ec"
 
 [[test]]
@@ -24079,8 +24073,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L516-L561"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "6441ea4bd56b1873738d8f7febdb922a517acf54516f7e2d52bdfb8d28638b16"
 
 [[test]]
@@ -24089,8 +24082,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L603-L639"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "98b4f8d5e1c960bab8308c8bd893583ae43f848302c2e0a5bc507e0702738311"
 
 [[test]]
@@ -24099,8 +24091,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L165-L195"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
+status = "passing"
 span_hash = "d358f02dcbd27389839c19338e2192d07d4c4cfafe8f82c7bdf6e8e07f965f95"
 
 [[test]]
@@ -24272,8 +24263,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/samplerstress.cpp#L147-L147"
 module = "raster"
-status = "todo"
-reason = "not attempted in this sweep: the old reason (SkPngEncoder) is stale because the PNG encoder has landed; re-check make_codec_image"
+status = "passing"
 span_hash = "b4a3cbd751c646cb375131c9fb1a10777e1fc2d25ea27f28aeeb991303414621"
 
 [[test]]
