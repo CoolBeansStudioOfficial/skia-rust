@@ -35830,8 +35830,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageGeneratorOrientationTest.cpp#L40-L124"
 module = "core"
-status = "todo"
-reason = "portable, not ported in sweep 3: needs SkCodecImageGenerator (skia-rust-codec codec_image_generator.rs) and the images/orientation JPEG resources, both present"
+status = "passing"
 span_hash = "7dc1f22d89bbdf60ae89fa176af650fc00cf2637dad578a6d2bdfe17d0027ca1"
 
 [[test]]
