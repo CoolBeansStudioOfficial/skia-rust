@@ -125,3 +125,24 @@ crate::def_gm!(
         })
     )
 );
+
+// Port of: gm/imagesource2.cpp#L95-L95 (chrome/m156)
+crate::def_gm!(
+    ImageSourceGM_low = "ImageSourceGM(\"low\", SkSamplingOptions(SkFilterMode::kLinear))",
+    ImageSourceGm::new(
+        "low",
+        SamplingOptions::from(skia_rust_core::sampling_options::FilterMode::Linear)
+    )
+);
+
+// Port of: gm/imagesource2.cpp#L98-L100 (chrome/m156)
+crate::def_gm!(
+    ImageSourceGM_med = "ImageSourceGM(\"med\", SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear))",
+    ImageSourceGm::new(
+        "med",
+        SamplingOptions::new(
+            skia_rust_core::sampling_options::FilterMode::Linear,
+            skia_rust_core::sampling_options::MipmapMode::Linear
+        )
+    )
+);
