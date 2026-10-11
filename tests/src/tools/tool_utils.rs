@@ -59,7 +59,8 @@ pub fn equal_pixels_image(a: &Image, b: &Image) -> bool {
 // Port of: tools/DecodeUtils.cpp#L23-L28 (chrome/m156)
 #[must_use]
 pub fn decode_data_to_bitmap(data: Option<skia_rust_core::data::Data>) -> Option<Bitmap> {
-    let mut generator = skia_rust_codec::image_generator_from_encoded::make_from_encoded(data, None)?;
+    let mut generator =
+        skia_rust_codec::image_generator_from_encoded::make_from_encoded(data, None)?;
     let gen_info = generator.info().clone();
     let row_bytes = gen_info.min_row_bytes();
     let mut pixels = vec![0u8; gen_info.compute_byte_size(row_bytes)];
@@ -68,7 +69,8 @@ pub fn decode_data_to_bitmap(data: Option<skia_rust_core::data::Data>) -> Option
         return None;
     }
     let mut bm = Bitmap::new();
-    bm.install_pixels(&gen_info, pixels, row_bytes).then_some(bm)
+    bm.install_pixels(&gen_info, pixels, row_bytes)
+        .then_some(bm)
 }
 
 /// Port of `ToolUtils::GetResourceAsBitmap` (tools/DecodeUtils.h): the bitmap decoded from the
@@ -91,6 +93,9 @@ pub struct PixmapLevel {
 
 impl PixmapLevel {
     /// The level as a read-only pixmap.
+    ///
+    /// # Panics
+    /// If the pixels do not hold the info (they always do for a level of [`make_pixmaps`]).
     #[must_use]
     pub fn pixmap(&self) -> Pixmap<'_> {
         Pixmap::new_readonly(&self.info, &self.pixels, self.row_bytes)
@@ -119,6 +124,7 @@ pub fn make_pixmaps(
         if level % 2 == 0 {
             row_bytes += (level + 1) * ct.bytes_per_pixel();
         }
+        #[allow(clippy::cast_sign_loss)] // level_size is a positive level dimension
         let mut pixels = vec![0u8; row_bytes * level_size as usize];
         if let Some(mut pixmap) = Pixmap::new(&info, &mut pixels, row_bytes) {
             pixmap.erase_4f(color, None);

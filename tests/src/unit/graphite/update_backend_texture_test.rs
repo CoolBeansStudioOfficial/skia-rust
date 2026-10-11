@@ -96,6 +96,7 @@ fn check_solid_pixmap(
         );
     };
     // 0.5 / (2^bits) is theoretically the limit but with floating point precision 1/2^N is safer.
+    #[allow(clippy::cast_precision_loss)] // 1 << bits is a small power of two, exact in f32
     let tol = 1.0f32 / (1u32 << color_type_max_bits_per_channel(ct)) as f32;
     let tols = [tol; 4];
     check_solid_pixels(&expected, actual, &tols, &mut error);
@@ -135,14 +136,7 @@ fn create_backend_texture(
     let info = caps.get_default_sampled_texture_info(ct, mipmapped, is_protected, renderable);
     let backend_tex = recorder.create_backend_texture(K_SIZE, &info);
     if backend_tex.is_valid() {
-        update_backend_texture(
-            recorder,
-            &backend_tex,
-            ct,
-            with_mips,
-            colors,
-            finished_proc,
-        );
+        update_backend_texture(recorder, &backend_tex, ct, with_mips, colors, finished_proc);
     } // else the color type mapped to a texture format not supported by the GPU backend
     backend_tex
 }
@@ -199,7 +193,7 @@ fn check_levels(
         .expect("a render target surface");
     let canvas = surf.canvas();
 
-    for i in 0..num_levels {
+    for (i, color) in colors.iter().enumerate().take(num_levels) {
         let draw_size = K_SIZE.width >> i;
         if i == 5 {
             // TODO: Metal currently never draws the top-most mip-level (skbug.com/40044877)
@@ -218,6 +212,7 @@ fn check_levels(
         let mut paint = Paint::default();
         paint.set_blend_mode(BlendMode::Src);
         canvas.clear(Color::TRANSPARENT);
+        #[allow(clippy::cast_precision_loss)] // draw sizes are at most 32
         let dst = Rect::from_ltrb(0.0, 0.0, draw_size as f32, draw_size as f32);
         canvas.draw_image_rect_with_sampling_options(image, None, dst, sampling, &paint);
 
@@ -234,9 +229,9 @@ fn check_levels(
         // that premultiplication that SkImages::WrapTexture's forceOpaque applies so we expect
         // RGB to match the premul value but have A=1.
         let expected = if force_opaque {
-            colors[i].premul().to_opaque().unpremul()
+            color.premul().to_opaque().unpremul()
         } else {
-            colors[i]
+            *color
         };
         let label = format!("mip-level {i}");
         let pixmap = actual.peek_pixels().expect("pixels");
@@ -398,9 +393,7 @@ def_graphite_test_for_all_contexts!(UpdateBackendTextureFinishedProcTest, |repor
         );
     }
     synced_submit(context);
-    let state = finish_ctx
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner);
+    let state = finish_ctx.lock().unwrap_or_else(PoisonError::into_inner);
     reporter_assert!(reporter, state.finished_update);
     reporter_assert!(reporter, !state.finished_twice);
     drop(state);

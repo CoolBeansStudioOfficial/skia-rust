@@ -50,6 +50,9 @@ fn f32_pixel(buf: &[u8], row_bytes: usize, x: usize, y: usize) -> [f32; 4] {
 
 /// Port of `ComparePixels`: converts both pixmaps to `RGBA_F32` and compares them channel by
 /// channel within `tol_rgba`. A premul and an unpremul pixmap are compared in premul space.
+///
+/// # Panics
+/// If a pixmap has no pixels or a conversion fails (`SkAssertResult`).
 // Port of: tests/ComparePixels.cpp#L46-L92 (chrome/m156)
 pub fn compare_pixels(
     a: &Pixmap<'_>,
@@ -75,7 +78,12 @@ pub fn compare_pixels(
     } else {
         Some(ColorSpace::new_srgb_linear())
     };
-    let float_info = ImageInfo::new(a.dimensions(), ColorType::RGBAF32, float_alpha_type, float_cs);
+    let float_info = ImageInfo::new(
+        a.dimensions(),
+        ColorType::RGBAF32,
+        float_alpha_type,
+        float_cs,
+    );
     let row_bytes = float_info.min_row_bytes();
     let size = float_info.compute_byte_size(row_bytes);
     let mut float_a = vec![0u8; size];
@@ -108,6 +116,8 @@ pub fn compare_pixels(
 
     for y in 0..float_info.height() {
         for x in 0..float_info.width() {
+            // x and y are in [0, size).
+            #[allow(clippy::cast_sign_loss)]
             let (xu, yu) = (x as usize, y as usize);
             let rgba_a = f32_pixel(&float_a, row_bytes, xu, yu);
             let rgba_b = f32_pixel(&float_b, row_bytes, xu, yu);
@@ -121,6 +131,9 @@ pub fn compare_pixels(
 
 /// Port of `CheckSolidPixels`: whether every pixel of `pixmap` is `col` (converted to the
 /// pixmap's alpha type and colour space), within `tol_rgba`.
+///
+/// # Panics
+/// If the pixmap has no pixels or a conversion fails (`SkAssertResult`).
 // Port of: tests/ComparePixels.cpp#L94-L134 (chrome/m156)
 pub fn check_solid_pixels(
     col: &Color4f,
@@ -179,6 +192,8 @@ pub fn check_solid_pixels(
     let rgba_b = f32_pixel(&color_pixels, color_rb, 0, 0);
     for y in 0..f32_info.dimensions().height {
         for x in 0..f32_info.dimensions().width {
+            // x and y are in [0, size).
+            #[allow(clippy::cast_sign_loss)]
             let (xu, yu) = (x as usize, y as usize);
             let rgba_a = f32_pixel(&f32_pixels, f32_rb, xu, yu);
             if !compare_colors(x, y, &rgba_a, &rgba_b, tol_rgba, error) {
