@@ -1125,6 +1125,7 @@ dependencies = [
  "skia-rust-core",
  "skia-rust-pathops",
  "skia-rust-pdf",
+ "skia-rust-svg",
 ]
 
 [[package]]

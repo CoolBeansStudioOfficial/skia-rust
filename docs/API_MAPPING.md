@@ -754,3 +754,13 @@ If a future caller needs exact expat parity beyond this surface (error positions
 | `SkUnicode::forEachCodepoint` (utf8 / utf16), `forEachBidiRegion`, `forEachBreak` | `for_each_codepoint_utf8`, `for_each_codepoint_utf16` (free functions), and default trait methods `for_each_bidi_region`, `for_each_break` | the callbacks are `&mut dyn FnMut` in the trait methods, so the trait stays object-safe |
 | `SkUnicodes::Client::Make(SkSpan<char>, words, graphemeBreaks, lineBreaks)` | `unicode_client::make(&[u8], Vec<Position>, Vec<Position>, Vec<LineBreakBefore>) -> Arc<dyn Unicode + 'a>` | the text is borrowed for `'a` (as `SkSpan` is), so no copy: `setText` relates its slice to the client text by address, as in Skia. The bidi methods (`make_bidi_iterator_*`, `get_bidi_regions`, `reorder_visual` except with no levels) panic with `unimplemented!` until M3; `SkUnicode_client::reset()` is not ported (never called) |
 | `SkBreakIterator_client::next()` | `BreakIteratorClient::next` | ported as it is: Skia's `next()` does not advance, so a loop over `next()` repeats one position |
+
+**SVG canvas (`skia_rust_svg::{canvas, device}`, milestone M16 of `docs/design/modules.md`)**
+
+| Skia / skia-safe | skia-rust | deviation |
+|---|---|---|
+| `SkSVGCanvas::Flags`, `SkSVGCanvas::Options`, `EncodePngCallback` | `canvas::{Flags (bitflags), Options, EncodePngCallback}` | `EncodePngCallback` is `fn(&mut dyn WStream, &Pixmap) -> bool`; `png_encoder: None` is the legacy default (`SkPngEncoder::Encode`) |
+| `SkSVGCanvas::Make(bounds, SkWStream*, Options)` | `canvas::make(&Rect, SharedStream, Options) -> Canvas` | the stream is an `Rc<RefCell<dyn WStream>>` because a Rust canvas owns its device and cannot borrow the stream. `Make(bounds, stream, uint32_t flags)` is `Options { flags, .. }` |
+| `skia_safe::svg::Canvas::new(bounds, flags)`, `end()` | `canvas::Canvas::new`, `end() -> Data` | same shape; collects the output in a `DynamicMemoryWStream` |
+| `SkSVGDevice::Make(size, unique_ptr<SkXMLWriter>, Options)` | `device::SvgDevice::make(ISize, Box<dyn XmlWriter>, Options) -> Box<dyn Device>` | `XmlStreamWriter::new_owned` and `XmlParserWriter::new_owned` make writers that own their sink, and `Dom::begin_parsing_shared` hands out a parser that a writer can own (`SkDOM::beginParsing` returns a pointer) |
+| `SkClipStackDevice` | `skia_rust_raster::clip_stack_device::ClipStackDevice` (re-exported by `skia_rust_pdf::clip_stack_device`) | moved from the PDF crate so that the SVG device shares it |

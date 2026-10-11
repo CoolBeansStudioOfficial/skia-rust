@@ -15808,6 +15808,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
 status = "todo"
+reason = "the fuzz crate (docs/design/fuzz.md) is not on main; SvgDevice and svg::canvas::make are ready for it"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -28974,7 +28975,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L97-L112"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "c84f94e6f49b3fd2a612096f1e23e5f22d4f7bd91462d0d2a4172728772c23dd"
 
 [[test]]
@@ -28983,7 +28984,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L114-L130"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "93e5366149c13907b8a44e6ce209a00a886b7e95c77b9cb8f978986cdd256c5c"
 
 [[test]]
@@ -42381,7 +42382,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L380-L459"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "2f53ed1a123c44f6556136bf8336e92f660d594007f62b894c4f970f5a6cc1e9"
 
 [[test]]
@@ -42390,7 +42391,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L765-L783"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "5336eb3f17ae743492fb57434303a4729b79bde499f88ae9c0c2b1da3afb6988"
 
 [[test]]
@@ -42399,7 +42400,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L532-L566"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0d83d6ee9266e846d6a1900d22793d8af28635fad6f01eb4d1fc04837907f935"
 
 [[test]]
@@ -42408,7 +42409,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L585-L615"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "e89d2874d32e8011ebcffcf74c4172b39274e135571ac00080ba9cb2f6e90405"
 
 [[test]]
@@ -42417,7 +42418,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L568-L583"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "6f7238f8ebcee8f3f3519b5be100485432386e34fac6a921c1ca56a317a333b6"
 
 [[test]]
@@ -42426,7 +42427,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L492-L530"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0c5305294abb5c588e7b2111b02c39d87a4422a308bc3e122e2857b9245ce6dc"
 
 [[test]]
@@ -42435,7 +42436,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L617-L642"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "3ed24832ae5cfea8b2c8ccf16081c6fe3918ac06b95cef916783a736dbda9db1"
 
 [[test]]
@@ -42444,7 +42445,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L267-L290"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "5f2b7b5df068e4189912b4b422f02f2e23b2d812bee5e6bc976b92f282218859"
 
 [[test]]
@@ -42453,7 +42454,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L352-L378"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "2d3340b14cbc336987b883e398c65453fa795593474064d642ec14a39fd931f8"
 
 [[test]]
@@ -42462,7 +42463,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L292-L320"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "7811933f13ce6c2ed528b4480e6b157c927f12a9c8eeea758e0a2f581eec747b"
 
 [[test]]
@@ -42471,7 +42472,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L322-L350"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "4f53a4a471bf82280db43bf584ecbd6b74fa8c818572754ad79dccbbdbfca482"
 
 [[test]]
@@ -42480,7 +42481,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L684-L702"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "9bd8d8b71e9e6cab91ce9ca7fd00339420718438e3f6b992188bc0cc89caafe1"
 
 [[test]]
@@ -42489,7 +42490,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L785-L800"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "b1980fbeed03ea1532440cea58a9a1f3490bf7f30665d8358d903d5a0601b76a"
 
 [[test]]
@@ -42498,7 +42499,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L705-L741"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "719e387da81e1539bb486f7fd0b79e9d365b7a85ff451b31f101510dd6fb340e"
 
 [[test]]
@@ -42507,7 +42508,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L644-L662"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "95e6e0a8852b8915c1eda2602084a06ca270f1ad8d9818089f1398ab18f5f0e0"
 
 [[test]]
@@ -42516,7 +42517,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L743-L763"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "37ebb58389ed221bb44f131dcea0e41e36ea23b7aa7503cccb52d13f323189f9"
 
 [[test]]
@@ -42525,7 +42526,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L664-L682"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "0d2dbea3d2575fc0eddebc6e5606508cadb339512fcfae6a0e755f9eda068127"
 
 [[test]]
@@ -42534,7 +42535,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L461-L490"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "7d1fa6e60ce7e756ac29681a5943cc42cbe7549037f8474c0082e795340da3c9"
 
 [[test]]
@@ -42543,7 +42544,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SVGDeviceTest.cpp#L185-L206"
 module = "svg"
-status = "todo"
+status = "passing"
 span_hash = "ddd79d6dbbe2999acf8b52ad9da99aa8ada6026251462686ac5a16bf99c57970"
 
 [[test]]
