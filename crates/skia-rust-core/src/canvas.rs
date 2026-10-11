@@ -246,6 +246,8 @@ pub struct SaveLayerRec<'a> {
     pub(crate) backdrop_tile_mode: TileMode,
     pub(crate) color_space: Option<&'a ColorSpace>,
     pub(crate) flags: SaveLayerFlags,
+    /// Relative scale of the image content that initializes the layer (`fExperimentalBackdropScale`).
+    pub(crate) experimental_backdrop_scale: f32,
 }
 
 impl Default for SaveLayerRec<'_> {
@@ -258,6 +260,7 @@ impl Default for SaveLayerRec<'_> {
             backdrop_tile_mode: TileMode::Clamp,
             color_space: None,
             flags: SaveLayerFlags::empty(),
+            experimental_backdrop_scale: 1.0,
         }
     }
 }
@@ -290,6 +293,17 @@ impl<'a> SaveLayerRec<'a> {
     #[must_use]
     pub fn backdrop_tile_mode(mut self, backdrop_tile_mode: TileMode) -> Self {
         self.backdrop_tile_mode = backdrop_tile_mode;
+        self
+    }
+
+    /// The scale of the intermediate image the backdrop is evaluated at, relative to the device
+    /// (`SkCanvasPriv::ScaledBackdropLayer`'s `backdropScale`, the `fExperimentalBackdropScale`
+    /// of the record). `1.0` is the unscaled backdrop.
+    #[doc(alias = "fExperimentalBackdropScale")]
+    #[doc(alias = "SkCanvasPriv::ScaledBackdropLayer")]
+    #[must_use]
+    pub fn experimental_backdrop_scale(mut self, scale: f32) -> Self {
+        self.experimental_backdrop_scale = scale;
         self
     }
 
@@ -1485,10 +1499,12 @@ impl CanvasState {
             // 'rec.fBackdrop', so allow the draw to transform the prior device contents if
             // necessary to evaluate the backdrop filter. If no filters are involved, then the
             // devices differ by integer translations and are always compatible.
-            // (skia-rust: the experimental backdrop scale is not ported; it is always 1.)
             let backdrop_paint = Paint::default();
             let backdrop_filters: Vec<ImageFilter> = rec.backdrop.cloned().into_iter().collect();
-            let compat = if !filters.is_empty() || rec.backdrop.is_some() {
+            // Port of: src/core/SkCanvas.cpp#L1074 (chrome/m156)
+            #[allow(clippy::float_cmp)] // Skia compares the scale with exactly 1
+            let scale_backdrop = rec.experimental_backdrop_scale != 1.0;
+            let compat = if !filters.is_empty() || rec.backdrop.is_some() || scale_backdrop {
                 DeviceCompatibleWithFilter::Unknown
             } else {
                 DeviceCompatibleWithFilter::Yes
@@ -1506,7 +1522,7 @@ impl CanvasState {
                 &backdrop_paint,
                 compat,
                 &color_info,
-                1.0,
+                rec.experimental_backdrop_scale,
                 rec.backdrop_tile_mode,
                 false,
             );

@@ -25,6 +25,7 @@ pub mod arcto;
 pub mod arithmode;
 pub mod asyncrescaleandread;
 pub mod b_119394958;
+pub mod backdrop;
 pub mod backdrop_imagefilter_croprect;
 pub mod badpaint;
 pub mod batchedconvexpaths;
