@@ -108,6 +108,19 @@ pub fn uses_rgba_goldens(config: Config, host_n32: ColorType) -> bool {
     config == Config::N32 && host_n32 == ColorType::RGBA8888
 }
 
+/// The `kN32_SkColorType` of the oracle build whose goldens `config` is compared with on a host
+/// whose N32 is `host_n32`: RGBA for the `-rgba` tiers ([`uses_rgba_goldens`]), else BGRA (the
+/// default tiers come from a Windows build). The harness forces it for the render
+/// (`skia_rust_raster::oracle_n32::testing::force_oracle_n32`), as it forces the CPU tier.
+#[must_use]
+pub fn oracle_n32(config: Config, host_n32: ColorType) -> ColorType {
+    if uses_rgba_goldens(config, host_n32) {
+        ColorType::RGBA8888
+    } else {
+        ColorType::BGRA8888
+    }
+}
+
 /// `DM::Result::Status`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Status {
@@ -246,14 +259,7 @@ impl RasterSink {
         src.modify_surface_props(&mut props);
         let mut surface =
             Surface::wrap_pixels(&mut dst, Some(&props)).expect("allocated pixels can be wrapped");
-        // The goldens this config is compared with come from an oracle whose N32 is BGRA, except
-        // for `8888` on a host whose N32 is RGBA (the `-rgba` tiers): code that makes explicit
-        // `kRGBA_8888` surfaces (the picture shader's tile) must behave like that oracle.
-        let oracle_n32_is_bgra = !uses_rgba_goldens(self.config, ColorType::N32);
-        let result =
-            skia_rust_raster::oracle_n32::testing::with_oracle_n32_bgra(oracle_n32_is_bgra, || {
-                src.draw(surface.canvas())
-            });
+        let result = src.draw(surface.canvas());
         drop(surface); // gives the drawn pixels back to `dst`
         Rendered {
             result,
