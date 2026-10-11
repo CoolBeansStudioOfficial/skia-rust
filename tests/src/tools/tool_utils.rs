@@ -52,6 +52,32 @@ pub fn equal_pixels_image(a: &Image, b: &Image) -> bool {
     equal_pixels(&pm0, &pm1)
 }
 
+/// Port of `ToolUtils::DecodeDataToBitmap` (tools/DecodeUtils.cpp): decodes `data` into a bitmap
+/// allocated with the generator's info, or `None` if no generator or no pixels.
+// Port of: tools/DecodeUtils.cpp#L23-L28 (chrome/m156)
+#[must_use]
+pub fn decode_data_to_bitmap(data: Option<skia_rust_core::data::Data>) -> Option<Bitmap> {
+    let mut generator = skia_rust_codec::image_generator_from_encoded::make_from_encoded(data, None)?;
+    let gen_info = generator.info().clone();
+    let row_bytes = gen_info.min_row_bytes();
+    let mut pixels = vec![0u8; gen_info.compute_byte_size(row_bytes)];
+    // `gen->getInfo().makeColorSpace(nullptr)`: the pixels are read without a colour space.
+    if !generator.get_pixels(&gen_info.with_color_space(None), &mut pixels, row_bytes) {
+        return None;
+    }
+    let mut bm = Bitmap::new();
+    bm.install_pixels(&gen_info, pixels, row_bytes).then_some(bm)
+}
+
+/// Port of `ToolUtils::GetResourceAsBitmap` (tools/DecodeUtils.h): the bitmap decoded from the
+/// resource at `resource`, or `None` if the resource is missing or cannot be decoded.
+// Port of: tools/DecodeUtils.h#L23-L25 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_bitmap(resource: &str) -> Option<Bitmap> {
+    let data = crate::resources::get_resource_as_data(resource)?;
+    decode_data_to_bitmap(Some(skia_rust_core::data::Data::new_from_vec(data)))
+}
+
 /// `ToolUtils::alphatype_name`.
 // Port of: tools/ToolUtils.cpp#L52-L60 (chrome/m156)
 #[must_use]

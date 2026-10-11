@@ -1,5 +1,6 @@
 //! Ports of Skia's `tools/` helpers that the ported tests use.
 
+pub mod compare_pixels;
 pub mod graphite_test_context;
 pub mod json;
 pub mod managed_graphite_texture;
