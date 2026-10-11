@@ -52392,8 +52392,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L185-L201"
 module = "gpu"
-status = "todo"
-reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
+status = "passing"
 span_hash = "3f665a1eece38d8ea118f6efa2006f343e2a2023c010a463246ab338b5566712"
 
 [[test]]
@@ -52402,8 +52401,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L224-L240"
 module = "gpu"
-status = "todo"
-reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
+status = "passing"
 span_hash = "33d03447c4bb3448abaac0a4df29f3c928c60d05eff4879a5a81d3ae5a0bb1e8"
 
 [[test]]
@@ -52412,8 +52410,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L204-L220"
 module = "gpu"
-status = "todo"
-reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
+status = "passing"
 span_hash = "53cc55cd7f8e6cbd77377032bc5fcb0b672a8426776e6614395aafe64b3b5372"
 
 [[test]]
@@ -52422,8 +52419,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L243-L259"
 module = "gpu"
-status = "todo"
-reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
+status = "passing"
 span_hash = "d28c4abb980619eedcfdaa542fbdaf9feee73d8399e2369a0253546b95d1440b"
 
 [[test]]
@@ -52432,8 +52428,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L340-L371"
 module = "gpu"
-status = "todo"
-reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
+status = "passing"
 span_hash = "28e0d79b7882cdd4a7d4e4d0e80ec0fcd2ee6f6d47748b49a5047937a77f879a"
 
 [[test]]
