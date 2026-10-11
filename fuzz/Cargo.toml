@@ -15,6 +15,7 @@ skia-rust-raster.workspace = true
 skia-rust-effects.workspace = true
 skia-rust-pathops.workspace = true
 skia-rust-codec.workspace = true
+skia-rust-pdf.workspace = true
 skia-rust-tools.workspace = true
 
 [lints]
