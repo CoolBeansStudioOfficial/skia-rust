@@ -142,6 +142,8 @@ pub mod dashcubics;
 pub mod dashing;
 pub mod degeneratesegments;
 pub mod destcolor;
+pub mod dftext;
+pub mod dftext_blob_persp;
 pub mod displacement;
 pub mod distantclip;
 pub mod draw_bitmap_rect_skbug4374;

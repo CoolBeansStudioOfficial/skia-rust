@@ -19628,8 +19628,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/dftext.cpp#L271-L271"
 module = "text"
-status = "todo"
-reason = "not ported yet (distance-field text on a raster surface, default EmojiSample for the emoji line)"
+status = "passing"
 span_hash = "e5c13723507bc213e6d0d840ef4c0a0c84c2ecd5577c8dc45343083e562336fc"
 
 [[test]]
@@ -19638,8 +19637,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/dftext_blob_persp.cpp#L160-L160"
 module = "text"
-status = "todo"
-reason = "not ported yet (perspective text blobs drawn with setMatrix on a raster canvas)"
+status = "passing"
 span_hash = "f60f77fbb2ac044acc031e6221f600420f32553455dbf8c98a08fdefc0f5b9cc"
 
 [[test]]
@@ -25456,7 +25454,7 @@ macro = "DEF_GM"
 source = "gm/textblobrandomfont.cpp#L184-L184"
 module = "text"
 status = "todo"
-reason = "needs SkRandomTypeface (tools/fonts/RandomScalerContext, not ported) to build its blob"
+reason = "needs SkRandomTypeface (tools/fonts/RandomScalerContext.cpp): an SkTypeface subclass (about 25 overrides, forwarding to a proxy typeface) whose SkScalerContext takes the proxy's metrics and paths and draws each glyph in a random mask format (LCD/A8/BW/RGBA) chosen from the glyph ID; the random scaler context (generateMetrics, generateImage, generatePath, generateDrawable, generateFontMetrics) is not on main"
 span_hash = "776042e03056c012e05ba439cb77657eeb20a3954def20d0fe79fc28ac511bbf"
 
 [[test]]
