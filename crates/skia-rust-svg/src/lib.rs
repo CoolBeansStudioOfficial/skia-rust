@@ -10,8 +10,10 @@
 
 pub mod attribute;
 pub mod attribute_parser;
+pub mod canvas;
 pub mod circle;
 pub mod container;
+pub mod device;
 pub mod dom;
 pub mod ellipse;
 pub mod id_mapper;
@@ -29,6 +31,7 @@ pub mod use_;
 pub mod value;
 
 pub use attribute::{Attribute, PresentationAttributes};
+pub use canvas::Canvas;
 pub use circle::Circle;
 pub use container::{Container, Defs, G, HiddenContainer};
 pub use dom::{Dom, LoadError};
