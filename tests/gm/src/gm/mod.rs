@@ -246,6 +246,7 @@ pub mod lumafilter;
 pub mod luminosity;
 pub mod mac_aa_explorer;
 pub mod make_raster_image;
+pub mod makecolorspace;
 pub mod mandoline;
 pub mod manypathatlases;
 pub mod manypaths;

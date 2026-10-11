@@ -22592,8 +22592,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/makecolorspace.cpp#L66-L97"
 module = "skcms"
-status = "todo"
-reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
+status = "passing"
 span_hash = "630226c8aec6e99b7a83362ecd99bd98bbd12972153dcdd0a3b96a9615601622"
 
 [[test]]
@@ -22602,8 +22601,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/makecolorspace.cpp#L99-L164"
 module = "skcms"
-status = "todo"
-reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
+status = "passing"
 span_hash = "89ec913c798f7b3f664ad7c968c9056a99ee22b8190dbc56b23d372f9f104413"
 
 [[test]]
@@ -22612,8 +22610,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/makecolorspace.cpp#L166-L231"
 module = "skcms"
-status = "todo"
-reason = "needs the colour-space transform helpers (SkColorSpace::makeLinearGamma, reinterpretColorSpace via make_color_space) and the GPU SkImages::TextureFromImage branch; not ported"
+status = "passing"
 span_hash = "2a15a3367f9c9325eec4c7bf6e992ff40ce0b6b1289ee406e0e511a3bf8da4a8"
 
 [[test]]

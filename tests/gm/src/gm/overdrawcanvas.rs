@@ -19,7 +19,7 @@ use skia_rust_tools::font_tool_utils::default_portable_font;
 const WIDTH: i32 = 500;
 const HEIGHT: i32 = 500;
 
-// Port of: gm/overdrawcanvas.cpp#L27-L30 (chrome/m156), kOverdrawColors
+// Port of: gm/overdrawcanvas.cpp#L28-L30 (chrome/m156), kOverdrawColors
 const OVERDRAW_COLORS: [Color; overdraw_color_filter::NUM_COLORS] = [
     Color::new(0x0000_0000),
     Color::new(0x5fff_0000),
@@ -79,7 +79,7 @@ crate::def_simple_gm_bg!(overdraw_canvas, canvas, WIDTH, HEIGHT, Color::WHITE, {
     );
 });
 
-// Port of: gm/overdrawcanvas.cpp#L61-L84 (chrome/m156), overdraw_text_grid
+// Port of: gm/overdrawcanvas.cpp#L61-L87 (chrome/m156), overdraw_text_grid
 fn overdraw_text_grid(use_ctm: bool) -> Option<Image> {
     let mut surface = surfaces::raster(&ImageInfo::new_a8((256, 512)), None, None)?;
     let canvas = OverdrawCanvas::new(surface.shared_canvas());
@@ -112,7 +112,7 @@ fn overdraw_text_grid(use_ctm: bool) -> Option<Image> {
 // canvas would have the CTM applied twice. If everything is working, both images generated should
 // look identical. When the bug was present, the second image would have the lines "double spaced",
 // because the translations were applied twice.
-// Port of: gm/overdrawcanvas.cpp#L86-L98 (chrome/m156), DEF_SIMPLE_GM_BG(overdraw_text_xform, ...)
+// Port of: gm/overdrawcanvas.cpp#L93-L98 (chrome/m156), DEF_SIMPLE_GM_BG(overdraw_text_xform, ...)
 crate::def_simple_gm_bg!(overdraw_text_xform, canvas, 512, 512, Color::BLACK, {
     let mut img_paint = Paint::default();
     img_paint.set_color(Color::WHITE);

@@ -12,17 +12,17 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::rect::Rect;
 
-// Port of: gm/drawable.cpp#L15-L31 (chrome/m156), MyDrawable
+// Port of: gm/drawable.cpp#L18-L34 (chrome/m156), MyDrawable
 #[derive(Debug)]
 struct MyDrawable;
 
 impl DrawableBase for MyDrawable {
-    // Port of: gm/drawable.cpp#L16 (chrome/m156), onGetBounds
+    // Port of: gm/drawable.cpp#L19 (chrome/m156), onGetBounds
     fn on_get_bounds(&self) -> Rect {
         Rect::from_wh(50.0, 100.0)
     }
 
-    // Port of: gm/drawable.cpp#L18-L30 (chrome/m156), onDraw
+    // Port of: gm/drawable.cpp#L21-L33 (chrome/m156), onDraw
     fn on_draw(&self, canvas: &Canvas) {
         let path = PathBuilder::new()
             .move_to((10.0, 10.0))
