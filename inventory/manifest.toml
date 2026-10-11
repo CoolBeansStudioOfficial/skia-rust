@@ -23422,8 +23422,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pathopsinverse.cpp#L108-L108"
 module = "pathops"
-status = "failing"
-reason = "ported; Union of inverse-filled rects differs from the golden (magenta in the Union column of the diff, all tiers). Suspect the skia-rust-pathops op result for inverse fill types. One diagnostic pass done; #[ignore]d"
+status = "passing"
 span_hash = "fca6d4ad40adf0d4c30fc4d043550fc4e1951edb11d4b0232201c62778f9b8d6"
 
 [[test]]
