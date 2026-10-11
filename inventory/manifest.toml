@@ -16586,8 +16586,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/backdrop.cpp#L89-L104"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvasPriv::ScaledBackdropLayer (scaled backdrop layers), which is not ported"
+status = "passing"
 span_hash = "ebc5e7743a8a99c31525a3a299cb158d06f2b9160313d565d89cf34f1cdf81d8"
 
 [[test]]
@@ -16596,8 +16595,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/backdrop.cpp#L114-L128"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvasPriv::ScaledBackdropLayer (scaled backdrop layers), which is not ported"
+status = "passing"
 span_hash = "ff2f0521355f396b363e3e74fa075390f649f56697417178667e30ce0b419632"
 
 [[test]]
