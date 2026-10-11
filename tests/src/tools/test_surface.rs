@@ -85,7 +85,10 @@ impl TestSurface for GraphiteTestSurface<'_> {
     }
     fn write_pixels(&mut self, bitmap: &Bitmap, x: i32, y: i32) {
         // `SkSurface::writePixels` goes through the surface's canvas.
-        let _ = self.surface.canvas().write_pixels_from_bitmap(bitmap, (x, y));
+        let _ = self
+            .surface
+            .canvas()
+            .write_pixels_from_bitmap(bitmap, (x, y));
     }
     fn generation_id(&self) -> u32 {
         self.surface.generation_id()

@@ -385,8 +385,7 @@ def_graphite_test_for_all_contexts!(GraphiteLazyTextureInvalidDimensions, |repor
         let surface =
             Surface::render_target(&recorder, &surface_image_info, Mipmapped::No, None, "")
                 .expect("a render target surface");
-        let fulfill: PromiseTextureFulfillProc =
-            Arc::new(move || (fulfill_context.clone(), None));
+        let fulfill: PromiseTextureFulfillProc = Arc::new(move || (fulfill_context.clone(), None));
         let promise_image = promise_texture_from(
             &recorder,
             image_info.dimensions(),
@@ -399,9 +398,7 @@ def_graphite_test_for_all_contexts!(GraphiteLazyTextureInvalidDimensions, |repor
         );
         // A null promise image (invalid dimensions) draws nothing (`RETURN_ON_NULL(image)`).
         if let Some(promise_image) = &promise_image {
-            surface
-                .canvas()
-                .draw_image(promise_image, (0.0, 0.0), None);
+            surface.canvas().draw_image(promise_image, (0.0, 0.0), None);
         }
 
         let recording = recorder.snap();
