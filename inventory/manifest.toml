@@ -35263,7 +35263,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1661-L1663"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d5ca1f352270c98f1e72bd2ec351ea8e89faf4732b7fb18191b3405fd9629858"
 
 [[test]]
@@ -35282,7 +35282,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1614-L1616"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "6db6d15d011401d09cf636c976e41d05b5af5056f11631608294d97481db0756"
 
 [[test]]
@@ -35329,7 +35329,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1448-L1453"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c33d8eb5b4c1dc77ed74209fdaeacead1e71bc8074d0d97f5cf69afab9678b40"
 
 [[test]]
@@ -35338,8 +35338,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L440-L542"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::SpotLitSpecular (the lighting filters are not ported)"
+status = "passing"
 span_hash = "01ec23a8d21ca70b514522e1a47040cff2804bc1d9770b7ea255d796512f3c1c"
 
 [[test]]
@@ -35348,7 +35347,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1834-L1837"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "344df332cd333a4011f21a371b409cccf877fa93e449f23e930dd773206be28d"
 
 [[test]]
@@ -35367,7 +35366,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L956-L978"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8dc0405dc8479d63ad006e848161916ffd28429135479cb6ac1b9ec6d2a5b4b8"
 
 [[test]]
@@ -35376,8 +35375,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1674-L1733"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::PointLitDiffuse (the lighting filters are not ported)"
+status = "passing"
 span_hash = "05a58bf7805ec3677358dcfc7976e1ab2426f08cb6fcf20118d828bb933addfd"
 
 [[test]]
@@ -35405,7 +35403,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2192-L2219"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b288c10b2442a9d0ef19208f88a2bade24ef8710ae9378868cc074534ff7e08a"
 
 [[test]]
@@ -35414,7 +35412,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1077-L1088"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "40e5a02bce11045578445fc19dda041173f551cc0a8b9750efed70f5e864e12e"
 
 [[test]]
@@ -35424,6 +35422,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1306-L1308"
 module = "effects"
 status = "todo"
+reason = "needs the FilterList helper (tests/ImageFilterTest.cpp#L179-L313, every image filter built in one list) and test_cropRects (#L544-L581); not ported yet"
 span_hash = "2b5cc0f5d0a1f7fa8532eb66646e2e14ca04d68e519f8afc8174d48aa8affc6c"
 
 [[test]]
@@ -35451,7 +35450,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L926-L946"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "94c048999a5041846f057bd76f3cbbe74e5c422bc4a19c9583644beb66a73b62"
 
 [[test]]
@@ -35461,6 +35460,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L818-L893"
 module = "effects"
 status = "todo"
+reason = "needs the FilterList helper (tests/ImageFilterTest.cpp#L179-L313, every image filter built in one list) and its tiled-draw comparison (#L818-L893); not ported yet"
 span_hash = "7d8dbbf91d1ea298177343063cc202a6feda95971d2f8bfd837455d215628459"
 
 [[test]]
@@ -35469,7 +35469,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1162-L1206"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d98250eefad2c7aef6ce3b3c0336b9ad4597be0374bd22ceb5b00150625aedad"
 
 [[test]]
@@ -35478,7 +35478,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1386-L1435"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "56879dfa0e6401be2c6ff68e3b004a8f02b754d44d5686278c9237c47d785bfa"
 
 [[test]]
@@ -35487,7 +35487,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L805-L807"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "0cc445be3a324590154b97af7ff9fb8dea251cdbc0fb88ebe55a8b713a2268cc"
 
 [[test]]
@@ -35517,6 +35517,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1736-L1778"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilter serialization (SkImageFilter::Serialize with SkSerialProcs image encoding, and Deserialize), which is not ported"
 span_hash = "48b2658d5af7ae7a39d11ec33c7c44a682576595b64d82c5dafbdc5cbd8f38db"
 
 [[test]]
@@ -35526,6 +35527,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1780-L1789"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilter::Deserialize (not ported) to read the crbug769134.fil resource"
 span_hash = "90ec8bb7a718bb9bdb49596fb5c945a5c71990f1c70580613d563fc39771c434"
 
 [[test]]
@@ -35572,6 +35574,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1319-L1343"
 module = "effects"
 status = "todo"
+reason = "needs MatrixTestImageFilter (tests/ImageFilterTest.cpp#L118-L177), a custom SkImageFilter_Base subclass whose onFilterImage reports to the Reporter; the test is not ported yet (the Rust port needs Reporter access from inside a filter)"
 span_hash = "2acdbacd4a7b604c8f587dd41db850a9c10c050a4b9f73645a8c29a28304718d"
 
 [[test]]
@@ -35646,7 +35649,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L640-L642"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b4add939901eebf3a1b85a16c77cf7fd2c46867ccaff889c0722c43d94b41d58"
 
 [[test]]
@@ -35665,7 +35668,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1540-L1588"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "72800aeb695ac29a798e06088165d97064338404d444bde7e2298a77f0559aab"
 
 [[test]]
@@ -35674,7 +35677,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1024-L1075"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b76fa073f0942989da493d72cd3c04456536c47240c7b7dfd122e161217284ff"
 
 [[test]]
@@ -35683,7 +35686,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L980-L1000"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "72f8decd28f08fefe8c064a02edd3225d4e78cafda857885dd90285d1f5ec47d"
 
 [[test]]
@@ -35701,7 +35704,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L769-L771"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "9d4db0357def2c50e3341fba4d806bee3b88fd52657cbf24fc7e8f41f190f1ad"
 
 [[test]]
@@ -35738,7 +35741,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2436-L2486"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e0e1d74ff3f454581a6ca3f80effd8921d7801d9f729d8d15c706b76a9c991c6"
 
 [[test]]
@@ -35793,7 +35796,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2222-L2269"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "836e6d9be11e63fb173fadd21eed52ff98c0d87046f7be9a11095dfbca9bbfa8"
 
 [[test]]
@@ -35802,7 +35805,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1590-L1593"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d310e99e9ad971f472237c0f2ad4b4f651a2e0399fb76c03977e0c7c16e37265"
 
 [[test]]
