@@ -16381,7 +16381,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/annotated_text.cpp#L38-L53"
 module = "text"
 status = "todo"
-reason = "needs SkCanvas::drawAnnotation / SkAnnotateRectWithURL (annotations are not ported)"
+reason = "not attempted in this sweep: the old reason (drawAnnotation) is stale because drawAnnotation has landed; SkAnnotateRectWithURL still needs checking"
 span_hash = "5e76b934fce5941e1feef6e78eca1638a662e0d0f457096816a44d522db27794"
 
 [[test]]
@@ -16821,7 +16821,7 @@ macro = "DEF_GM"
 source = "gm/bitmapfilters.cpp#L114-L114"
 module = "effects"
 status = "todo"
-reason = "draws its labels with drawString (text not ported)"
+reason = "not attempted in this sweep: the old reason (drawString) is stale because text has landed; re-check the remaining needs"
 span_hash = "4a54a347805cb06f730a513d432ca1b641b0529564ec49481cd55f1e95f63600"
 
 [[test]]
@@ -18639,7 +18639,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L107-L148"
 module = "effects"
 status = "todo"
-reason = "needs SkShaders::MakeTurbulence and the SkImageFilters Shader, ColorFilter and Compose factories (not ported)"
+reason = "not attempted in this sweep: SkShaders::MakeTurbulence and the image-filter Shader/ColorFilter/Compose factories are on main; re-check"
 span_hash = "6835bce8d9ed6bcd46b89b14f1646705578ee3334127219f47d876ce49c993fe"
 
 [[test]]
@@ -19719,7 +19719,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L264-L302"
 module = "raster"
 status = "todo"
-reason = "needs fonts/Distortable.ttf as a resource stream (GetResourceAsStream), which is not ported"
+reason = "not attempted in this sweep: the old reason (resource stream) is stale because get_resource_as_stream exists; re-check the blob path"
 span_hash = "3713bba18f7836b70cbec27269bbdb4751da8f35ad7313bac51371539eb38710"
 
 [[test]]
@@ -20150,6 +20150,7 @@ macro = "DEF_GM"
 source = "gm/filterfastbounds.cpp#L334-L334"
 module = "effects"
 status = "todo"
+reason = "not attempted in this sweep: 335-line GM over Picture/Tile/MatrixTransform/DropShadow image filters, whose fast-bounds path has not been checked against the golden"
 span_hash = "0bdb74bd7488427d37404fdf8e86afcc0895dbb24c4e273ec204d030c96a8346"
 
 [[test]]
@@ -21726,7 +21727,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L615-L644"
 module = "raster"
 status = "todo"
-reason = "needs SkImage::makeScaled, which has no public API in this port"
+reason = "needs SkImage::makeScaled (not ported)"
 span_hash = "fd4a8cec806633fb20aed93717c8687109ec1d104e8b2781e5af78be420ebc04"
 
 [[test]]
@@ -21736,7 +21737,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/image.cpp#L596-L613"
 module = "raster"
 status = "todo"
-reason = "needs SkImage serialization (serial_deserial), which is not ported"
+reason = "needs SkImage serialization (serial_deserial), not checked against the image port"
 span_hash = "7d90f328e5486d76530aa64bb558c8ade550fee472a4a957f854e06da4ca5d28"
 
 [[test]]
@@ -22185,7 +22186,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/imagemasksubset.cpp#L96-L114"
 module = "effects"
 status = "todo"
-reason = "its third maker needs SkImages::DeferredFromGenerator (SkImageGenerator, lazy images): not ported"
+reason = "not attempted in this sweep: the old reason (DeferredFromGenerator) is stale because images::deferred_from_generator is on main; re-check the generator subclass"
 span_hash = "d0a004b20d2d57273739a62945bceb673d55a05def23780a3da3cf59b747387f"
 
 [[test]]
@@ -23583,7 +23584,7 @@ macro = "DEF_GM"
 source = "gm/pictureimagefilter.cpp#L159-L159"
 module = "effects"
 status = "todo"
-reason = "needs text: the GM draws glyphs with SkFont/drawString, and text is not ported"
+reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
 span_hash = "93554f90877793b02dc492e2db40d726b3eb38ad1f2a9b7399ca81f6beee5183"
 
 [[test]]
@@ -23836,6 +23837,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/recordopts.cpp#L142-L230"
 module = "raster"
 status = "todo"
+reason = "not attempted in this sweep: 230-line GM over SkImageFilters::Picture and TableARGB colour filters, with Ganesh-only flush helpers"
 span_hash = "e8c43157ad064dca707ee60568d10f240f469ccc126cf6b6050ff18c3b8d2e18"
 
 [[test]]
@@ -23918,7 +23920,7 @@ macro = "DEF_GM"
 source = "gm/rrect.cpp#L315-L315"
 module = "effects"
 status = "todo"
-reason = "needs text (labels use SkFont/drawString)"
+reason = "not attempted in this sweep: the old reason (text) is stale because text has landed; re-check the remaining needs"
 span_hash = "8f8f0a49a7c24ea9b6edaaaf5195079ac982a5ca16ade39d37784ad94d85c972"
 
 [[test]]
@@ -24037,7 +24039,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
 status = "todo"
-reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
+reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]
@@ -24047,7 +24049,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeimagefilter.cpp#L81-L111"
 module = "effects"
 status = "todo"
-reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
+reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
 span_hash = "8415cadfee6eba60dd9f8c94b2e8f5512e54750ad54a3e7b0f59c1399b4083fe"
 
 [[test]]
@@ -24057,7 +24059,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L267-L318"
 module = "raster"
 status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
 span_hash = "dd098ded396b100e48be8e2f458eb32b103383ae81576ff9f9c91bfe800865c6"
 
 [[test]]
@@ -24077,7 +24079,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L238-L264"
 module = "raster"
 status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
 span_hash = "eab99248a8d97aabd7eaeab47f7d2d7f5219f70165478f55757e292a7472d5fa"
 
 [[test]]
@@ -24087,7 +24089,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L382-L415"
 module = "raster"
 status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
 span_hash = "b087a0d1ab68e8b8e4e25a8ee958680b73af987bc97a275d4e636ff03e39c8ec"
 
 [[test]]
@@ -24097,7 +24099,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L516-L561"
 module = "raster"
 status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
 span_hash = "6441ea4bd56b1873738d8f7febdb922a517acf54516f7e2d52bdfb8d28638b16"
 
 [[test]]
@@ -24107,7 +24109,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L603-L639"
 module = "raster"
 status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
 span_hash = "98b4f8d5e1c960bab8308c8bd893583ae43f848302c2e0a5bc507e0702738311"
 
 [[test]]
@@ -24117,7 +24119,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L165-L195"
 module = "raster"
 status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+reason = "not attempted in this sweep: the old reason (drawSimpleText) is stale because text has landed; the SkSL intrinsic coverage and canvas makeSurface readback still need checking"
 span_hash = "d358f02dcbd27389839c19338e2192d07d4c4cfafe8f82c7bdf6e8e07f965f95"
 
 [[test]]
@@ -24290,7 +24292,7 @@ macro = "DEF_GM"
 source = "gm/samplerstress.cpp#L147-L147"
 module = "raster"
 status = "todo"
-reason = "needs make_codec_image (codec-backed image via PNG encode/decode: SkPngEncoder is not on main)"
+reason = "not attempted in this sweep: the old reason (SkPngEncoder) is stale because the PNG encoder has landed; re-check make_codec_image"
 span_hash = "b4a3cbd751c646cb375131c9fb1a10777e1fc2d25ea27f28aeeb991303414621"
 
 [[test]]
@@ -25209,7 +25211,7 @@ macro = "DEF_GM"
 source = "gm/surface.cpp#L170-L170"
 module = "text"
 status = "todo"
-reason = "not ported yet: surface.rs has no SurfacePropsGM (test_draw with text and gradients)"
+reason = "not attempted in this sweep: SurfacePropsGM is not written yet (text and gradients)"
 span_hash = "54b4394be45f96ff10a15149f8616c2e2715dbd99b95efad49070c163b7f3c71"
 
 [[test]]
@@ -25857,7 +25859,7 @@ macro = "DEF_GM"
 source = "gm/vertices.cpp#L207-L207"
 module = "effects"
 status = "todo"
-reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
+reason = "not attempted in this sweep: drawVertices/drawPatch are ported; the GM's gradient shader path needs checking"
 span_hash = "4d8869c55c1eb6620ad0f14f2460a0de7ea469ffde7a302af3f2bac26e920276"
 
 [[test]]
@@ -25921,7 +25923,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L167-L168"
 module = "raster"
 status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
+reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
 span_hash = "616eda1fdcb5a30e150eec589f08e172dc1176aa947a22d260ce7d305a5d8fe1"
 
 [[test]]
@@ -25931,7 +25933,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L169-L170"
 module = "raster"
 status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
+reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
 span_hash = "39371c0e14bd3675f1f81cad92e168a7005b366bfdd01a57c52150c479f97d7e"
 
 [[test]]
@@ -25941,7 +25943,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L163-L164"
 module = "raster"
 status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
+reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
 span_hash = "413261afa1c9df7dc8d93c4f920014999b441cc58c2ad47571b7ef8458d988cc"
 
 [[test]]
@@ -25951,7 +25953,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L165-L166"
 module = "raster"
 status = "todo"
-reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
+reason = "needs SkTiledImageUtils (manual tiling), which is not ported; the raster variants are also very large"
 span_hash = "b6e1b132a3ce795b894c5778e472ef59f408aa782083e64f3f9c61484efe9dd3"
 
 [[test]]
@@ -26462,6 +26464,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/ExternalProperties.cpp#L138-L138"
 module = "skottie"
 status = "todo"
+reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
 span_hash = "cf6518affcf7117dc7efb0545bd2f814687da4d2e66647672ce3942fd674b1bc"
 
 [[test]]
@@ -26471,6 +26474,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L182-L182"
 module = "skottie"
 status = "todo"
+reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
 span_hash = "541f39506ae3df91222ff1b07d8febc9c4fe77b7f4c22fb710a0b016585ddd4a"
 
 [[test]]
@@ -26480,6 +26484,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L183-L183"
 module = "skottie"
 status = "todo"
+reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
 span_hash = "f74e03d29d896f95053bb67b85a11800925db8023addbdc7df4f839799a6dc98"
 
 [[test]]
@@ -26489,6 +26494,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L242-L242"
 module = "skottie"
 status = "todo"
+reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
 span_hash = "6c83508dc70d702b41352f5622d7651704762b270d0ee34fa4ff5a07e7af2329"
 
 [[test]]
@@ -26498,6 +26504,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L94-L94"
 module = "skottie"
 status = "todo"
+reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
 span_hash = "fd5304773225efaa47b6e282a52395f1f0a417cc9e9239a51c353a27ef1b9c67"
 
 [[test]]
@@ -26727,6 +26734,7 @@ macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L253-L253"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
 span_hash = "6a5402337d111d6ea7a5565e32ee2d2cb055fc2548499902bbab50e3364194cd"
 
 [[test]]
@@ -26736,6 +26744,7 @@ macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L257-L257"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
 span_hash = "547da74113bbbca47d712d60438b69d07b31ae5b44788ab26c3c264bdab0846b"
 
 [[test]]
@@ -26745,6 +26754,7 @@ macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L256-L256"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
 span_hash = "1b6e121e336248c4f5591f15fbaadb7a91c39c219b4c9a6eba9dc2ff97468814"
 
 [[test]]
@@ -26754,6 +26764,7 @@ macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L254-L254"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
 span_hash = "295fcb9679c4f1a00ad0d3952f7948a227de1834f87feedacbf47c40255915b2"
 
 [[test]]
@@ -26763,6 +26774,7 @@ macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L255-L255"
 module = "paragraph"
 status = "todo"
+reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
 span_hash = "8ee3c7e899b35f86407a6e9fb602e2aafa1b25c313b7c96ccb5872747639bf36"
 
 [[test]]
