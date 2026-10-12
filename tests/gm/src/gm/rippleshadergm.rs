@@ -119,42 +119,42 @@ impl GM for RippleShaderGm {
         set2(
             &mut builder,
             "in_tCircle1",
-            scale * 0.5 + (phase * 0.01 * (scale * 0.55).cos()),
-            scale * 0.5 + (phase * 0.01 * (scale * 0.55).sin()),
+            scale * 0.5 + (phase * 0.01 * skia_rust_core::libm::cosf(scale * 0.55)),
+            scale * 0.5 + (phase * 0.01 * skia_rust_core::libm::sinf(scale * 0.55)),
         );
         set2(
             &mut builder,
             "in_tCircle2",
-            scale * 0.2 + (phase * -0.0066 * (scale * 0.45).cos()),
-            scale * 0.2 + (phase * -0.0066 * (scale * 0.45).sin()),
+            scale * 0.2 + (phase * -0.0066 * skia_rust_core::libm::cosf(scale * 0.45)),
+            scale * 0.2 + (phase * -0.0066 * skia_rust_core::libm::sinf(scale * 0.45)),
         );
         set2(
             &mut builder,
             "in_tCircle3",
-            scale + (phase * -0.0066 * (scale * 0.35).cos()),
-            scale + (phase * -0.0066 * (scale * 0.35).sin()),
+            scale + (phase * -0.0066 * skia_rust_core::libm::cosf(scale * 0.35)),
+            scale + (phase * -0.0066 * skia_rust_core::libm::sinf(scale * 0.35)),
         );
 
         let rotation1 = phase * pi_rotate_right + 1.7 * SCALAR_PI;
         set2(
             &mut builder,
             "in_tRotation1",
-            rotation1.cos(),
-            rotation1.sin(),
+            skia_rust_core::libm::cosf(rotation1),
+            skia_rust_core::libm::sinf(rotation1),
         );
         let rotation2 = phase * pi_rotate_left + 2.0 * SCALAR_PI;
         set2(
             &mut builder,
             "in_tRotation2",
-            rotation2.cos(),
-            rotation2.sin(),
+            skia_rust_core::libm::cosf(rotation2),
+            skia_rust_core::libm::sinf(rotation2),
         );
         let rotation3 = phase * pi_rotate_right + 2.75 * SCALAR_PI;
         set2(
             &mut builder,
             "in_tRotation3",
-            rotation3.cos(),
-            rotation3.sin(),
+            skia_rust_core::libm::cosf(rotation3),
+            skia_rust_core::libm::sinf(rotation3),
         );
 
         builder.uniform("in_color").set_f32(&[0.0, 0.6, 0.0, 1.0]); // green

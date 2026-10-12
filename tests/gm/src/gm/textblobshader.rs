@@ -68,7 +68,11 @@ impl GM for TextBlobShaderGm {
             for (i, p) in pos.iter_mut().enumerate() {
                 *p = Point::new(
                     font.size() * index_to_scalar(i) * 0.75,
-                    150.0 + 5.0 * (index_to_scalar(i) * 8.0 / index_to_scalar(glyph_count)).sin(),
+                    150.0
+                        + 5.0
+                            * skia_rust_core::libm::sinf(
+                                index_to_scalar(i) * 8.0 / index_to_scalar(glyph_count),
+                            ),
                 );
             }
         }

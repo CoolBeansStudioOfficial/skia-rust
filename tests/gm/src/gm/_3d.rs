@@ -47,7 +47,11 @@ impl Info {
             near: 0.05,
             far: 4.0,
             angle,
-            eye: V3::new(0.0, 0.0, 1.0 / (angle / 2.0).tan() - 1.0),
+            eye: V3::new(
+                0.0,
+                0.0,
+                1.0 / skia_rust_core::libm::tanf(angle / 2.0) - 1.0,
+            ),
             coa: V3::new(0.0, 0.0, 0.0),
             up: V3::new(0.0, 1.0, 0.0),
         }

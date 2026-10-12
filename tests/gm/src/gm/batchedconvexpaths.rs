@@ -36,18 +36,24 @@ impl GM for BatchedConvexPathsGM {
                 const K2PI: f32 = SCALAR_PI * 2.0;
                 let last = j + 2.0 == np;
                 builder.cubic_to(
-                    ((j / np * K2PI).cos(), (j / np * K2PI).sin()),
-                    (((j + 1.0) / np * K2PI).cos(), ((j + 1.0) / np * K2PI).sin()),
+                    (
+                        skia_rust_core::libm::cosf(j / np * K2PI),
+                        skia_rust_core::libm::sinf(j / np * K2PI),
+                    ),
+                    (
+                        skia_rust_core::libm::cosf((j + 1.0) / np * K2PI),
+                        skia_rust_core::libm::sinf((j + 1.0) / np * K2PI),
+                    ),
                     (
                         if last {
                             1.0
                         } else {
-                            ((j + 2.0) / np * K2PI).cos()
+                            skia_rust_core::libm::cosf((j + 2.0) / np * K2PI)
                         },
                         if last {
                             0.0
                         } else {
-                            ((j + 2.0) / np * K2PI).sin()
+                            skia_rust_core::libm::sinf((j + 2.0) / np * K2PI)
                         },
                     ),
                 );

@@ -64,7 +64,16 @@ fn draw_clipped_flower(canvas: &Canvas, fill_type: PathFillType) {
     for i in 1..=K_NUM_PETALS {
         let c: f32 = 2.0 * SCALAR_PI * (i as f32 - 0.5) / K_NUM_PETALS as f32;
         let theta: f32 = 2.0 * SCALAR_PI * i as f32 / K_NUM_PETALS as f32;
-        flower.quad_to((c.cos() * 2.0, c.sin() * 2.0), (theta.cos(), theta.sin()));
+        flower.quad_to(
+            (
+                skia_rust_core::libm::cosf(c) * 2.0,
+                skia_rust_core::libm::sinf(c) * 2.0,
+            ),
+            (
+                skia_rust_core::libm::cosf(theta),
+                skia_rust_core::libm::sinf(theta),
+            ),
+        );
     }
     flower.close();
     flower.add_arc(Rect::new(-0.75, -0.75, 0.75, 0.75), 0.0, 360.0);

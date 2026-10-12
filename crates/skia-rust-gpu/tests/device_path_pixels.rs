@@ -98,7 +98,10 @@ fn star() -> Path {
     for i in 0..10_u16 {
         let radius = if i % 2 == 0 { 50.0_f32 } else { 20.0 };
         let angle = std::f32::consts::PI / 5.0 * f32::from(i) - std::f32::consts::FRAC_PI_2;
-        let p = Point::new(64.0 + radius * angle.cos(), 64.0 + radius * angle.sin());
+        let p = Point::new(
+            64.0 + radius * skia_rust_core::libm::cosf(angle),
+            64.0 + radius * skia_rust_core::libm::sinf(angle),
+        );
         if i == 0 {
             builder.move_to(p);
         } else {
