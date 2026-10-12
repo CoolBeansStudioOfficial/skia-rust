@@ -170,6 +170,7 @@ pub mod emptypath;
 pub mod emptyshader;
 pub mod encode;
 pub mod encode_alpha_jpeg;
+pub mod encode_color_types;
 pub mod encode_platform;
 pub mod encode_srgb;
 pub mod exoticformats;

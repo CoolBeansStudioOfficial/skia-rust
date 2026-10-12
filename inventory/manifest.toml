@@ -20001,8 +20001,8 @@ kind = "gm"
 macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L188-L188"
 module = "codec"
-status = "todo"
-reason = "not ported: DEF_VARIANTS registers three GMs per manifest id, which the one-GM-per-name registration cannot express yet"
+status = "failing"
+reason = "see notes/gm_encode_color_types_cpp_SkEncodedImageFormat_kWEBP.md (DEF_VARIANTS: the f16 normal variants differ on the decoded premul pair, 1 F16 ulp / 1 8-bit level; 8888 and 565 match)"
 span_hash = "5c06e81aa5205c6cbfaeb468b02ed765240cff984513105fc850029631d2dcc6"
 
 [[test]]
@@ -20011,8 +20011,8 @@ kind = "gm"
 macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L189-L189"
 module = "codec"
-status = "todo"
-reason = "not ported: DEF_VARIANTS, as the entry above (the one-GM-per-name registration cannot express the three variants yet)"
+status = "failing"
+reason = "see notes/gm_encode_color_types_cpp_SkEncodedImageFormat_kWEBP_2.md (the lossy set, as the entry above: the f16 normal variants differ on the decoded premul pair)"
 span_hash = "44de642452e3eb339e86b9e7e4e8c57eb9c127f1d1b14af0d11fca99c4048646"
 
 [[test]]
