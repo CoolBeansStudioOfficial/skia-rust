@@ -1,0 +1,217 @@
+name: Oracle (CI-hosted)
+
+# Real Skia at the pinned revision, built on a hosted Linux runner, as the CPU oracle
+# (oracle/README.md, "CI-hosted oracle"). Manual only: it never runs on a PR or a push.
+#
+#   gh api -X POST repos/<owner>/skia-rust/actions/workflows/oracle.yml/dispatches -f ref=<branch>
+#
+# Per build it builds `dm` (and nanobench) with clang and the GN args of oracle/tiers.toml,
+# caches the binaries, renders `--src gm` at each CPU tier of the build and compares the hashes
+# with the published `goldens-m156` tier of the same name (the equivalence check), then renders
+# `--src image` and `--src lottie` and uploads hash files in the goldens-m156 format as artifacts.
+# Nothing is published from here; the maintainer publishes the artifacts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      builds:
+        description: "JSON list of builds from oracle/tiers.toml"
+        default: '["x64-sse2-rgba","x64-sse41-rgba","x64-scalar-rgba"]'
+      extras:
+        description: "Also render --src image and --src lottie"
+        type: boolean
+        default: true
+      lottie_configs:
+        description: "DM configs for --src lottie"
+        default: "8888"
+      nanobench:
+        description: "Also build nanobench (shares the build, bench.md Q1)"
+        type: boolean
+        default: true
+      rebuild:
+        description: "Ignore the build cache"
+        type: boolean
+        default: false
+      goldens_release:
+        description: "Release holding the goldens to compare with"
+        default: "goldens-m156"
+
+permissions:
+  contents: read
+
+env:
+  GIT_SYNC_DEPS_SKIP_EMSDK: "1"
+
+jobs:
+  oracle:
+    name: oracle (${{ matrix.build }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        build: ${{ fromJSON(inputs.builds) }}
+    env:
+      BUILD: ${{ matrix.build }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build zstd
+          clang --version | tee clang-version.txt
+          python3 --version
+
+      - name: Cache key (pin + GN args + patches + compiler)
+        id: key
+        run: |
+          pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
+          python3 -I oracle/ci/oracle_ci.py gn-args "$BUILD" > gn-args.txt
+          cat gn-args.txt
+          if [ "${{ inputs.nanobench }}" = "true" ]; then nb=nb; else nb=nonb; fi
+          h=$( (cat gn-args.txt clang-version.txt oracle/patches/*.patch oracle/dm/*; echo "$nb") | sha256sum | cut -c1-16)
+          echo "pin=$pin" >> "$GITHUB_OUTPUT"
+          echo "bin=oracle-bin-$BUILD-${pin::12}-$h" >> "$GITHUB_OUTPUT"
+
+      - name: Restore binaries
+        id: bin
+        if: ${{ !inputs.rebuild }}
+        uses: actions/cache/restore@v4
+        with:
+          path: oracle-bin
+          key: ${{ steps.key.outputs.bin }}
+
+      # ---- cold build ---------------------------------------------------------------------
+      - name: Restore Skia checkout with dependencies
+        id: src
+        if: steps.bin.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: skia
+          key: skia-src-${{ steps.key.outputs.pin }}
+
+      - name: Fetch Skia and sync dependencies
+        if: steps.bin.outputs.cache-hit != 'true' && steps.src.outputs.cache-hit != 'true'
+        run: |
+          rm -rf skia
+          git clone --depth 1 --single-branch --branch chrome/m156 https://skia.googlesource.com/skia skia
+          test "$(git -C skia rev-parse HEAD)" = "${{ steps.key.outputs.pin }}"
+          cd skia
+          for attempt in 1 2 3 4; do
+            python3 tools/git-sync-deps && break
+            echo "git-sync-deps failed (attempt $attempt); retrying"; sleep $((60 * attempt))
+          done
+          python3 bin/fetch-gn
+          du -sh .
+
+      - name: Save Skia checkout with dependencies
+        if: steps.bin.outputs.cache-hit != 'true' && steps.src.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: skia
+          key: skia-src-${{ steps.key.outputs.pin }}
+
+      - name: Patch Skia (oracle dump, SKIA_ORACLE_CPU_CAP)
+        if: steps.bin.outputs.cache-hit != 'true'
+        run: |
+          cp oracle/dm/* skia/dm/
+          cd skia
+          git apply --check ../oracle/patches/skia-oracle.patch
+          git apply ../oracle/patches/skia-oracle.patch
+          python3 bin/fetch-gn
+
+      - name: Build
+        if: steps.bin.outputs.cache-hit != 'true'
+        run: |
+          cd skia
+          mkdir -p out/oracle
+          cp ../gn-args.txt out/oracle/args.gn
+          bin/gn gen out/oracle
+          ninja -C out/oracle dm
+          if [ "${{ inputs.nanobench }}" = "true" ]; then
+            ninja -C out/oracle nanobench || echo "::warning::nanobench failed to build"
+          fi
+          mkdir -p ../oracle-bin
+          cp out/oracle/dm out/oracle/args.gn ../oracle-bin/
+          [ -f out/oracle/nanobench ] && cp out/oracle/nanobench ../oracle-bin/
+          cp -r resources ../oracle-bin/resources
+          {
+            echo "tier-build = $BUILD"
+            echo "compiler = $(clang --version | head -n 1)"
+            echo "runner-image = ${ImageOS:-?} ${ImageVersion:-?}"
+            echo
+            echo "[args.gn]"
+            cat out/oracle/args.gn
+          } > ../oracle-bin/toolchain.txt
+
+      - name: Save binaries
+        if: steps.bin.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: oracle-bin
+          key: ${{ steps.key.outputs.bin }}
+
+      # ---- equivalence check and extra sources ----------------------------------------------
+      - name: Download the published goldens
+        run: |
+          mkdir -p goldens
+          gh release download "${{ inputs.goldens_release }}" -R "$GITHUB_REPOSITORY" -D goldens \
+            -p hashes-m156.json -p objects-m156.tar
+          ls -l goldens
+          sha256sum goldens/* | tee goldens/sha256.txt
+          grep -F "$(grep hashes-m156.json inventory/goldens.lock | cut -d'"' -f4)" goldens/sha256.txt \
+            || echo "::warning::hashes-m156.json differs from inventory/goldens.lock"
+
+      - name: Render and compare
+        env:
+          EXTRAS: ${{ inputs.extras && '1' || '0' }}
+          LOTTIE_CONFIGS: ${{ inputs.lottie_configs }}
+        run: |
+          chmod +x oracle/ci/run_tiers.sh oracle-bin/dm
+          oracle/ci/run_tiers.sh "$BUILD" oracle-bin goldens results
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-results-${{ matrix.build }}
+          path: |
+            results
+            oracle-bin/toolchain.txt
+            gn-args.txt
+          if-no-files-found: warn
+
+  collect:
+    name: collect hashes
+    needs: oracle
+    if: ${{ always() && inputs.extras }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: oracle-results-*
+          path: all
+      - name: Merge into the goldens-m156 format
+        run: |
+          mkdir -p merged
+          for src in image lottie; do
+            files=$(ls all/*/results/*/hashes-$src.json 2>/dev/null || true)
+            [ -n "$files" ] || continue
+            python3 -I oracle/ci/oracle_ci.py merge "merged/dm-$src-hashes-m156.json" $files
+          done
+          # one equivalence summary over all tiers
+          cat all/*/results/*/equivalence.md > merged/equivalence-m156.md 2>/dev/null || true
+          cat merged/equivalence-m156.md >> "$GITHUB_STEP_SUMMARY" || true
+          ls -l merged
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oracle-dm-hashes-m156
+          path: merged
