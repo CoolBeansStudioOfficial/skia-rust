@@ -15,7 +15,6 @@ use serde::Serialize;
 use skia_rust_gm::check::{self, GmReport, Options, Verdict};
 use skia_rust_gm::goldens::GoldenStore;
 use skia_rust_gm::registry;
-use skia_rust_gm::sink::GmSrc;
 
 #[derive(Serialize)]
 struct PlanEntry {
@@ -49,9 +48,9 @@ fn main() -> ExitCode {
         }
     }
 
-    let gms: Vec<_> = registry::all()
+    let gms: Vec<_> = registry::sets()
         .into_iter()
-        .filter(|r| matches.is_empty() || matches.iter().any(|m| r.key().contains(m.as_str())))
+        .filter(|(key, _)| matches.is_empty() || matches.iter().any(|m| key.contains(m.as_str())))
         .collect();
     let mut report = Report {
         goldens: String::new(),
@@ -84,14 +83,8 @@ fn main() -> ExitCode {
             diffs: diffs.then(skia_rust_gm::diff::diff_root),
             ..Options::default()
         };
-        for reg in gms {
-            let r = check::check_gm(
-                &reg.key(),
-                &GmSrc::from_registration(reg),
-                store,
-                &plan,
-                &opts,
-            );
+        for (key, srcs) in &gms {
+            let r = check::check_gm_set(key, srcs, store, &plan, &opts);
             if r.verdict != Verdict::Passing {
                 print!("{r}");
             }

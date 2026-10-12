@@ -222,6 +222,59 @@ fn skips_match_only_when_the_oracle_skipped_too() {
 }
 
 #[test]
+fn variant_set_passes_only_when_every_variant_matches() {
+    let store = fixture_store(Objects::None);
+    let plan = fixture_plan(&store);
+
+    // Both variants match their goldens (a skip the oracle also made counts as a match): the id
+    // passes, and each variant's checks keep its own name.
+    let good = [
+        GmSrc::new(|| fake("fixture_blue", DrawResult::Ok)),
+        GmSrc::new(|| fake("fixture_skip", DrawResult::Skip)),
+    ];
+    let report = check_gm_set("gm::fixture::set", &good, &store, &plan, &byte_opts());
+    assert_eq!(report.verdict, Verdict::Passing, "{report}");
+    assert_eq!(report.name, "fixture_blue, fixture_skip");
+    assert!(report.checks.iter().any(|c| c.name == "fixture_blue"));
+    assert!(report.checks.iter().any(|c| c.name == "fixture_skip"));
+
+    // One variant that differs from its golden fails the whole id, whatever the others do.
+    let bad = [
+        GmSrc::new(|| fake("fixture_blue", DrawResult::Ok)),
+        GmSrc::new(|| fake("fixture_wrong", DrawResult::Ok)),
+    ];
+    let report = check_gm_set("gm::fixture::set", &bad, &store, &plan, &byte_opts());
+    assert_eq!(report.verdict, Verdict::Failing, "{report}");
+    assert!(
+        report
+            .checks
+            .iter()
+            .any(|c| c.name == "fixture_wrong" && matches!(c.outcome, Outcome::Mismatch { .. }))
+    );
+
+    // A variant that cannot be checked keeps the id from passing.
+    let report = check_gm_set("gm::fixture::set", &good, &store, &[], &byte_opts());
+    assert_eq!(report.verdict, Verdict::NotCheckable, "{report}");
+
+    // A set with no variants checks nothing, so it is not checkable either.
+    let report = check_gm_set("gm::fixture::none", &[], &store, &plan, &byte_opts());
+    assert_eq!(report.verdict, Verdict::NotCheckable, "{report}");
+    assert!(report.checks.is_empty());
+}
+
+#[test]
+fn single_registration_is_a_set_of_one() {
+    let store = fixture_store(Objects::None);
+    let plan = fixture_plan(&store);
+    let src = GmSrc::new(|| fake("fixture_blue", DrawResult::Ok));
+    let one = check_gm("gm::fixture::blue", &src, &store, &plan, &byte_opts());
+    let set = check_gm_set("gm::fixture::blue", &[src], &store, &plan, &byte_opts());
+    assert_eq!(set.verdict, one.verdict);
+    assert_eq!(set.name, one.name);
+    assert_eq!(set.checks.len(), one.checks.len());
+}
+
+#[test]
 fn empty_sources_skip_like_dm() {
     let src = GmSrc::new(|| {
         Box::new(Fake {
