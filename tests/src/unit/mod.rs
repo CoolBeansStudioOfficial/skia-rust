@@ -478,6 +478,8 @@ pub mod sk_sl_debug_trace_player_test;
 #[cfg(test)]
 pub mod sk_sl_debug_trace_test;
 #[cfg(test)]
+pub mod sk_sl_error_test;
+#[cfg(test)]
 pub mod sk_sl_memory_layout_test;
 #[cfg(test)]
 pub mod sk_sl_pipeline_stage_testbed;
