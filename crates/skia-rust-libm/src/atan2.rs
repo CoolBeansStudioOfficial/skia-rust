@@ -14,8 +14,8 @@ const PI: f64 = core::f64::consts::PI;
 #[must_use]
 pub fn atan2f(y: f32, x: f32) -> f32 {
     if x.is_nan() || y.is_nan() {
-        // Which operand's payload wins is settled by the probe's special-value check.
-        let n = if y.is_nan() { y } else { x };
+        // The platform returns x (quieted) when both are NaN.
+        let n = if x.is_nan() { x } else { y };
         return f32::from_bits(n.to_bits() | 0x0040_0000);
     }
     let (yd, xd) = (f64::from(y), f64::from(x));
