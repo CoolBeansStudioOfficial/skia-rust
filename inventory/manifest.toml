@@ -28523,8 +28523,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L316-L323"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "37ea37c0625ad2b97629dda8bc6284ae102efcc3a9dcb2fa31398a560064a83e"
 
 [[test]]
@@ -28533,8 +28532,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L120-L135"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "d4329312b92adf69adce3c93b3358342bab58f9d5f4c0165aa117338922d83a2"
 
 [[test]]
@@ -28543,8 +28541,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L349-L356"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "1027c2717566f681f7cd12b2310658f9df2fb8776c8e8c3a1639ba504f7c5714"
 
 [[test]]
@@ -28553,8 +28550,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L88-L101"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "143edd6cb3c14d0c21626f474a9e2a9bbf117ddc0bc3c20dd32339e7624e72bc"
 
 [[test]]
@@ -28563,8 +28559,7 @@ kind = "unit"
 macro = "DEF_TEST_ICU_UNICODES"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L251-L284"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "a607a166e73f8f0b78b7149f1cefda5cbe78c8e6eb296742ca9cf81076d83b0b"
 
 [[test]]
@@ -28619,8 +28614,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L327-L334"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "3d0c1373b5f6032171a9d08b77536bc10b69f1edff13e2678118cb7b4811aaaa"
 
 [[test]]
@@ -28629,8 +28623,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L360-L367"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "2e235a54c204ce8ef675fbf074543046b6d6c613a4d99fa0f73bb606d8ee7d17"
 
 [[test]]
@@ -28648,8 +28641,7 @@ kind = "unit"
 macro = "DEF_TEST_ICU_UNICODES"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L239-L249"
 module = "unicode"
-status = "todo"
-reason = "needs the ICU-backed implementation (M2, decision Q3/Q8): the test runs only on SkUnicodes::ICU / ICU4X, not on the hardcoded or client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "b78f16311cb304586b821f0f469aab2ab034587c4b2e43dbe6213f54c186a279"
 
 [[test]]

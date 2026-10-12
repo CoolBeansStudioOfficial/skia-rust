@@ -1,12 +1,14 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: the call sequence of oracle/unicode-diff/cpp/unicode_diff.cc (Skia's SkUnicode_icu.cpp and
-// SkUnicode_icu_bidi.cpp over Chromium ICU 78.2), replayed against ICU4X 2.3 and unicode-bidi 0.3.18.
+// SkUnicode_icu_bidi.cpp over Chromium ICU 78.2), replayed against the ICU shim (ICU4X 2.3) and
+// unicode-bidi 0.3.18.
 
 // `ICU4X` and `unicode-bidi` are proper names, not code.
 #![allow(clippy::doc_markdown)]
 
-//! Replays the stored ICU results (`expected/*.txt`) against ICU4X and `unicode-bidi`, with no C/C++.
+//! Replays the stored ICU results (`expected/*.txt`) against `skia_rust_unicode::icu_shim` (on ICU4X) and
+//! `unicode-bidi`, with no C/C++.
 //!
 //! Every string, code point range and conformance line is either exact or listed with its class in
 //! `known-divergences.txt`; there is no tolerance. The `conformance` section needs the UAX
@@ -66,6 +68,11 @@ fn properties_over_all_code_points() {
 #[test]
 fn to_upper_per_locale() {
     replay(Section::Case);
+}
+
+#[test]
+fn error_names_and_locales() {
+    replay(Section::Misc);
 }
 
 #[test]
