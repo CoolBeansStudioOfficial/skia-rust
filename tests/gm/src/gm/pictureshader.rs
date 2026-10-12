@@ -323,85 +323,78 @@ crate::def_simple_gm!(tiled_picture_shader, canvas, 400, 400, {
 });
 
 // Port of: gm/pictureshader.cpp#L239-L306 (chrome/m156), pictureshader_persp
-crate::def_simple_gm!(
-    #[ignore = "f16 mismatch from host libm tanf (glibc vs UCRT): see notes/gm_pictureshader_cpp_pictureshader_persp.md"]
-    pictureshader_persp,
-    canvas,
-    215,
-    110,
-    {
-        // `DrawStrategy`.
-        #[derive(Clone, Copy)]
-        enum DrawStrategy {
-            Direct,
-            PictureShader,
-        }
-
-        let draw_picture = |canvas: &Canvas, picture: &Picture, strategy: DrawStrategy| {
-            // Only want local upper 50x50 of 'picture' before we apply decal (or clip)
-            let bounds = Rect::from_ltrb(0.0, 0.0, 50.0, 50.0);
-            match strategy {
-                DrawStrategy::Direct => {
-                    canvas.clip_rect(bounds, None, true);
-                    canvas.draw_picture(picture, None, None);
-                }
-                DrawStrategy::PictureShader => {
-                    let mut paint = Paint::default();
-                    paint.set_shader(picture.to_shader(
-                        (TileMode::Decal, TileMode::Decal),
-                        FilterMode::Linear,
-                        None,
-                        &bounds,
-                    ));
-                    canvas.draw_rect(Rect::from_ltrb(0.0, 0.0, 50.0, 50.0), &paint);
-                }
-            }
-        };
-
-        let picture = {
-            let mut font = Font::from_typeface(Some(default_portable_typeface()));
-            font.set_size(8.0);
-            font.set_hinting(FontHinting::Normal);
-
-            let mut paint = Paint::default();
-            paint.set_color(Color::GREEN);
-            let mut recorder = PictureRecorder::new();
-            let record_canvas =
-                recorder.begin_recording(Rect::from_ltrb(0.0, 0.0, 100.0, 100.0), false);
-            if let Some(blob) = TextBlob::from_str("Hamburgefons", &font) {
-                record_canvas.draw_text_blob(&blob, (0.0, 16.0), &paint);
-            }
-            recorder.finish_recording_as_picture(None)
-        };
-        let Some(picture) = picture else {
-            return;
-        };
-
-        let mut m = M44::default();
-        m.pre_scale(2.0, 2.0);
-        let mut persp = M44::perspective(0.01, 10.0, std::f32::consts::PI / 3.0);
-        persp.pre_translate(0.0, 5.0, -0.1);
-        persp.pre_concat(&M44::rotate(V3::new(0.0, 1.0, 0.0), 0.008));
-        m.post_concat(&persp);
-
-        canvas.clear(Color::BLACK);
-        canvas.translate((5.0, 5.0));
-        for strategy in [DrawStrategy::Direct, DrawStrategy::PictureShader] {
-            canvas.save();
-
-            let mut outline = Paint::default();
-            outline.set_color(Color::WHITE);
-            outline.set_style(Style::Stroke);
-            outline.set_stroke_width(1.0);
-            canvas.draw_rect(Rect::from_ltrb(-1.0, -1.0, 101.0, 101.0), &outline);
-
-            canvas.clip_rect(Rect::from_ltrb(0.0, 0.0, 100.0, 100.0), None, None);
-            canvas.concat_44(&m);
-
-            draw_picture(canvas, &picture, strategy);
-            canvas.restore();
-
-            canvas.translate((105.0, 0.0));
-        }
+crate::def_simple_gm!(pictureshader_persp, canvas, 215, 110, {
+    // `DrawStrategy`.
+    #[derive(Clone, Copy)]
+    enum DrawStrategy {
+        Direct,
+        PictureShader,
     }
-);
+
+    let draw_picture = |canvas: &Canvas, picture: &Picture, strategy: DrawStrategy| {
+        // Only want local upper 50x50 of 'picture' before we apply decal (or clip)
+        let bounds = Rect::from_ltrb(0.0, 0.0, 50.0, 50.0);
+        match strategy {
+            DrawStrategy::Direct => {
+                canvas.clip_rect(bounds, None, true);
+                canvas.draw_picture(picture, None, None);
+            }
+            DrawStrategy::PictureShader => {
+                let mut paint = Paint::default();
+                paint.set_shader(picture.to_shader(
+                    (TileMode::Decal, TileMode::Decal),
+                    FilterMode::Linear,
+                    None,
+                    &bounds,
+                ));
+                canvas.draw_rect(Rect::from_ltrb(0.0, 0.0, 50.0, 50.0), &paint);
+            }
+        }
+    };
+
+    let picture = {
+        let mut font = Font::from_typeface(Some(default_portable_typeface()));
+        font.set_size(8.0);
+        font.set_hinting(FontHinting::Normal);
+
+        let mut paint = Paint::default();
+        paint.set_color(Color::GREEN);
+        let mut recorder = PictureRecorder::new();
+        let record_canvas =
+            recorder.begin_recording(Rect::from_ltrb(0.0, 0.0, 100.0, 100.0), false);
+        if let Some(blob) = TextBlob::from_str("Hamburgefons", &font) {
+            record_canvas.draw_text_blob(&blob, (0.0, 16.0), &paint);
+        }
+        recorder.finish_recording_as_picture(None)
+    };
+    let Some(picture) = picture else {
+        return;
+    };
+
+    let mut m = M44::default();
+    m.pre_scale(2.0, 2.0);
+    let mut persp = M44::perspective(0.01, 10.0, std::f32::consts::PI / 3.0);
+    persp.pre_translate(0.0, 5.0, -0.1);
+    persp.pre_concat(&M44::rotate(V3::new(0.0, 1.0, 0.0), 0.008));
+    m.post_concat(&persp);
+
+    canvas.clear(Color::BLACK);
+    canvas.translate((5.0, 5.0));
+    for strategy in [DrawStrategy::Direct, DrawStrategy::PictureShader] {
+        canvas.save();
+
+        let mut outline = Paint::default();
+        outline.set_color(Color::WHITE);
+        outline.set_style(Style::Stroke);
+        outline.set_stroke_width(1.0);
+        canvas.draw_rect(Rect::from_ltrb(-1.0, -1.0, 101.0, 101.0), &outline);
+
+        canvas.clip_rect(Rect::from_ltrb(0.0, 0.0, 100.0, 100.0), None, None);
+        canvas.concat_44(&m);
+
+        draw_picture(canvas, &picture, strategy);
+        canvas.restore();
+
+        canvas.translate((105.0, 0.0));
+    }
+});

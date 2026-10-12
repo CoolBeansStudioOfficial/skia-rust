@@ -175,7 +175,7 @@ def_test!(SkRasterPipelineOpts_Sin, |r| {
     let mut rad = -5.0 * pi;
     while rad <= 5.0 * pi {
         let result = apply(&mut program, rad);
-        let expected = rad.sin();
+        let expected = skia_rust_core::libm::sinf(rad);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
         rad += 0.1;
@@ -190,7 +190,7 @@ def_test!(SkRasterPipelineOpts_Cos, |r| {
     let mut rad = -5.0 * pi;
     while rad <= 5.0 * pi {
         let result = apply(&mut program, rad);
-        let expected = rad.cos();
+        let expected = skia_rust_core::libm::cosf(rad);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
         rad += 0.1;
@@ -211,7 +211,7 @@ def_test!(SkRasterPipelineOpts_Tan, |r| {
         let mut rad = -pi / 2.0 + k_epsilon;
         while rad <= pi / 2.0 - k_epsilon {
             let result = apply(&mut program, rad + period);
-            let expected = rad.tan();
+            let expected = skia_rust_core::libm::tanf(rad);
 
             reporter_assert!(r, all_within(&result, expected, k_tolerance));
             rad += 0.01;

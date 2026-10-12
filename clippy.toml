@@ -1,0 +1,8 @@
+# Elementary functions go through skia-rust-libm (re-exported as `skia_rust_core::libm`), which is
+# bit-identical to the Windows UCRT that produced the oracle goldens; the host libm is not.
+disallowed-methods = [
+    { path = "f32::sin", reason = "use skia_rust_core::libm::sinf (bit-exact against the oracle's UCRT)" },
+    { path = "f32::cos", reason = "use skia_rust_core::libm::cosf (bit-exact against the oracle's UCRT)" },
+    { path = "f32::tan", reason = "use skia_rust_core::libm::tanf (bit-exact against the oracle's UCRT)" },
+    { path = "f32::sin_cos", reason = "use skia_rust_core::libm::sinf and cosf (bit-exact against the oracle's UCRT)" },
+]

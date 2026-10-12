@@ -143,6 +143,17 @@ adapter = "RTX 4070 SUPER"
 cpu_level = "ml3"
 report_only = true
 
+# Rendered on CI (.github/workflows/oracle.yml, oracle/README.md "CI-hosted oracle"), not on the
+# server: Skia + Dawn on Linux with the Ubuntu archive's lavapipe, Vulkan only. The CI build is
+# BGRA (-DSK_R32_SHIFT=16) like the Windows ones, so its `grdawn_vk` hashes compare directly.
+[[gpu_tier]]
+name = "gpu-dawn-vk-lavapipe"
+build = "gpu-dawn"
+configs = ["grdawn_vk"]
+adapter = "llvmpipe"
+cpu_level = "ml3"
+report_only = true
+
 # Expected CPU behaviour classes (docs/design/raster-pipeline.md §4.4): tiers listed together
 # must have identical hashes on every result, and two classes must differ. `cargo xtask oracle
 # check-classes` enforces this against the goldens; a split or merge means the number of x64

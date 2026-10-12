@@ -399,12 +399,12 @@ def_test!(
                 let angle = random.next_f() * FLOAT_PI;
                 let distance = random.next_range_f(10.0, 300.0);
                 let p0 = Point::new(
-                    float_round2int(x + angle.cos() * distance),
-                    float_round2int(y + angle.sin() * distance),
+                    float_round2int(x + skia_rust_core::libm::cosf(angle) * distance),
+                    float_round2int(y + skia_rust_core::libm::sinf(angle) * distance),
                 );
                 let p1 = Point::new(
-                    float_round2int(x - angle.cos() * distance),
-                    float_round2int(y - angle.sin() * distance),
+                    float_round2int(x - skia_rust_core::libm::cosf(angle) * distance),
+                    float_round2int(y - skia_rust_core::libm::sinf(angle) * distance),
                 );
                 segments.push(Segment::new(p0, p1));
             }

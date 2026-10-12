@@ -1,5 +1,9 @@
 //! Core types of skia-rust, ported from Skia's `include/core` and `src/core`.
 
+/// Elementary functions bit-identical to the Windows UCRT (clean-room; see
+/// `docs/design/libm-cleanroom.md`). Ported arithmetic calls these instead of the host libm.
+pub use skia_rust_libm as libm;
+
 pub mod advanced_typeface_metrics;
 pub mod align;
 pub mod alpha_type;
@@ -99,6 +103,9 @@ mod glyph_intercepts;
 pub mod glyph_run;
 pub mod graphics;
 pub mod half;
+pub mod hdr_agtm;
+pub mod hdr_agtm_filter;
+pub mod hdr_agtm_helpers;
 pub mod hdr_metadata;
 pub mod id_change_listener;
 pub mod image;
