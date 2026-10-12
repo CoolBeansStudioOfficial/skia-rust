@@ -1,0 +1,20 @@
+name: libm-cleanroom-probe
+
+# Clean-room black-box probe of the platform math library (docs/design/libm-cleanroom.md).
+on:
+  workflow_dispatch:
+  push:
+    branches: [port/libm-cleanroom]
+    paths: [.github/workflows/libm-cleanroom-probe.yml, crates/skia-rust-libm/**]
+
+jobs:
+  dump:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo run --release -p skia-rust-libm --example probe -- dump out 400000
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-dump
+          path: out

@@ -13,6 +13,7 @@ members = [
     "crates/skia-rust-libjpeg",
     "crates/skia-rust-codec",
     "crates/skia-rust-core",
+    "crates/skia-rust-libm",
     "crates/skia-rust-raster",
     "crates/skia-rust-effects",
     "crates/skia-rust-pathops",
