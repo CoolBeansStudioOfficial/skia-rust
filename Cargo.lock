@@ -1248,6 +1248,10 @@ name = "skia-rust-libjpeg"
 version = "0.156.0"
 
 [[package]]
+name = "skia-rust-libm"
+version = "0.156.0"
+
+[[package]]
 name = "skia-rust-libpng"
 version = "0.156.0"
 dependencies = [
