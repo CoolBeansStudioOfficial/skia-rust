@@ -100,12 +100,12 @@ A Linux build with `-DSK_R32_SHIFT=16` has the Windows N32, so it can be checked
 
 | Tier | byte-identical | different |
 |---|---|---|
-| `cpu-x64-sse2` | 2,695 | 32 (`8888` 10, `565` 7, `f16` 15) |
+| `cpu-x64-sse2`, `-rt-ssse3` | 2,695 | 32 (`8888` 10, `565` 7, `f16` 15) |
 | `cpu-x64-sse2-rt-ml3`, `-rt-ml4` | 2,695 | 32 |
 | `cpu-x64-sse41`, `-rt-ml3`, `-rt-ml4` | 2,695 | 32 |
 | `cpu-x64-scalar` | 2,693 | 34 |
 
-(`cpu-x64-sse2-rt-ssse3` ran on an Intel runner in the last run and failed the vendor guard; its leg is re-run until an AMD runner takes it, and its hashes in the artifact are from an AMD run.) The `8888` mismatches are the RGBA list minus `rasterallocator`; the `565` and `f16` ones are the same GMs (the libm and `scaledemojiperspective_test` classes) plus `gradients_color_space`, `gradients_color_space_tilemode`, `pictureshader_persp` in `f16`. So the RGBA variant build and the BGRA build agree on everything but the GDI-dependent GM, which supports using the CI RGBA tiers as extra goldens.
+(`cpu-x64-sse2-rt-ssse3` gives the same 2,695.) The `8888` mismatches are the RGBA list minus `rasterallocator`; the `565` and `f16` ones are the same GMs (the libm and `scaledemojiperspective_test` classes) plus `gradients_color_space`, `gradients_color_space_tilemode`, `pictureshader_persp` in `f16`. So the RGBA variant build and the BGRA build agree on everything but the GDI-dependent GM, which supports using the CI RGBA tiers as extra goldens.
 
 ### Bench goldens (nanobench)
 
