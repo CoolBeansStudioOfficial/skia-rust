@@ -147,8 +147,8 @@ fn lighting_factory(_aux: Option<Image>, crop: Option<Rect>) -> Option<ImageFilt
 
     // Combine both specular and diffuse into a single DAG since they use separate internal filter
     // implementations.
-    let sin_azimuth = degrees_to_radians(225.0).sin();
-    let cos_azimuth = degrees_to_radians(225.0).cos();
+    let sin_azimuth = skia_rust_core::libm::sinf(degrees_to_radians(225.0));
+    let cos_azimuth = skia_rust_core::libm::cosf(degrees_to_radians(225.0));
     let spot_target = Point3::new(40.0, 40.0, 0.0);
     let diff_location = Point3::new(
         spot_target.x + 50.0 * cos_azimuth,

@@ -333,12 +333,12 @@ crate::def_simple_gm!(tinyanglearcs, canvas, 620, 330, {
         let end_angle = start_angle + sweep_angle;
         // skia-rust: libm (`std::cos`/`std::sin` on float are `cosf`/`sinf`)
         path.move_to((
-            center_x + inner_radius * start_angle.cos(),
-            center_y + inner_radius * start_angle.sin(),
+            center_x + inner_radius * skia_rust_core::libm::cosf(start_angle),
+            center_y + inner_radius * skia_rust_core::libm::sinf(start_angle),
         ));
         path.line_to((
-            center_x + outer_radius * start_angle.cos(),
-            center_y + outer_radius * start_angle.sin(),
+            center_x + outer_radius * skia_rust_core::libm::cosf(start_angle),
+            center_y + outer_radius * skia_rust_core::libm::sinf(start_angle),
         ));
         // A combination of tiny sweepAngle + large radius, we should draw a line.
         html_canvas_arc(
@@ -352,8 +352,8 @@ crate::def_simple_gm!(tinyanglearcs, canvas, 620, 330, {
             true,
         );
         path.line_to((
-            center_x + inner_radius * end_angle.cos(),
-            center_y + inner_radius * end_angle.sin(),
+            center_x + inner_radius * skia_rust_core::libm::cosf(end_angle),
+            center_y + inner_radius * skia_rust_core::libm::sinf(end_angle),
         ));
         html_canvas_arc(
             &mut path,

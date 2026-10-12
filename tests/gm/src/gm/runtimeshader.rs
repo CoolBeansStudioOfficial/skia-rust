@@ -183,7 +183,7 @@ impl GM for SpiralRt {
 
         builder
             .uniform("rad_scale")
-            .set_f32(&[(self.0.secs * 0.5 + 2.0).sin() / 5.0]);
+            .set_f32(&[skia_rust_core::libm::sinf(self.0.secs * 0.5 + 2.0) / 5.0]);
         builder.uniform("in_center").set_f32(&[256.0, 256.0]);
         builder
             .uniform("in_colors0")
@@ -425,7 +425,7 @@ impl GM for ThresholdRt {
 
         builder
             .uniform("cutoff")
-            .set_f32(&[(self.base.secs).sin() * 0.55 + 0.5]);
+            .set_f32(&[skia_rust_core::libm::sinf(self.base.secs) * 0.55 + 0.5]);
         builder.uniform("slope").set_f32(&[10.0]);
 
         builder
