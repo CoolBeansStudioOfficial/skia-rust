@@ -1,6 +1,6 @@
 [package]
 name = "skia-rust-unicode"
-description = "The SkUnicode module of skia-rust: a port of Skia's modules/skunicode API, the hardcoded and client implementations"
+description = "The SkUnicode module of skia-rust: a port of Skia's modules/skunicode API, the hardcoded, client and ICU implementations, and the ICU shim over ICU4X"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,6 +12,11 @@ publish = false
 [dependencies]
 skia-rust-core.workspace = true
 bitflags.workspace = true
+icu_segmenter.workspace = true
+icu_properties.workspace = true
+icu_casemap.workspace = true
+icu_locale_core.workspace = true
+icu_provider.workspace = true
 
 [lints]
 workspace = true

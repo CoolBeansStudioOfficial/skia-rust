@@ -97,11 +97,13 @@ font-types = "=0.12.0"
 # shares Skia's read-fonts =0.40.1. Bumped only with a Skia milestone bump.
 harfrust = "=0.9.0"
 # Unicode (docs/design/modules.md decision 4 and Q8): ICU4X 2.3.x with compiled data, and
-# unicode-bidi with ICU4X's BidiClass data. Used so far by oracle/unicode-diff (M0c).
+# unicode-bidi with ICU4X's BidiClass data. Used by skia-rust-unicode (M2) and oracle/unicode-diff.
 icu_segmenter = "=2.3.0"
 icu_properties = { version = "=2.3.0", features = ["unicode_bidi"] }
 icu_casemap = "=2.3.0"
 icu_locale_core = "=2.3.0"
+# Only for its `sync` feature: the shim keeps ICU4X segmenters in `Send + Sync` iterators.
+icu_provider = { version = "=2.3.1", default-features = false, features = ["sync"] }
 unicode-bidi = "=0.3.18"
 
 [workspace.lints.rust]

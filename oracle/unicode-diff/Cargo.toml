@@ -16,6 +16,7 @@ icu_casemap.workspace = true
 icu_locale_core.workspace = true
 unicode-bidi.workspace = true
 skia-rust-text-deps = { path = "../text-deps" }
+skia-rust-unicode.workspace = true
 sha2 = "0.11.0"
 
 [[bin]]

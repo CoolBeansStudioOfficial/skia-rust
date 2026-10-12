@@ -14,6 +14,7 @@
 //!   and line breaks itself.
 //! - The hardcoded character properties are the default methods of [`unicode::Unicode`].
 
+pub mod icu_shim;
 pub mod unicode;
 pub mod unicode_client;
 pub(crate) mod unicode_hardcoded;

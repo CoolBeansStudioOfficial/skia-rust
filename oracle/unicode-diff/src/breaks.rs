@@ -2,21 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 //! The `breaks` section: `ubrk_open`, `ubrk_setUText`, `ubrk_first`, `ubrk_next`, `ubrk_current`,
-//! `ubrk_getRuleStatus`, `ubrk_following` and `ubrk_preceding` of `SkUnicode_icu.cpp#L330-L410`, through
-//! ICU4X's segmenters (compiled data, `new_auto`, line strictness `Normal` as Chromium's
-//! `line_normal.patch` makes ICU's default).
+//! `ubrk_getRuleStatus`, `ubrk_following` and `ubrk_preceding` of `SkUnicode_icu.cpp#L330-L410`,
+//! through `skia_rust_unicode::icu_shim` (milestone M2): ICU4X's segmenters (compiled data) with
+//! ICU's rule status and navigation emulated, opened for the locale `en` as the driver does.
 //!
-//! ICU4X has no rule status except `WordType`, so the twin reports what it has and nothing is
-//! emulated here: words `None` = 0, `Number` = 100, `Letter` = 200; everything else 0. The differences
-//! this leaves are what the shim of M2 has to emulate.
+//! What still differs is the break data (Chromium's patched rules and dictionaries, milestone M4).
 
 use std::fmt::Write as _;
 
-use icu_segmenter::options::{
-    LineBreakOptions, LineBreakStrictness, LineBreakWordOption, SentenceBreakInvariantOptions,
-    WordBreakInvariantOptions, WordType,
-};
-use icu_segmenter::{GraphemeClusterSegmenter, LineSegmenter, SentenceSegmenter, WordSegmenter};
+use skia_rust_unicode::icu_shim::{UBRK_DONE, UBreakIterator, UBreakIteratorType};
 
 use crate::{Source, row, utf16};
 
@@ -42,61 +36,41 @@ pub enum Text<'a> {
     Utf16(&'a [u16]),
 }
 
-/// `(position, rule status)` for `first()` and every `next()` until `UBRK_DONE`.
+/// `ubrk_open(kind, "en")` + `ubrk_setUText(text)`.
 ///
 /// # Panics
-/// Never: the segmenters are built from compiled data.
+/// Never: the root rules of every kind exist.
+#[must_use]
+pub fn open(kind: Kind, text: Text<'_>) -> UBreakIterator {
+    let kind = match kind {
+        Kind::Char => UBreakIteratorType::Character,
+        Kind::Word => UBreakIteratorType::Word,
+        Kind::Line => UBreakIteratorType::Line,
+        Kind::Sentence => UBreakIteratorType::Sentence,
+    };
+    let mut it = UBreakIterator::open(kind, Some("en")).expect("the root rules exist");
+    match text {
+        Text::Utf8(s) => it.set_text_utf8(s.as_bytes()),
+        Text::Utf16(s) => it.set_text_utf16(s),
+    }
+    it
+}
+
+/// `(position, rule status)` for `first()` and every `next()` until `UBRK_DONE`.
 #[must_use]
 pub fn boundaries(kind: Kind, text: Text<'_>) -> Vec<(usize, i32)> {
-    macro_rules! plain {
-        ($it:expr) => {{ $it.map(|p| (p, 0)).collect() }};
+    let mut it = open(kind, text);
+    let mut out = Vec::new();
+    let mut pos = it.first();
+    while pos != UBRK_DONE {
+        assert_eq!(it.current(), pos, "ubrk_current != position");
+        out.push((
+            usize::try_from(pos).expect("positions are not negative"),
+            it.get_rule_status(),
+        ));
+        pos = it.next();
     }
-    match kind {
-        Kind::Char => {
-            let seg = GraphemeClusterSegmenter::new();
-            match text {
-                Text::Utf8(s) => plain!(seg.segment_str(s)),
-                Text::Utf16(s) => plain!(seg.segment_utf16(s)),
-            }
-        }
-        Kind::Sentence => {
-            let seg = SentenceSegmenter::new(SentenceBreakInvariantOptions::default());
-            match text {
-                Text::Utf8(s) => plain!(seg.segment_str(s)),
-                Text::Utf16(s) => plain!(seg.segment_utf16(s)),
-            }
-        }
-        Kind::Line => {
-            let mut options = LineBreakOptions::default();
-            options.strictness = Some(LineBreakStrictness::Normal);
-            options.word_option = Some(LineBreakWordOption::Normal);
-            let seg = LineSegmenter::new_auto(options);
-            match text {
-                Text::Utf8(s) => plain!(seg.segment_str(s)),
-                Text::Utf16(s) => plain!(seg.segment_utf16(s)),
-            }
-        }
-        Kind::Word => {
-            let seg = WordSegmenter::new_auto(WordBreakInvariantOptions::default());
-            let status = |t: WordType| match t {
-                WordType::Number => 100,
-                WordType::Letter => 200,
-                _ => 0,
-            };
-            match text {
-                Text::Utf8(s) => seg
-                    .segment_str(s)
-                    .iter_with_word_type()
-                    .map(|(p, t)| (p, status(t)))
-                    .collect(),
-                Text::Utf16(s) => seg
-                    .segment_utf16(s)
-                    .iter_with_word_type()
-                    .map(|(p, t)| (p, status(t)))
-                    .collect(),
-            }
-        }
-    }
+    out
 }
 
 fn enumerate(kind: Kind, text: Text<'_>) -> (String, usize) {
@@ -111,24 +85,17 @@ fn enumerate(kind: Kind, text: Text<'_>) -> (String, usize) {
     (out, b.len())
 }
 
-/// `ubrk_following(i)` and `ubrk_preceding(i)` for every offset `0..=len` (`-1` is `UBRK_DONE`),
-/// from the boundary list.
+/// `ubrk_following(i)` and `ubrk_preceding(i)` for every offset `0..=len` (`-1` is `UBRK_DONE`).
 fn navigate(kind: Kind, text: Text<'_>, len: usize) -> (String, usize) {
-    let b: Vec<usize> = boundaries(kind, text).into_iter().map(|(p, _)| p).collect();
+    let mut it = open(kind, text);
     let mut out = String::new();
     for i in 0..=len {
         if i > 0 {
             out.push(' ');
         }
-        let f = b
-            .iter()
-            .find(|&&p| p > i)
-            .map_or(String::from("-1"), ToString::to_string);
-        let p = b
-            .iter()
-            .rev()
-            .find(|&&p| p < i)
-            .map_or(String::from("-1"), ToString::to_string);
+        let offset = i32::try_from(i).expect("corpus strings are short");
+        let f = it.following(offset);
+        let p = it.preceding(offset);
         let _ = write!(out, "{i}>{f}<{p}");
     }
     (out, len + 1)

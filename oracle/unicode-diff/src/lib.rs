@@ -10,12 +10,14 @@
 //! The C++ driver (`cpp/unicode_diff.cc`, built by `build.sh` from the sources
 //! `cargo xtask text-deps fetch --only icu` downloads) makes the calls of Skia's `SKICU_EMIT_FUNCS`
 //! (`modules/skunicode/src/SkUnicode_icupriv.h`) over a corpus and prints the results; the committed
-//! `expected/*.txt` are that output. This crate makes the same calls through ICU4X `=2.3.0`
-//! (`icu_segmenter`, `icu_properties`, `icu_casemap`) and `unicode-bidi =0.3.18` with the stock
-//! compiled data, prints the same text, and [`check`] compares the two, the way `oracle/shaper-diff`
-//! replays its stored HarfBuzz results, so `cargo test` needs no C/C++.
+//! `expected/*.txt` are that output. This crate makes the same calls through
+//! `skia_rust_unicode::icu_shim` (milestone M2: the ICU functions on ICU4X `=2.3.x` compiled data,
+//! with ICU's rule status, navigation, numbering and locale handling) for the break, property, case
+//! and locale calls, and through `unicode-bidi =0.3.18` for the bidi calls (milestone M3), prints the
+//! same text, and [`check`] compares the two, the way `oracle/shaper-diff` replays its stored
+//! HarfBuzz results, so `cargo test` needs no C/C++.
 //!
-//! Sections ([`Section`]): `breaks`, `bidi`, `reorder`, `props`, `case`, `conformance`. A divergence is
+//! Sections ([`Section`]): `breaks`, `bidi`, `reorder`, `props`, `case`, `conformance`, `misc`. A divergence is
 //! a string whose result differs ([`Divergence`] with the key `case source index`), a range of code
 //! points whose property value differs (`prop name first-last icu/icu4x`), or a conformance-test line
 //! one side fails and the other passes. Each is either listed in `known-divergences.txt` with a class
@@ -26,6 +28,7 @@ pub mod bidi;
 pub mod breaks;
 pub mod case;
 pub mod conformance;
+pub mod misc;
 pub mod props;
 pub mod reorder;
 
@@ -58,17 +61,20 @@ pub enum Section {
     Case,
     /// The UAX #29, #14 and #9 conformance files through the break and bidi calls.
     Conformance,
+    /// `u_errorName`, `uloc_forLanguageTag` and `uloc_getDefault`.
+    Misc,
 }
 
 impl Section {
     /// All sections, in the order of the drivers.
-    pub const ALL: [Section; 6] = [
+    pub const ALL: [Section; 7] = [
         Section::Breaks,
         Section::Bidi,
         Section::Reorder,
         Section::Props,
         Section::Case,
         Section::Conformance,
+        Section::Misc,
     ];
 
     /// The section's name: the driver's argument and the expected file's stem.
@@ -81,6 +87,7 @@ impl Section {
             Section::Props => "props",
             Section::Case => "case",
             Section::Conformance => "conformance",
+            Section::Misc => "misc",
         }
     }
 
@@ -144,11 +151,14 @@ fn unescape(line: &str) -> Result<String, String> {
 }
 
 /// Loads `corpus/` (see `gen_corpus.py`), in the order of `corpus/index.txt`.
+/// `$SKIA_RUST_UNICODE_DIFF_CORPUS` replaces it with a directory of the same layout, to compare
+/// cases of one's own with the driver's `--corpus` (`unicode-diff run <section> --dump`).
 ///
 /// # Errors
 /// If a file cannot be read or has a bad escape.
 pub fn load_corpus() -> Result<Vec<Source>, String> {
-    let dir = crate_dir().join("corpus");
+    let dir = std::env::var_os("SKIA_RUST_UNICODE_DIFF_CORPUS")
+        .map_or_else(|| crate_dir().join("corpus"), PathBuf::from);
     let index = std::fs::read_to_string(dir.join("index.txt")).map_err(|e| e.to_string())?;
     let mut out = Vec::new();
     for line in index
@@ -215,6 +225,7 @@ pub fn compute(section: Section, dump: bool) -> Result<String, String> {
         Section::Props => Ok(props::run()),
         Section::Case => Ok(case::run(&load_corpus()?, dump)),
         Section::Conformance => conformance::run(),
+        Section::Misc => Ok(misc::run()),
     }
 }
 
@@ -303,8 +314,19 @@ fn diff_runs(group: &str, icu: &[Run], rust: &[Run], out: &mut Vec<Divergence>) 
     flush(&mut pending, out);
 }
 
-fn split_lines(text: &str) -> (Vec<&str>, Vec<&str>, Vec<&str>) {
-    let (mut rows, mut ranges, mut conf) = (Vec::new(), Vec::new(), Vec::new());
+/// The lines of an output: per-string rows, code point ranges, conformance lines, and the `misc`
+/// lines keyed by what they ask (`u_errorName <code>`, `uloc_forLanguageTag "<tag>"`,
+/// `uloc_getDefault`).
+type Lines<'a> = (
+    Vec<&'a str>,
+    Vec<&'a str>,
+    Vec<&'a str>,
+    BTreeMap<String, &'a str>,
+);
+
+fn split_lines(text: &str) -> Lines<'_> {
+    let (mut rows, mut ranges, mut conf, mut misc) =
+        (Vec::new(), Vec::new(), Vec::new(), BTreeMap::new());
     for l in text
         .lines()
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
@@ -312,10 +334,21 @@ fn split_lines(text: &str) -> (Vec<&str>, Vec<&str>, Vec<&str>) {
         match l.split(' ').next() {
             Some("cp" | "prop") => ranges.push(l),
             Some("conf") => conf.push(l),
+            Some("u_errorName") => {
+                let key = l.splitn(3, ' ').take(2).collect::<Vec<_>>().join(" ");
+                misc.insert(format!("misc {key}"), l);
+            }
+            Some("uloc_forLanguageTag") => {
+                let key = l.split(" -> ").next().unwrap_or(l);
+                misc.insert(format!("misc {key}"), l);
+            }
+            Some("uloc_getDefault") => {
+                misc.insert(String::from("misc uloc_getDefault"), l);
+            }
             _ => rows.push(l),
         }
     }
-    (rows, ranges, conf)
+    (rows, ranges, conf, misc)
 }
 
 fn row_map<'a>(rows: &[&'a str]) -> Result<BTreeMap<String, &'a str>, String> {
@@ -336,9 +369,21 @@ fn row_map<'a>(rows: &[&'a str]) -> Result<BTreeMap<String, &'a str>, String> {
 /// # Errors
 /// If a line is malformed.
 pub fn diff(icu_text: &str, rust_text: &str) -> Result<Vec<Divergence>, String> {
-    let (icu_rows, icu_ranges, icu_conf) = split_lines(icu_text);
-    let (rust_rows, rust_ranges, rust_conf) = split_lines(rust_text);
+    let (icu_rows, icu_ranges, icu_conf, icu_misc) = split_lines(icu_text);
+    let (rust_rows, rust_ranges, rust_conf, rust_misc) = split_lines(rust_text);
     let mut out = Vec::new();
+
+    let misc_keys: BTreeSet<&String> = icu_misc.keys().chain(rust_misc.keys()).collect();
+    for key in misc_keys {
+        let (a, b) = (icu_misc.get(key), rust_misc.get(key));
+        if a != b {
+            out.push(Divergence {
+                key: key.clone(),
+                icu: a.map_or("(none)", |s| s).to_owned(),
+                rust: b.map_or("(none)", |s| s).to_owned(),
+            });
+        }
+    }
 
     let (icu_rows, rust_rows) = (row_map(&icu_rows)?, row_map(&rust_rows)?);
     for (key, v) in &icu_rows {
@@ -468,6 +513,7 @@ pub fn key_section(key: &str) -> Section {
     match first {
         "prop" => Section::Props,
         "conf" => Section::Conformance,
+        "misc" => Section::Misc,
         "cp" => Section::Case,
         c if c.starts_with("bidi-") => Section::Bidi,
         c if c.starts_with("upper-") => Section::Case,
