@@ -307,12 +307,104 @@ fn nsel(name: &str) {
     }
 }
 
+fn ref64(name: &str) -> fn(f64) -> f64 {
+    match name {
+        "sinf" => f64::sin,
+        "cosf" => f64::cos,
+        "tanf" => f64::tan,
+        "asinf" => f64::asin,
+        "acosf" => f64::acos,
+        "atanf" => f64::atan,
+        "expf" => f64::exp,
+        "logf" => f64::ln,
+        "log2f" => f64::log2,
+        "cbrtf" => f64::cbrt,
+        _ => panic!("no f64 reference for {name}"),
+    }
+}
+
+/// Near-midpoint ledger: every f32 `x` in `[lo, hi]` (bit patterns of the non-negative floats, or
+/// of the magnitudes when `neg` is set) for which the platform's float result lies within `tau`
+/// float-ulps of a rounding boundary of the (platform) double-precision result. The double result
+/// is accurate to ~1e-9 float ulps, so it stands in for the true value. Records are
+/// `(x bits, platform bits)` as u32 pairs in `<fn>_<tag>.ledger`.
+fn ledger(name: &str, tag: &str, lo: f32, hi: f32, tau: f64, neg: bool, dir: &str) {
+    let (platform, reference) = (un32(name), ref64(name));
+    let (blo, bhi) = (lo.to_bits(), hi.to_bits());
+    let threads = std::thread::available_parallelism().map_or(4, usize::from);
+    let total = u64::from(bhi - blo) + 1;
+    let chunk = total.div_ceil(threads as u64);
+    let results: Vec<Vec<(u32, u32)>> = std::thread::scope(|sc| {
+        let hs: Vec<_> = (0..threads as u64)
+            .map(|t| {
+                sc.spawn(move || {
+                    let (a, b) = (t * chunk, ((t + 1) * chunk).min(total));
+                    let mut list = Vec::new();
+                    for k in a..b {
+                        let mut bits = blo + k as u32;
+                        if neg {
+                            bits |= 0x8000_0000;
+                        }
+                        let x = f32::from_bits(bits);
+                        let u = platform(std::hint::black_box(x));
+                        let t = reference(std::hint::black_box(f64::from(x)));
+                        if !u.is_finite() || !t.is_finite() || u == 0.0 {
+                            continue;
+                        }
+                        let spacing =
+                            f64::from(f32::from_bits(u.abs().to_bits() + 1)) - f64::from(u.abs());
+                        let d = (t - f64::from(u)).abs() / spacing;
+                        // for u at a binade boundary the spacing below differs; keep generous
+                        if d > 0.5 - tau {
+                            list.push((bits, u.to_bits()));
+                        }
+                    }
+                    list
+                })
+            })
+            .collect();
+        hs.into_iter().map(|h| h.join().unwrap()).collect()
+    });
+    let mut out = writer_at(&format!("{dir}/{name}_{tag}.ledger"));
+    let mut n = 0usize;
+    for list in results {
+        for (x, u) in list {
+            out.write_all(&x.to_le_bytes()).unwrap();
+            out.write_all(&u.to_le_bytes()).unwrap();
+            n += 1;
+        }
+    }
+    println!("ledger {name} {tag}: {n} entries of {total} inputs (tau {tau})");
+}
+
 fn writer_at(path: &str) -> std::io::BufWriter<std::fs::File> {
     std::io::BufWriter::new(std::fs::File::create(path).unwrap())
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 3 && args[1] == "ledger" {
+        // probe ledger <outdir> <spec-file>; spec lines: fn tag lo hi tau [neg]
+        std::fs::create_dir_all(&args[2]).unwrap();
+        let text = std::fs::read_to_string(&args[3]).unwrap();
+        for l in text
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        {
+            let w: Vec<&str> = l.split_whitespace().collect();
+            ledger(
+                w[0],
+                w[1],
+                w[2].parse().unwrap(),
+                w[3].parse().unwrap(),
+                w[4].parse().unwrap(),
+                w.get(5) == Some(&"neg"),
+                &args[2],
+            );
+        }
+        return;
+    }
     if args.len() >= 3 && args[1] == "nsel" {
         for name in &args[2..] {
             nsel(name);
