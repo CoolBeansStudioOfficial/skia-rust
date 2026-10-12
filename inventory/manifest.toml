@@ -53435,8 +53435,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L465-L514"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "0c6bc99f3dd425203f0902b4329fba7b05370d706a7ed5ab5a1f5bb4e76e72f2"
 
 [[test]]
@@ -53445,8 +53445,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L558-L577"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "d6168d2be1ff4f5dd5518b2aa884f773e66690908fb826a61368e866fbc41d7a"
 
 [[test]]
@@ -53455,8 +53455,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L428-L461"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "3fb42a8d02f9e5d30039c3a56380fb3852ffcd076ee11b859f31f2db414cf026"
 
 [[test]]
