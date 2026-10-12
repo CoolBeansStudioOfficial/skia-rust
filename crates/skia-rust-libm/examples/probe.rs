@@ -19,7 +19,10 @@
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
-    clippy::many_single_char_names
+    clippy::many_single_char_names,
+    clippy::cast_possible_wrap,
+    clippy::float_cmp,
+    clippy::type_complexity
 )]
 
 use std::io::Write;
@@ -251,12 +254,70 @@ fn check32(name: &str, dir: &str) {
     }
 }
 
+/// For each binade, finds the inputs where the quadrant choice (double-precision product vs exact
+/// expansion) changes the result, and counts which side the platform follows.
+fn nsel(name: &str) {
+    let (platform, var): (fn(f32) -> f32, fn(f32, f64, bool) -> f32) = match name {
+        "sinf" => (f32::sin, skia_rust_libm::probe_sinf),
+        _ => (f32::cos, skia_rust_libm::probe_cosf),
+    };
+    for exp in 126u32..=190 {
+        let (mut d, mut dbl, mut exact, mut neither, mut fused) = (0u32, 0u32, 0u32, 0u32, 0u32);
+        let mut sample = Vec::new();
+        for mant in 0u32..(1 << 23) {
+            let x = f32::from_bits((exp << 23) | mant);
+            if f64::from(x) <= 0.8 {
+                continue;
+            }
+            let a = var(x, f64::INFINITY, false);
+            let b = var(x, 0.0, false);
+            let c = var(x, f64::INFINITY, true);
+            if a == b && c == b {
+                continue;
+            }
+            d += 1;
+            let p = platform(std::hint::black_box(x));
+            if p == a {
+                dbl += 1;
+            } else if p == b {
+                exact += 1;
+            } else {
+                neither += 1;
+            }
+            if a != c {
+                fused += 1;
+            }
+            if sample.len() < 3 {
+                sample.push(format!(
+                    "{:#x}:p={:#x},dbl={:#x},ex={:#x},fma={:#x}",
+                    x.to_bits(),
+                    p.to_bits(),
+                    a.to_bits(),
+                    b.to_bits(),
+                    c.to_bits()
+                ));
+            }
+        }
+        println!(
+            "{name} binade {} ({:e}): differing {d}: platform=double-n {dbl}, =exact-n {exact}, neither {neither}; fma-n differs {fused} {sample:?}",
+            exp as i32 - 127,
+            f64::from(f32::from_bits(exp << 23))
+        );
+    }
+}
+
 fn writer_at(path: &str) -> std::io::BufWriter<std::fs::File> {
     std::io::BufWriter::new(std::fs::File::create(path).unwrap())
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 3 && args[1] == "nsel" {
+        for name in &args[2..] {
+            nsel(name);
+        }
+        return;
+    }
     if args.len() >= 4 && args[1] == "check" {
         std::fs::create_dir_all(&args[2]).unwrap();
         for name in &args[3..] {

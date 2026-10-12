@@ -1,0 +1,20 @@
+# tag fn n xmode xlo xhi [ymode ylo yhi]   (see examples/probe.rs)
+tanf_all tanf 0 all 0.0625 0.7853982
+tanf_b0 tanf 300000 bits 0.0000001 0.001
+tanf_b1 tanf 300000 bits 0.001 0.01
+tanf_b2 tanf 300000 bits 0.01 0.0625
+tanf_b4 tanf 300000 bits 0.7853982 1.5707964
+tanf_b5 tanf 300000 bits 1.5707964 6.3
+tanf_b6 tanf 300000 bits 6.3 1000
+tanf_b7 tanf 300000 bits 1000 1000000
+tanf_b8 tanf 300000 bits 1000000 1e30
+expf_p expf 3000000 bits 0.000244 88.72
+expf_n expf 3000000 bits -104 -0.000244
+logf_a logf 3000000 bits 1e-38 3e38
+logf_n1 logf 2000000 bits 0.5 2
+log2f_a log2f 3000000 bits 1e-38 3e38
+log2f_n1 log2f 2000000 bits 0.5 2
+atanf_a atanf 3000000 symbits 0.000244 1e10
+asinf_a asinf 3000000 symbits 0.000244 1.0
+acosf_a acosf 3000000 symbits 0.000244 1.0
+cbrtf_a cbrtf 3000000 symbits 1e-38 3e38
