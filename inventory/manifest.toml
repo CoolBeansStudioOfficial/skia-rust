@@ -23696,8 +23696,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/postercircle.cpp#L152-L152"
 module = "raster"
-status = "failing"
-reason = "f16 config mismatches on every tier (565 and 8888 match); needs an oracle rp-dump to locate the divergence; see notes/gm_postercircle_cpp_PosterCircleGM.md"
+status = "passing"
 span_hash = "3ab1d2908d8a9bd94e2c42c5534e2ecfc31db3433868a0a134de6b8bfe29a57a"
 
 [[test]]
@@ -24360,8 +24359,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L245-L245"
 module = "text"
-status = "failing"
-reason = "see notes/gm-scaledemojiperspective-test.md (565 and f16 differ in a few pixels; re-checked on main 3f14c4d: same hashes, 565 848b8bc8 vs d0fe24b7, f16 dfdc4561 vs 28f84587)"
+status = "passing"
 span_hash = "fc541cd23891d42640c055361d022cb76a47841081af87ed4e963a1cf5962158"
 
 [[test]]
