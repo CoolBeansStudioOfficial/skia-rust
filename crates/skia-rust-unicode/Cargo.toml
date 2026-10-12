@@ -18,6 +18,8 @@ icu_casemap.workspace = true
 icu_locale_core.workspace = true
 icu_provider.workspace = true
 unicode-bidi.workspace = true
+skia-rust-unicode-data.workspace = true
+icu_normalizer.workspace = true
 
 [lints]
 workspace = true

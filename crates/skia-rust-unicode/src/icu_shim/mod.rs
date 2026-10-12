@@ -19,26 +19,34 @@
 //! | `ubrk_first`, `ubrk_next`, `ubrk_current`, `ubrk_following`, `ubrk_preceding`, `ubrk_getRuleStatus` | the methods of [`UBreakIterator`] |
 //! | `ubidi_*` | milestone M3 (`SkUnicode_icu_bidi.cpp`) |
 //!
-//! What ICU4X does not provide and the shim adds: the rule status of every boundary (from the rule
-//! tags of Chromium's `word.txt`, `sent.txt` and `line*.txt`, including the status ICU gives the
-//! boundaries a dictionary adds), the navigation of ICU's break iterators, ICU's numbering of
-//! `Line_Break` and `Script`, ICU's definitions of `u_isspace` / `u_isWhitespace` / `u_iscntrl`, ICU's
-//! choice of case-mapping locale, and ICU's choice of break rules per locale.
+//! What ICU4X does not provide and the shim adds: ICU's numbering of `Line_Break` and `Script`,
+//! ICU's definitions of `u_isspace` / `u_isWhitespace` / `u_iscntrl`, ICU's choice of case-mapping
+//! locale, and ICU's choice of break rules per locale. Break iterators run, by default, a port of
+//! ICU's `RuleBasedBreakIterator` and dictionary engines (`rbbi.cpp`, `rbbi_cache.cpp`,
+//! `dictbe.cpp`, milestone M4) over Chromium's compiled break data ([`ChromiumData`], from the
+//! `skia-rust-unicode-data` crate); with ICU4X's segmenters instead ([`CompiledData`], milestone
+//! M2), the shim emulates the rule status and navigation of ICU around their boundaries
+//! ([`data::BreakDataSource`] is the seam).
 //!
-//! `oracle/unicode-diff` runs every function here against Chromium's ICU over its corpus; what still
-//! differs is the break data (Chromium's patched rules and dictionaries), which milestone M4 plugs
-//! in through [`data::BreakDataSource`].
+//! `oracle/unicode-diff` runs every function here against Chromium's ICU over its corpus
+//! (`docs/design/modules.md` §3.4-§3.6).
 
 pub mod data;
+mod dictbe;
+mod dictionary_data;
+mod rbbi;
+mod rbbi_data;
 mod rule_status;
 pub mod ubrk;
 pub mod uchar;
+mod ucptrie;
 pub mod uloc;
 pub mod ustring;
+mod utext;
 pub mod utypes;
 mod word_rules;
 
-pub use data::{BreakDataSource, CompiledData, LineStrictness};
+pub use data::{BreakDataSource, ChromiumData, CompiledData, LineStrictness};
 pub use ubrk::{
     BreakRules, UBRK_DONE, UBreakIterator, UBreakIteratorType, resolve_rules, ubrk_open,
 };

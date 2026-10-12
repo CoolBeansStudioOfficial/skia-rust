@@ -3,11 +3,12 @@
 
 //! Cases of the ICU shim with the values Chromium's ICU 78.2 (d578f2e8) gives, from
 //! `oracle/unicode-diff`'s driver (`unicode_diff --dump breaks` over these strings). The full
-//! comparison is the unicode-diff replay test; these pin the semantics the shim adds to ICU4X.
+//! comparison is the unicode-diff replay test; these pin the semantics of ICU the shim reproduces.
 
 use skia_rust_unicode::icu_shim::{
-    CaseLocale, UBRK_DONE, UBreakIterator, UBreakIteratorType, u_error_name, u_str_to_upper,
-    ucase_get_case_locale, uloc_for_language_tag, uloc_get_default,
+    BreakDataSource, CaseLocale, ChromiumData, CompiledData, UBRK_DONE, UBreakIterator,
+    UBreakIteratorType, u_error_name, u_str_to_upper, ucase_get_case_locale, uloc_for_language_tag,
+    uloc_get_default,
 };
 
 /// `p:s` for every boundary, as the driver prints it.
@@ -68,6 +69,46 @@ fn line_status() {
     for b in lao.split(' ').skip(1) {
         assert!(b.ends_with(":100"), "{lao}");
     }
+}
+
+/// [`dump`] (UTF-8) with the break data of `data`.
+fn dump_with(kind: UBreakIteratorType, text: &str, data: &dyn BreakDataSource) -> String {
+    let mut it = UBreakIterator::open_with_data(kind, Some("en"), data).unwrap();
+    it.set_text_utf8(text.as_bytes());
+    let mut out = Vec::new();
+    let mut p = it.first();
+    while p != UBRK_DONE {
+        out.push(format!("{p}:{}", it.get_rule_status()));
+        p = it.next();
+    }
+    out.join(" ")
+}
+
+/// Chromium's break data (milestone M4): `wordbrk.patch` (`.` and `:`), the dictionaries of the
+/// South-East Asian scripts (no LSTM: `lstm.patch`) and cjdict, through ICU's engines.
+#[test]
+fn chromium_break_data() {
+    use UBreakIteratorType::{Line, Word};
+    let word = |t| dump_with(Word, t, &ChromiumData);
+    let line = |t| dump_with(Line, t, &ChromiumData);
+    assert_eq!(
+        word("SkCanvas.h a:b e.g."),
+        "0:0 8:200 9:0 10:200 11:0 12:200 13:0 14:200 15:0 16:200 17:0 18:200 19:0"
+    );
+    assert_eq!(line("SkCanvas.h a:b e.g."), "0:0 11:0 15:0 19:0");
+    assert_eq!(word("สวัสดีครับภาษาไทย"), "0:0 18:200 30:200 42:200 51:200");
+    assert_eq!(line("สวัสดีครับภาษาไทย"), "0:0 18:0 30:0 42:0 51:0");
+    assert_eq!(
+        word("東京都に住んでいます。コンピューター"),
+        "0:0 6:400 9:400 12:400 15:400 21:400 24:400 30:400 33:0 54:400"
+    );
+    assert_eq!(word("សួស្តីភាសាខ្មែរ"), "0:0 6:200 18:200 45:200");
+    assert_eq!(line("សួស្តីភាសាខ្មែរ"), "0:0 6:0 18:0 45:0");
+    assert_eq!(word("မြန်မာဘာသာစကား"), "0:0 30:200 42:200");
+    // ICU4X's stock rules keep `SkCanvas.h` whole.
+    assert_eq!(dump_with(Word, "SkCanvas.h", &CompiledData), "0:0 10:200");
+    // The default is Chromium's data.
+    assert_eq!(dump(Word, "SkCanvas.h"), "0:0 8:200 9:0 10:200");
 }
 
 #[test]

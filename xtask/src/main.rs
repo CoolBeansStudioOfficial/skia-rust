@@ -1,5 +1,6 @@
 //! Project automation: `cargo xtask <command>`. See `docs/PLAN.md`.
 
+mod break_data;
 mod cpp;
 mod cpu_probe;
 mod gen_test_fonts;
@@ -205,6 +206,13 @@ enum TextDepsCommand {
         #[arg(long, value_enum)]
         only: Vec<text_deps::Dep>,
     },
+    /// Regenerate `crates/skia-rust-unicode-data` (Chromium ICU's `brkitr` rule tables and
+    /// dictionaries) from `common/icudtl.dat` at the ICU pin. Run after an ICU pin bump.
+    BreakData {
+        /// Only check that the committed crate is current.
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -336,6 +344,9 @@ fn main() -> Result<()> {
         Command::TextDeps {
             command: TextDepsCommand::Fetch { only },
         } => text_deps::fetch(&only),
+        Command::TextDeps {
+            command: TextDepsCommand::BreakData { check },
+        } => break_data::run(&root, check),
         Command::GenTestFonts => gen_test_fonts::run(&root),
         Command::CpuProbe { dump_tables } => cpu_probe::probe(dump_tables.as_deref()),
     }

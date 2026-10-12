@@ -11,9 +11,9 @@
 //! `cargo xtask text-deps fetch --only icu` downloads) makes the calls of Skia's `SKICU_EMIT_FUNCS`
 //! (`modules/skunicode/src/SkUnicode_icupriv.h`) over a corpus and prints the results; the committed
 //! `expected/*.txt` are that output. This crate makes the same calls through
-//! `skia_rust_unicode::icu_shim` (milestone M2: the ICU functions on ICU4X `=2.3.x` compiled data,
-//! with ICU's rule status, navigation, numbering and locale handling) for the break, property, case
-//! and locale calls, and through `unicode-bidi =0.3.18` for the bidi calls (milestone M3), prints the
+//! `skia_rust_unicode::icu_shim` (milestones M2 and M4: the break iterators are a port of ICU's over
+//! Chromium's compiled break data; properties, case and locales are on ICU4X `=2.3.x` compiled data
+//! with ICU's numbering and locale handling) for the break, property, case and locale calls, and through `unicode-bidi =0.3.18` for the bidi calls (milestone M3), prints the
 //! same text, and [`check`] compares the two, the way `oracle/shaper-diff` replays its stored
 //! HarfBuzz results, so `cargo test` needs no C/C++.
 //!

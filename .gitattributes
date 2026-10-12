@@ -5,3 +5,6 @@ crates/skia-rust-sksl/tests/data/** -text
 # Fuzzer inputs are raw bytes (docs/design/fuzz.md §2).
 fuzz/corpus/** binary
 fuzz/regressions/** binary
+# ICU break data, byte for byte (crates/skia-rust-unicode-data).
+crates/skia-rust-unicode-data/src/data/*.brk binary
+crates/skia-rust-unicode-data/src/data/*.dict binary

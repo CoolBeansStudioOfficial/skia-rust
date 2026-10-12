@@ -3,10 +3,9 @@
 
 //! The `breaks` section: `ubrk_open`, `ubrk_setUText`, `ubrk_first`, `ubrk_next`, `ubrk_current`,
 //! `ubrk_getRuleStatus`, `ubrk_following` and `ubrk_preceding` of `SkUnicode_icu.cpp#L330-L410`,
-//! through `skia_rust_unicode::icu_shim` (milestone M2): ICU4X's segmenters (compiled data) with
-//! ICU's rule status and navigation emulated, opened for the locale `en` as the driver does.
-//!
-//! What still differs is the break data (Chromium's patched rules and dictionaries, milestone M4).
+//! through `skia_rust_unicode::icu_shim`, opened for the locale `en` as the driver does: the port of
+//! ICU's `RuleBasedBreakIterator` and dictionary engines over Chromium's compiled break data
+//! (milestone M4; the shim's default). All exact.
 
 use std::fmt::Write as _;
 

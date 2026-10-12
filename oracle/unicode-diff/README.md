@@ -1,10 +1,11 @@
 # unicode-diff
 
-`skia_rust_unicode::icu_shim` (M2: the ICU functions on ICU4X `=2.3.0` stock compiled data, with ICU's rule
-status, navigation, numbering and locale handling) and `unicode-bidi =0.3.18` (M3), against Chromium's ICU
-78.2 at Skia's pin (`d578f2e8`). Design:
-`docs/design/modules.md` §3.3; results and the divergence classes: §3.4. It is the measuring tool for
-M2 (`icu_shim`) and M4 (Chromium break data).
+`skia_rust_unicode::icu_shim` (M2: the ICU functions on ICU4X `=2.3.0` compiled data, with ICU's numbering
+and locale handling; M4: break iterators that port ICU's `RuleBasedBreakIterator` and dictionary engines and
+run Chromium's compiled break data from `skia-rust-unicode-data`) and `unicode-bidi =0.3.18` (M3), against
+Chromium's ICU 78.2 at Skia's pin (`d578f2e8`). Design: `docs/design/modules.md` §3.3; results and the
+divergence classes: §3.4 (M0c), §3.5 (M2), §3.6 (M4). It is the measuring tool for M2, M3 and M4; since M4
+only bidi differs.
 
 | File | What |
 |---|---|

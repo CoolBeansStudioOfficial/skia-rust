@@ -18,6 +18,7 @@ members = [
     "crates/skia-rust-pathops",
     "crates/skia-rust-text",
     "crates/skia-rust-unicode",
+    "crates/skia-rust-unicode-data",
     "crates/skia-rust-shaper",
     "crates/skia-rust-svg",
     "crates/skia-rust-pdf",
@@ -67,6 +68,7 @@ skia-rust-effects = { path = "crates/skia-rust-effects", version = "0.156.0" }
 skia-rust-pathops = { path = "crates/skia-rust-pathops", version = "0.156.0" }
 skia-rust-text = { path = "crates/skia-rust-text", version = "0.156.0" }
 skia-rust-unicode = { path = "crates/skia-rust-unicode", version = "0.156.0" }
+skia-rust-unicode-data = { path = "crates/skia-rust-unicode-data", version = "0.156.0" }
 skia-rust-shaper = { path = "crates/skia-rust-shaper", version = "0.156.0" }
 skia-rust-svg = { path = "crates/skia-rust-svg", version = "0.156.0" }
 skia-rust-pdf = { path = "crates/skia-rust-pdf", version = "0.156.0" }
@@ -104,6 +106,7 @@ icu_segmenter = "=2.3.0"
 icu_properties = { version = "=2.3.0", features = ["unicode_bidi"] }
 icu_casemap = "=2.3.0"
 icu_locale_core = "=2.3.0"
+icu_normalizer = "=2.3.0"
 # Only for its `sync` feature: the shim keeps ICU4X segmenters in `Send + Sync` iterators.
 icu_provider = { version = "=2.3.1", default-features = false, features = ["sync"] }
 unicode-bidi = { version = "=0.3.18", default-features = false, features = ["std"] }

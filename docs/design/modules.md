@@ -495,6 +495,81 @@ the driver's `--corpus`): at every boundary both sides have, the status is ICU's
 `line-normal-other` break (after U+FE13) splits ICU's range, and navigation is exact wherever the
 boundaries are.
 
+### 3.6 Results of M4 (2026-10-12)
+
+M4 was planned as `icu4x-datagen` over Chromium's ICU tree. That does not work, for two reasons, so M4
+reproduces Chromium's segmentation with ICU's own run time and ICU's own compiled data instead:
+
+- **ICU4X's data cannot express Chromium's rules.** ICU4X 2.3's rule-based segmenter data comes from
+  `icu_provider_source`'s own TOML rule files, compiled into the crate (`src/segmenter/mod.rs#L941-L1037`:
+  `include_str!("../../data/segmenter/{line,word,sentence,grapheme}.toml")`). There is no input for ICU's
+  RBBI rule files (`source/data/brkitr/rules/*.txt`), which are what Chromium patches (`wordbrk.patch`,
+  `line_normal.patch`); translating them to ICU4X's rule language would be invention, not a port.
+- **Most of the classes are engines, not data.** ICU splits dictionary ranges with `dictbe.cpp`:
+  `ThaiBreakEngine` and its Lao, Burmese and Khmer siblings look three words ahead, resynchronise after
+  non-words, never stop before a mark and handle Thai suffixes; `CjkBreakEngine` normalises to NFKC and
+  runs a Viterbi search over the dictionary's costs with a katakana-run heuristic. ICU4X has an LSTM and
+  a different dictionary algorithm. The 318 `icu4x-lb-<rule>` lines are ICU4X's UAX #14 engine against
+  ICU's `line_normal` rules. Chromium also changes engine code (`khmer-dictbe.patch`: the Khmer
+  thresholds 10 and 5).
+
+What M4 adds:
+
+- **`skia-rust-unicode-data`**: the 17 `brkitr` files of Chromium's `common/icudtl.dat` at the pin (12
+  `.brk` rule tables, 5 `.dict` dictionaries; `title.brk` and `line_cj.brk` are not in Chromium's data),
+  byte for byte, with their SHA-256 and ICU's `LICENSE`. They are what Chromium's ICU loads, built from
+  `source/data/brkitr` with every patch applied (`wordbrk`, `line_normal`, `lstm`: no LSTM models, so Thai
+  and Burmese use dictionaries, `cjdict`). 3,231,904 bytes (cjdict 2.0 MB, burmese 254 kB, thai 126 kB,
+  khmer 94 kB, lao 52 kB, line tables 73-86 kB each, word 23 kB, sentence 20 kB each, char 14 kB). They stay
+  in ICU's binary form (`include_bytes!`, read in place, little-endian on every host): that is the compact
+  form; the same tables as Rust source would be several times larger. `std` only, no `unsafe`, no code
+  besides the lookup functions.
+- **`cargo xtask text-deps break-data [--check]`** regenerates the crate from `icudtl.dat` (TOC of ICU's
+  common data package, `brkitr/*.brk|*.dict`) after an ICU pin bump; `--check` fails when the committed
+  crate differs.
+- **A port of ICU's break-iterator run time in `icu_shim`**: `rbbidata.cpp` (sections of a `.brk`),
+  `ucptrie.cpp` (the read side of the category trie), `rbbi.cpp` (`handleNext`, `handleSafePrevious`,
+  `first`/`last`/`next`/`previous`/`following`/`preceding`/`isBoundary`/`getRuleStatus`, the engine lookup
+  of `getLanguageBreakEngine`), `rbbi_cache.cpp` (`BreakCache` with its 128-entry ring and `populateNear` /
+  `populateFollowing` / `populatePreceding`, `DictionaryCache`), `brkeng.cpp` (`UnhandledEngine`,
+  `loadEngineFor` with the root bundle's `dictionaries` table), `dictbe.cpp` (the five engines, with
+  `khmer-dictbe.patch`), `dictionarydata.cpp` and the read side of `ucharstrie.cpp` / `bytestrie.cpp`, over a
+  `UText` with ICU's native indexing. `CjkBreakEngine`'s NFKC uses ICU4X's normalizer (`icu_normalizer
+  =2.3.0`); `hasBoundaryBefore` is the `ccc` of the first NFKD character, which equals ICU's on the
+  engine's character set (a test checks every character).
+- **The seam**: `BreakDataSource::rule_file` / `dictionary` hand out ICU data; `ChromiumData` (the crate)
+  is the default of `UBreakIterator::open`, so of `SkUnicodes::ICU::Make`. `CompiledData` (ICU4X with M2's
+  emulation) stays available through `open_with_data`.
+
+Not ported, both outside Skia's calls: phrase breaking (`@lw=phrase` selects the `_phrase_cj` rules, which
+run, but without ICU's ML phrase engine and the `ja` skip set), and one piece of process-wide state. ICU's
+`ICULanguageBreakFactory` keeps the engines it has created for the life of the process and hands any of them
+to a character its set holds, before it creates one by the character's script; the shim behaves as a
+process that has created every engine. The difference shows only for the four Common-script characters of
+the Chinese/Japanese set (U+30FC, U+FF70, U+FF9E, U+FF9F) at the start of a dictionary range, in a process
+that has not yet met a Han, Hiragana or Katakana dictionary character.
+
+| Class (rows) | After M2 | After M4 | What fixed it |
+|---|---|---|---|
+| `word-dot` | 576 | 0 | `word.brk` with `wordbrk.patch` |
+| `word-colon` (incl. 17 `WordBreakTest` lines) | 26 | 0 | the same; the twin now fails ICU's 17 lines (rule 6.0, `a:a`) |
+| `word-hangul-syllable-jamo` | 3 | 0 | ICU's rules, not Chromium's: `word.txt#L70-L79` keeps Hangul syllables out of `$ALetterPlus` (they are dictionary characters, `$dictionaryCJK`) and joins them only to each other (`#L111`, `#L175`); with no Korean dictionary, U+11A8 after U+AC00 starts a word |
+| `word-dictionary-cj` | 24 | 0 | `cjdict.dict` + `CjkBreakEngine` |
+| `word-dictionary-sa` | 30 | 0 | the four dictionaries + their engines; Tai Tham and New Tai Lue go to `UnhandledEngine` |
+| `line-dictionary-sa` | 104 | 0 | the same, for lines |
+| `line-normal-other` | 8 | 0 | `line_normal.brk` |
+| `icu4x-lb-<rule>` (15 rules, `LineBreakTest`) | 318 | 0 | ICU's `line_normal` rules: the twin now fails exactly ICU's 142 lines (decided: Chromium's data, so ICU's side) |
+
+`known-divergences.txt`: 1,197 → 108 entries, all bidi (77 rows of M3's classes and the 31
+`icu-bidi-conformance` lines). Every `breaks` row (14,773: line, word, character and sentence boundaries with
+rule status in UTF-8 and UTF-16, the 7 locale cases, `following`/`preceding` at every offset) is exact. Beyond
+the corpus, three random corpora (2,000 strings of up to 30 tokens, 300 of up to 400 tokens, which overflow
+the 128-entry cache and send `following`/`preceding` through `handleSafePrevious`, and 5,000 of up to 12
+tokens; tokens are Thai, Lao, Khmer, Myanmar, Tai Tham, New Tai Lue and Tai Viet words and marks, kanji,
+kana, half-width kana and sound marks, CJK compatibility ideographs and supplementary Han, Hangul syllables
+and jamo, `.`/`:` and their full-width forms, separators, controls and emoji) give 124,100 rows through the
+driver's `--corpus` and `$SKIA_RUST_UNICODE_DIFF_CORPUS`: all exact.
+
 ---
 
 ## 4. Paragraph (`modules/skparagraph`, 8.5k C++ lines)
@@ -718,7 +793,7 @@ execution order. Within a wave, tasks are parallel unless "Depends" says otherwi
 | M1 | `skia-rust-unicode`: `SkUnicode` API (`CodeUnitFlags`, `BidiRegion`, break and bidi iterator traits, UTF conversions), `SkUnicode.cpp`, `SkUnicode_hardcoded.cpp`, client implementation | `include/SkUnicode.h`, `src/SkUnicode{,_hardcoded,_client}.cpp` [0.8k] | — | M | `SkUnicode_Client` (1) |
 | M2 **(O)** | `icu_shim` (30 functions with ICU semantics, rule-status emulation) + port of `SkUnicode_icu.cpp`, on ICU4X compiled data | `SkUnicode_icu.cpp`, `SkUnicode_icupriv.h` [0.8k] | M1, M0c | L | `SkUnicode_Compiled_{Native,GetSentences,Emoji,Ideographic}`, `SkUnicode_ICU4X_{Emoji,Ideographic}`, `SkUnicode_ToUpper`, `SkUnicode_ComputeCodeUnitFlags` (8) |
 | M3 | Bidi: `SkUnicode_icu_bidi.cpp`, `SkBidiFactory_icu_full.cpp` over `unicode-bidi` + ICU4X data; `ubidi_reorderVisual` port | `SkUnicode_icu_bidi.cpp`, `SkBidiFactory_icu_full.cpp`, ICU `ubidiln.cpp` (reorderVisual) [0.3k] | M1 | M | `SkUnicode_GetBidiRegions{LTR,RTL,Mix1,Mix2}`, `SkUnicode_ReorderVisual` (5) |
-| M4 **(O)** | Chromium break data for ICU4X: `icu4x-datagen` over the Chromium ICU tree with the `wordbrk`, `line_normal`, `lstm`, `khmer-dictbe`, `laodict` and `cjdict` changes, baked into `skia-rust-unicode-data`; regenerate on pin bumps | Chromium `deps/icu` `patches/`, `source/data/brkitr` | M2, M0c | M (+ data) | unicode-diff clean: words around `.`/`:`, SA and CJ line/word breaks |
+| M4 **(O)** | Chromium break data: the `brkitr` rule tables and dictionaries of Chromium's `icudtl.dat` (`wordbrk`, `line_normal`, `lstm`, `cjdict` applied) in `skia-rust-unicode-data`, regenerated on pin bumps; ICU's break-iterator run time and dictionary engines (with `khmer-dictbe`) ported into `icu_shim` (planned as `icu4x-datagen`; why not: §3.6) | Chromium `deps/icu` `patches/`, `source/data/brkitr`, `rbbi*.cpp`, `dictbe.cpp` | M2, M0c | M (+ data) | unicode-diff clean: words around `.`/`:`, SA and CJ line/word breaks |
 
 ### Wave M-B: shaper
 
@@ -849,6 +924,13 @@ every M2 class gone, and the eight `SkUnicode` tests of M2's row (plus M3's five
 their stand-in to the ICU implementation). `SkUnicode_icu.cpp` uses M3's `icu_bidi` (merged from
 `port/text-m3-m5`). Not ported: `SkIcuBreakIteratorCache`'s de-duplication by actual locale and its purge of
 live iterators (memory only).
+
+### Status of M4 (2026-10-12)
+
+M4 is done (§3.6): `skia-rust-unicode-data` (Chromium's compiled break data, `cargo xtask text-deps
+break-data`), the port of ICU's `RuleBasedBreakIterator`, caches and dictionary engines in `icu_shim`, and
+`ChromiumData` as the default break data. unicode-diff's `breaks` section and the break conformance files are
+exact; only bidi remains in `known-divergences.txt`.
 
 ### Status of M0b and M8's font part (2026-10-12)
 

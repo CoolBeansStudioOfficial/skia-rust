@@ -1,0 +1,16 @@
+[package]
+name = "skia-rust-unicode-data"
+description = "The break data of Chromium's ICU at Skia's pin (brkitr rule tables and dictionaries from icudtl.dat), for skia-rust-unicode's ICU shim"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# The data files are ICU's (Unicode License v3 and the third-party terms in src/data/LICENSE).
+license = "Unicode-3.0"
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

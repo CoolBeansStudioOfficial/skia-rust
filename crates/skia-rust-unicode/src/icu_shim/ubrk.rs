@@ -3,26 +3,30 @@
 
 //! `UBreakIterator`: `ubrk_open`, `ubrk_setUText` (over `utext_openUTF8` / `utext_openUChars`),
 //! `ubrk_first`, `ubrk_next`, `ubrk_current`, `ubrk_following`, `ubrk_preceding`,
-//! `ubrk_getRuleStatus` and `ubrk_clone`, with ICU's semantics over ICU4X's segmenters.
+//! `ubrk_getRuleStatus` and `ubrk_clone`, with ICU's semantics.
 //!
-//! The boundaries are ICU4X's; everything around them is ICU's:
+//! Which rule file a type and locale select is ICU's (`BreakIterator::makeInstance` and
+//! `buildInstance`, `brkiter.cpp`, over the `brkitr` resources of Chromium's `icudtl.dat`), see
+//! [`resolve_rules`]. What runs it depends on the [`BreakDataSource`]:
 //!
-//! - which rule file a type and locale select (`BreakIterator::makeInstance` and `buildInstance`,
-//!   `brkiter.cpp`, over the `brkitr` resources of Chromium's `icudtl.dat`), see [`resolve_rules`];
-//! - the rule status of every boundary, which ICU4X does not report, from the rule tags of
-//!   Chromium's `word.txt`, `sent.txt` and `line_normal.txt` (see [`super::rule_status`]);
-//! - the navigation of `RuleBasedBreakIterator` and its `BreakCache` (`rbbi.cpp`, `rbbi_cache.cpp`):
-//!   `following` and `preceding` first move an offset inside a code point to its start, `next` past
-//!   the end reports `UBRK_DONE` and leaves `current` at the end.
-//!
-//! ICU computes boundaries lazily, through a cache; the shim computes all of them when the text is
-//! set. The results are the same.
+//! - With ICU's compiled data ([`ChromiumData`], the default), the port of ICU's
+//!   `RuleBasedBreakIterator` (`super::rbbi`): everything is ICU's.
+//! - With ICU4X segmenters ([`CompiledData`](super::CompiledData)), the boundaries are ICU4X's and everything around them
+//!   is ICU's: the rule status of every boundary, which ICU4X does not report, from the rule tags
+//!   of Chromium's `word.txt`, `sent.txt` and `line_normal.txt` (see [`super::rule_status`]); the
+//!   navigation of `RuleBasedBreakIterator` and its `BreakCache` (`rbbi.cpp`, `rbbi_cache.cpp`):
+//!   `following` and `preceding` first move an offset inside a code point to its start, `next`
+//!   past the end reports `UBRK_DONE` and leaves `current` at the end. ICU computes boundaries
+//!   lazily, through a cache; this backend computes all of them when the text is set.
 
 use std::sync::Arc;
 
 use icu_segmenter::{GraphemeClusterSegmenter, LineSegmenter, SentenceSegmenter, WordSegmenter};
 
-use super::data::{BreakDataSource, CompiledData, LineStrictness};
+use super::data::{BreakDataSource, ChromiumData, LineStrictness};
+use super::dictbe::EngineKind;
+use super::rbbi::RuleBasedBreakIterator;
+use super::rbbi_data::RbbiData;
 use super::rule_status;
 use super::uloc::{LocaleParts, uloc_get_default};
 use super::utypes::{U_INVALID_FORMAT_ERROR, U_MISSING_RESOURCE_ERROR, UErrorCode};
@@ -140,6 +144,14 @@ fn rule_file(name: &str) -> Option<BreakRules> {
 /// names a rule file that is not in the data (`ko@lb=strict`: `line_cj.brk`; `UBRK_TITLE`:
 /// `title.brk`), as Chromium's ICU reports (measured with `oracle/unicode-diff`, `line-ko-strict-u8`).
 pub fn resolve_rules(kind: UBreakIteratorType, locale: &str) -> Result<BreakRules, UErrorCode> {
+    rule_file(resolve_rule_file(kind, locale)?).ok_or(U_INVALID_FORMAT_ERROR)
+}
+
+/// The name of the rule file (`brkitr/<name>.brk`) [`resolve_rules`] finds.
+///
+/// # Errors
+/// `U_MISSING_RESOURCE_ERROR` when no bundle has the key.
+fn resolve_rule_file(kind: UBreakIteratorType, locale: &str) -> Result<&'static str, UErrorCode> {
     let parts = LocaleParts::parse(locale);
     let key = match kind {
         UBreakIteratorType::Character => String::from("grapheme"),
@@ -171,7 +183,7 @@ pub fn resolve_rules(kind: UBreakIteratorType, locale: &str) -> Result<BreakRule
     chain.push(String::from("root"));
     for bundle in &chain {
         if let Some(&(_, _, file)) = BOUNDARIES.iter().find(|(b, k, _)| b == bundle && *k == key) {
-            return rule_file(file).ok_or(U_INVALID_FORMAT_ERROR);
+            return Ok(file);
         }
     }
     Err(U_MISSING_RESOURCE_ERROR)
@@ -371,10 +383,10 @@ fn to_i32(p: usize) -> i32 {
     i32::try_from(p).expect("ICU text offsets are int32")
 }
 
-/// `UBreakIterator`. See the module documentation.
+/// A break iterator over ICU4X's segmenters ([`CompiledData`](super::CompiledData) and other ICU4X sources): all
+/// boundaries are computed when the text is set, and ICU's navigation runs over them.
 #[derive(Clone, Debug)]
-pub struct UBreakIterator {
-    rules: BreakRules,
+struct Icu4xIterator {
     engines: Arc<Engines>,
     text: Text,
     /// The boundaries, ascending, starting with 0 and ending with the text length.
@@ -387,32 +399,11 @@ pub struct UBreakIterator {
     done: bool,
 }
 
-impl UBreakIterator {
-    // Port of: icu4c/source/common/ubrk.cpp ubrk_open (chromium/deps/icu d578f2e8)
-    /// `ubrk_open(type, locale, nullptr, 0, &status)` on ICU4X's compiled data. `None` is the
-    /// default locale, as a null `locale` in ICU.
-    ///
-    /// # Errors
-    /// When ICU has no rules for the type and locale ([`resolve_rules`]).
-    #[doc(alias = "ubrk_open")]
-    pub fn open(kind: UBreakIteratorType, locale: Option<&str>) -> Result<Self, UErrorCode> {
-        Self::open_with_data(kind, locale, &CompiledData)
-    }
-
-    /// [`Self::open`] with the segmenters of `data` (the seam of [`super::data`]).
-    ///
-    /// # Errors
-    /// As [`Self::open`].
-    pub fn open_with_data(
-        kind: UBreakIteratorType,
-        locale: Option<&str>,
-        data: &dyn BreakDataSource,
-    ) -> Result<Self, UErrorCode> {
-        let rules = resolve_rules(kind, locale.unwrap_or_else(|| uloc_get_default()))?;
+impl Icu4xIterator {
+    fn new(rules: BreakRules, data: &dyn BreakDataSource) -> Self {
         let engines = Arc::new(Engines::new(rules, data));
         // An iterator without text runs over the empty text, as after `ubrk_open` with no text.
-        let mut it = UBreakIterator {
-            rules,
+        let mut it = Icu4xIterator {
             engines,
             text: Text::Utf16(Vec::new()),
             boundaries: Vec::new(),
@@ -421,13 +412,7 @@ impl UBreakIterator {
             done: false,
         };
         it.set_text(TextRef::Utf16(&[]));
-        Ok(it)
-    }
-
-    /// The rule file this iterator runs.
-    #[must_use]
-    pub fn rules(&self) -> BreakRules {
-        self.rules
+        it
     }
 
     fn set_text(&mut self, text: TextRef<'_>) {
@@ -445,23 +430,6 @@ impl UBreakIterator {
         };
         self.index = 0;
         self.done = false;
-    }
-
-    // Port of: icu4c/source/common/ubrk.cpp ubrk_setUText and rbbi.cpp setText
-    // (chromium/deps/icu d578f2e8)
-    /// `ubrk_setUText` with `utext_openUTF8(text)`: the iterator moves to the start.
-    #[doc(alias = "ubrk_setUText")]
-    #[doc(alias = "utext_openUTF8")]
-    pub fn set_text_utf8(&mut self, text: &[u8]) {
-        self.set_text(TextRef::Utf8(text));
-    }
-
-    /// `ubrk_setUText` with `utext_openUChars(text)`, or `ubrk_setText(text)`.
-    #[doc(alias = "ubrk_setUText")]
-    #[doc(alias = "ubrk_setText")]
-    #[doc(alias = "utext_openUChars")]
-    pub fn set_text_utf16(&mut self, text: &[u16]) {
-        self.set_text(TextRef::Utf16(text));
     }
 
     // Port of: icu4c/source/common/rbbi.cpp#L541-L549 (chromium/deps/icu d578f2e8)
@@ -611,6 +579,160 @@ impl UBreakIterator {
     #[must_use]
     pub fn is_done(&self) -> bool {
         self.done
+    }
+}
+
+/// The engine behind a [`UBreakIterator`].
+#[derive(Clone, Debug)]
+enum Backend {
+    /// ICU's engine over ICU's compiled data ([`ChromiumData`]).
+    Icu(Box<RuleBasedBreakIterator>),
+    /// ICU4X's segmenters with ICU emulated around them ([`CompiledData`](super::CompiledData)).
+    Icu4x(Icu4xIterator),
+}
+
+/// Dispatches a call to the backend.
+macro_rules! dispatch {
+    ($self:ident, $it:ident => $e:expr) => {
+        match &mut $self.backend {
+            Backend::Icu($it) => $e,
+            Backend::Icu4x($it) => $e,
+        }
+    };
+}
+
+/// `UBreakIterator`. See the module documentation.
+#[derive(Clone, Debug)]
+pub struct UBreakIterator {
+    rules: BreakRules,
+    backend: Backend,
+}
+
+impl UBreakIterator {
+    // Port of: icu4c/source/common/ubrk.cpp ubrk_open (chromium/deps/icu d578f2e8)
+    /// `ubrk_open(type, locale, nullptr, 0, &status)` on Chromium's ICU data ([`ChromiumData`]).
+    /// `None` is the default locale, as a null `locale` in ICU.
+    ///
+    /// # Errors
+    /// When ICU has no rules for the type and locale ([`resolve_rules`]).
+    #[doc(alias = "ubrk_open")]
+    pub fn open(kind: UBreakIteratorType, locale: Option<&str>) -> Result<Self, UErrorCode> {
+        Self::open_with_data(kind, locale, &ChromiumData)
+    }
+
+    // Port of: icu4c/source/common/brkiter.cpp BreakIterator::buildInstance (chromium/deps/icu
+    // d578f2e8)
+    /// [`Self::open`] with the data of `data` (the seam of [`super::data`]).
+    ///
+    /// # Errors
+    /// As [`Self::open`]; `U_INVALID_FORMAT_ERROR` also if `data`'s rule file is not valid ICU
+    /// break data.
+    pub fn open_with_data(
+        kind: UBreakIteratorType,
+        locale: Option<&str>,
+        data: &dyn BreakDataSource,
+    ) -> Result<Self, UErrorCode> {
+        let file = resolve_rule_file(kind, locale.unwrap_or_else(|| uloc_get_default()))?;
+        let rules = rule_file(file).ok_or(U_INVALID_FORMAT_ERROR)?;
+        let backend = if let Some(bytes) = data.rule_file(file) {
+            let rbbi = RbbiData::open(bytes)?;
+            let dictionaries = EngineKind::ALL.map(|kind| data.dictionary(kind.dictionary()));
+            Backend::Icu(Box::new(RuleBasedBreakIterator::new(rbbi, dictionaries)))
+        } else {
+            Backend::Icu4x(Icu4xIterator::new(rules, data))
+        };
+        Ok(UBreakIterator { rules, backend })
+    }
+
+    /// The rule file this iterator runs, as the ICU4X sources name it (the `_phrase_cj` files are
+    /// their `_cj` counterparts).
+    #[must_use]
+    pub fn rules(&self) -> BreakRules {
+        self.rules
+    }
+
+    // Port of: icu4c/source/common/ubrk.cpp ubrk_setUText and rbbi.cpp setText
+    // (chromium/deps/icu d578f2e8)
+    /// `ubrk_setUText` with `utext_openUTF8(text)`: the iterator moves to the start.
+    #[doc(alias = "ubrk_setUText")]
+    #[doc(alias = "utext_openUTF8")]
+    pub fn set_text_utf8(&mut self, text: &[u8]) {
+        dispatch!(self, it => it.set_text(TextRef::Utf8(text)));
+    }
+
+    /// `ubrk_setUText` with `utext_openUChars(text)`, or `ubrk_setText(text)`.
+    #[doc(alias = "ubrk_setUText")]
+    #[doc(alias = "ubrk_setText")]
+    #[doc(alias = "utext_openUChars")]
+    pub fn set_text_utf16(&mut self, text: &[u16]) {
+        dispatch!(self, it => it.set_text(TextRef::Utf16(text)));
+    }
+
+    /// `ubrk_first`: 0.
+    #[doc(alias = "ubrk_first")]
+    pub fn first(&mut self) -> i32 {
+        dispatch!(self, it => it.first())
+    }
+
+    /// `ubrk_last`: the text length.
+    #[doc(alias = "ubrk_last")]
+    pub fn last(&mut self) -> i32 {
+        dispatch!(self, it => it.last())
+    }
+
+    /// `ubrk_next`: the next boundary, or `UBRK_DONE` at the end (`current` stays at the end).
+    #[doc(alias = "ubrk_next")]
+    #[allow(clippy::should_implement_trait)] // ICU's `ubrk_next`, not an `Iterator`
+    pub fn next(&mut self) -> i32 {
+        dispatch!(self, it => it.next())
+    }
+
+    /// `ubrk_previous`: the previous boundary, or `UBRK_DONE` at the start.
+    #[doc(alias = "ubrk_previous")]
+    pub fn previous(&mut self) -> i32 {
+        dispatch!(self, it => it.previous())
+    }
+
+    /// `ubrk_current`.
+    #[doc(alias = "ubrk_current")]
+    #[must_use]
+    pub fn current(&self) -> i32 {
+        match &self.backend {
+            Backend::Icu(it) => it.current(),
+            Backend::Icu4x(it) => it.current(),
+        }
+    }
+
+    /// `ubrk_getRuleStatus`: the status of the rule that produced the current boundary (the largest
+    /// of its tags; 0 at the start).
+    #[doc(alias = "ubrk_getRuleStatus")]
+    #[must_use]
+    pub fn get_rule_status(&self) -> i32 {
+        match &self.backend {
+            Backend::Icu(it) => it.get_rule_status(),
+            Backend::Icu4x(it) => it.get_rule_status(),
+        }
+    }
+
+    /// `ubrk_following(offset)`: the first boundary after `offset`, or `UBRK_DONE`.
+    #[doc(alias = "ubrk_following")]
+    pub fn following(&mut self, offset: i32) -> i32 {
+        dispatch!(self, it => it.following(offset))
+    }
+
+    /// `ubrk_preceding(offset)`: the last boundary before `offset`, or `UBRK_DONE`.
+    #[doc(alias = "ubrk_preceding")]
+    pub fn preceding(&mut self, offset: i32) -> i32 {
+        dispatch!(self, it => it.preceding(offset))
+    }
+
+    /// Whether the last `next`, `previous`, `following` or `preceding` ran off the text.
+    #[must_use]
+    pub fn is_done(&self) -> bool {
+        match &self.backend {
+            Backend::Icu(it) => it.is_done(),
+            Backend::Icu4x(it) => it.is_done(),
+        }
     }
 }
 
