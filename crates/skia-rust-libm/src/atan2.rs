@@ -6,7 +6,7 @@
 //! (`atan(q) = q`) when `q < 1e-4` or when the exponent of `y` is at least 14 below the exponent
 //! of `x`.
 
-use crate::atan::atan_pos;
+use crate::atan::ATANF_CORE as CORE;
 
 const PI: f64 = core::f64::consts::PI;
 
@@ -29,7 +29,7 @@ pub fn atan2f(y: f32, x: f32) -> f32 {
         if q < 1e-4 || exp_diff <= -14 {
             q
         } else {
-            atan_pos(q)
+            CORE.atan_pos(q)
         }
     };
     let both_inf = y.is_infinite() && x.is_infinite();

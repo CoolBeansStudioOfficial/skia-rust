@@ -311,83 +311,76 @@ crate::def_gm!(
 );
 
 // Port of: gm/imagefilterstransformed.cpp#L318-L357 (chrome/m156), imagefilter_transformed_image
-crate::def_simple_gm!(
-    #[ignore = "perspective (m2) rows differ by 1 f16 ulp; see the manifest reason (host libm tanf)"]
-    imagefilter_transformed_image,
-    canvas,
-    256,
-    256,
-    {
-        let Some(image) = get_resource_as_image("images/color_wheel.png") else {
-            return;
-        };
-        let Some(image_filter) = image_sampled(
-            Some(image.clone()),
-            SamplingOptions::from(FilterMode::Linear),
-        ) else {
-            return;
-        };
+crate::def_simple_gm!(imagefilter_transformed_image, canvas, 256, 256, {
+    let Some(image) = get_resource_as_image("images/color_wheel.png") else {
+        return;
+    };
+    let Some(image_filter) = image_sampled(
+        Some(image.clone()),
+        SamplingOptions::from(FilterMode::Linear),
+    ) else {
+        return;
+    };
 
-        let image_rect = Rect::from_wh(image.width() as f32, image.height() as f32);
+    let image_rect = Rect::from_wh(image.width() as f32, image.height() as f32);
 
-        let m1 = M44::concat(
-            &M44::translate(0.9 * image.width() as f32, 0.1 * image.height() as f32, 0.0),
-            &M44::scale(-0.8, 0.8, 1.0),
+    let m1 = M44::concat(
+        &M44::translate(0.9 * image.width() as f32, 0.1 * image.height() as f32, 0.0),
+        &M44::scale(-0.8, 0.8, 1.0),
+    );
+
+    let m2 = {
+        let a = M44::rect_to_rect(Rect::from_ltrb(-1.0, -1.0, 1.0, 1.0), image_rect);
+        let a = M44::concat(
+            &a,
+            &M44::perspective(0.01, 100.0, std::f32::consts::PI / 3.0),
         );
-
-        let m2 = {
-            let a = M44::rect_to_rect(Rect::from_ltrb(-1.0, -1.0, 1.0, 1.0), image_rect);
-            let a = M44::concat(
-                &a,
-                &M44::perspective(0.01, 100.0, std::f32::consts::PI / 3.0),
-            );
-            let a = M44::concat(&a, &M44::translate(0.0, 0.0, -2.0));
-            let a = M44::concat(
-                &a,
-                &M44::rotate(V3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 6.0),
-            );
-            M44::concat(
-                &a,
-                &M44::rect_to_rect(image_rect, Rect::from_ltrb(-1.0, -1.0, 1.0, 1.0)),
-            )
-        };
-
-        let font = Font::from_size(default_portable_typeface(), 12.0);
-        canvas.draw_str(
-            "Columns should match",
-            (5.0, 15.0),
-            &font,
-            &Paint::default(),
+        let a = M44::concat(&a, &M44::translate(0.0, 0.0, -2.0));
+        let a = M44::concat(
+            &a,
+            &M44::rotate(V3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 6.0),
         );
-        canvas.translate((0.0, 10.0));
+        M44::concat(
+            &a,
+            &M44::rect_to_rect(image_rect, Rect::from_ltrb(-1.0, -1.0, 1.0, 1.0)),
+        )
+    };
 
-        let sampling = SamplingOptions::from(FilterMode::Linear);
-        for m in [m1, m2] {
+    let font = Font::from_size(default_portable_typeface(), 12.0);
+    canvas.draw_str(
+        "Columns should match",
+        (5.0, 15.0),
+        &font,
+        &Paint::default(),
+    );
+    canvas.translate((0.0, 10.0));
+
+    let sampling = SamplingOptions::from(FilterMode::Linear);
+    for m in [m1, m2] {
+        canvas.save();
+        for canvas_transform in [false, true] {
             canvas.save();
-            for canvas_transform in [false, true] {
-                canvas.save();
-                canvas.clip_rect(image_rect, None, None);
+            canvas.clip_rect(image_rect, None, None);
 
-                let final_filter = if canvas_transform {
-                    canvas.concat_44(&m);
-                    Some(image_filter.clone())
-                } else {
-                    matrix_transform(&m.to_m33(), sampling, Some(image_filter.clone()))
-                };
+            let final_filter = if canvas_transform {
+                canvas.concat_44(&m);
+                Some(image_filter.clone())
+            } else {
+                matrix_transform(&m.to_m33(), sampling, Some(image_filter.clone()))
+            };
 
-                let mut paint = Paint::default();
-                paint.set_image_filter(final_filter);
-                canvas.draw_paint(&paint);
+            let mut paint = Paint::default();
+            paint.set_image_filter(final_filter);
+            canvas.draw_paint(&paint);
 
-                canvas.restore();
-                canvas.translate((image.width() as f32, 0.0));
-            }
             canvas.restore();
-
-            canvas.translate((0.0, image.height() as f32));
+            canvas.translate((image.width() as f32, 0.0));
         }
+        canvas.restore();
+
+        canvas.translate((0.0, image.height() as f32));
     }
-);
+});
 
 // Port of: gm/imagefilterstransformed.cpp#L173-L221 (chrome/m156), ImageFilterMatrixWLocalMatrix
 struct ImageFilterMatrixWLocalMatrixGm {
