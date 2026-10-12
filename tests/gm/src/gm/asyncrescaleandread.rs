@@ -6,7 +6,7 @@
 // The CPU readback of asyncRescaleAndReadPixels: the raster sink has no GPU context or Recorder,
 // so every read is synchronous and goes through `skia_rust_raster::rescale_and_read_pixels`. The
 // YUV[A] readbacks have no CPU implementation in Skia (they call back with no result), so the GMs
-// that use them are skipped here and have no entry in this file.
+// that use them skip on the raster sink: their grids return `kSkip` at the first read.
 
 use crate::prelude::*;
 use crate::tool_utils::{draw_checkerboard, get_resource_as_image, int_to_scalar};
@@ -114,14 +114,34 @@ fn read_and_scale_rgba(
     images::raster_from_pixmap_copy(&pixmap)
 }
 
-/// `AsyncReadGMBase::drawRescaleGrid` for the RGBA type: a grid of rescales, with the columns for
-/// nearest, repeated-linear and repeated-cubic rescaling and the rows for source and linear gamma.
-// Port of: gm/asyncrescaleandread.cpp#L326-L380 (chrome/m156), drawRescaleGrid (kRGBA)
+/// `AsyncReadGMBase::readAndScaleYUVA` on the CPU. The YUV[A] readback calls the client's callback
+/// with no result on the raster sink (`SkImage_Base` and `SkSurface_Base` both do), so the C++
+/// returns null.
+// Port of: gm/asyncrescaleandread.cpp#L208-L304 (chrome/m156), readAndScaleYUVA (CPU)
+#[allow(clippy::unnecessary_wraps)] // the `None` is the callback's result, which is always absent
+fn read_and_scale_yuva_cpu() -> Option<Image> {
+    None
+}
+
+/// The `Type` of an [`AsyncRescaleAndReadGridGm`]: the planes it reads (`kRGBA`, `kYUV`, `kYUVA`).
+// Port of: gm/asyncrescaleandread.cpp#L46-L50 (chrome/m156), enum class Type
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum GridType {
+    Rgba,
+    Yuv,
+    Yuva,
+}
+
+/// `AsyncReadGMBase::drawRescaleGrid`: a grid of rescales, with the columns for nearest,
+/// repeated-linear and repeated-cubic rescaling and the rows for source and linear gamma. The
+/// RGBA type reads pixels; the YUV[A] types have no CPU readback and skip.
+// Port of: gm/asyncrescaleandread.cpp#L326-L380 (chrome/m156), drawRescaleGrid
 fn draw_rescale_grid(
     canvas: &Canvas,
     src: &mut Source,
     src_rect: IRect,
     read_size: ISize,
+    grid_type: GridType,
     error_msg: &mut String,
     pad: i32,
 ) -> DrawResult {
@@ -133,11 +153,24 @@ fn draw_rescale_grid(
             RescaleMode::RepeatedLinear,
             RescaleMode::RepeatedCubic,
         ] {
-            let ii = canvas.image_info().with_dimensions(read_size);
-            let Some(result) = read_and_scale_rgba(src, src_rect, &ii, gamma, mode) else {
-                error_msg.clear();
-                error_msg.push_str("async read call failed.");
-                return DrawResult::Fail;
+            let result = match grid_type {
+                GridType::Rgba => {
+                    let ii = canvas.image_info().with_dimensions(read_size);
+                    let Some(result) = read_and_scale_rgba(src, src_rect, &ii, gamma, mode) else {
+                        error_msg.clear();
+                        error_msg.push_str("async read call failed.");
+                        return DrawResult::Fail;
+                    };
+                    result
+                }
+                GridType::Yuv | GridType::Yuva => {
+                    let Some(result) = read_and_scale_yuva_cpu() else {
+                        error_msg.clear();
+                        error_msg.push_str("YUV[A]420 async call failed. Allowed for now.");
+                        return DrawResult::Skip;
+                    };
+                    result
+                }
             };
             canvas.draw_image(&result, (0.0, 0.0), None);
             canvas.translate((int_to_scalar(read_size.width + pad), 0.0));
@@ -158,6 +191,7 @@ struct AsyncRescaleAndReadGridGm {
     src_rect: IRect,
     read_size: ISize,
     read_source: ReadSource,
+    grid_type: GridType,
 }
 
 impl AsyncRescaleAndReadGridGm {
@@ -175,7 +209,15 @@ impl AsyncRescaleAndReadGridGm {
             src_rect,
             read_size,
             read_source,
+            grid_type: GridType::Rgba,
         }
+    }
+
+    /// The template argument `TYPE` of `AsyncRescaleAndReadGridGM<SOURCE, TYPE>`.
+    // Port of: gm/asyncrescaleandread.cpp#L483-L499 (chrome/m156), the DEF_RESCALE_AND_READ_GRID_GM TYPE
+    fn with_grid_type(mut self, grid_type: GridType) -> Self {
+        self.grid_type = grid_type;
+        self
     }
 }
 
@@ -210,14 +252,41 @@ impl GM for AsyncRescaleAndReadGridGm {
             &mut src,
             self.src_rect,
             self.read_size,
+            self.grid_type,
             error_msg,
             0,
         )
     }
 }
 
-// Port of: gm/asyncrescaleandread.cpp#L483-L545 (chrome/m156), the RGBA DEF_RESCALE_AND_READ_GRID_GM
-// registrations (the YUV[A] ones have no CPU readback, so they are not registered).
+// Port of: gm/asyncrescaleandread.cpp#L483-L486 (chrome/m156), the yuv420_rose registration
+// (kYUVA from a surface). Its CPU readback has no result, so the GM skips on the raster sink.
+crate::def_gm!(
+    AsyncReadRoseYuvaGm = "images/yellow_rose.webp",
+    AsyncRescaleAndReadGridGm::new(
+        "async_rescale_and_read_yuv420_rose",
+        "images/yellow_rose.webp",
+        IRect::from_xywh(50, 5, 200, 150),
+        ISize::new(410, 376),
+        ReadSource::Surface,
+    )
+    .with_grid_type(GridType::Yuva)
+);
+// Port of: gm/asyncrescaleandread.cpp#L491-L494 (chrome/m156), the yuv420_rose_down registration
+// (kYUV from an image). Its CPU readback has no result, so the GM skips on the raster sink.
+crate::def_gm!(
+    AsyncReadRoseYuvDownGm = "images/yellow_rose.webp#2",
+    AsyncRescaleAndReadGridGm::new(
+        "async_rescale_and_read_yuv420_rose_down",
+        "images/yellow_rose.webp",
+        IRect::from_xywh(50, 5, 200, 150),
+        ISize::new(106, 60),
+        ReadSource::Image,
+    )
+    .with_grid_type(GridType::Yuv)
+);
+// Port of: gm/asyncrescaleandread.cpp#L499-L505 (chrome/m156), the RGBA DEF_RESCALE_AND_READ_GRID_GM
+// registrations.
 crate::def_gm!(
     AsyncReadRoseGm = "images/yellow_rose.webp#3",
     AsyncRescaleAndReadGridGm::new(
@@ -322,7 +391,15 @@ impl GM for AsyncRescaleAndReadNoBleedGm {
         canvas.translate((int_to_scalar(PAD), int_to_scalar(PAD)));
         let mut src = Source::Surface(surface);
         let down_size = ISize::new(INNER / 2, INNER / 2);
-        let result = draw_rescale_grid(canvas, &mut src, src_rect, down_size, error_msg, PAD);
+        let result = draw_rescale_grid(
+            canvas,
+            &mut src,
+            src_rect,
+            down_size,
+            GridType::Rgba,
+            error_msg,
+            PAD,
+        );
         if result != DrawResult::Ok {
             return result;
         }
@@ -334,7 +411,15 @@ impl GM for AsyncRescaleAndReadNoBleedGm {
             (f64::from(INNER) * 3.5) as i32,
             (f64::from(INNER) * 4.6) as i32,
         );
-        let result = draw_rescale_grid(canvas, &mut src, src_rect, up_size, error_msg, PAD);
+        let result = draw_rescale_grid(
+            canvas,
+            &mut src,
+            src_rect,
+            up_size,
+            GridType::Rgba,
+            error_msg,
+            PAD,
+        );
         if result != DrawResult::Ok {
             return result;
         }
