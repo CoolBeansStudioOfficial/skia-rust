@@ -14,6 +14,8 @@ pub const U_ZERO_ERROR: UErrorCode = 0;
 pub const U_ILLEGAL_ARGUMENT_ERROR: UErrorCode = 1;
 /// `U_MISSING_RESOURCE_ERROR`.
 pub const U_MISSING_RESOURCE_ERROR: UErrorCode = 2;
+/// `U_INVALID_FORMAT_ERROR`.
+pub const U_INVALID_FORMAT_ERROR: UErrorCode = 3;
 /// `U_BUFFER_OVERFLOW_ERROR`.
 pub const U_BUFFER_OVERFLOW_ERROR: UErrorCode = 15;
 

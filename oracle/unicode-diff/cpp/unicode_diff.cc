@@ -216,10 +216,10 @@ struct BreakIter {
 // `p:s` for first() and every next() until UBRK_DONE, with the raw rule status after each; current()
 // is checked to equal the position (SkBreakIterator_icu::current).
 std::string enumerate(const std::string& type, bool utf16, const std::string& text8, int* count,
-                      bool nav) {
+                      bool nav, const char* locale = "en") {
     UErrorCode status = U_ZERO_ERROR;
     BreakIter it;
-    it.bi = ubrk_open(break_type(type), "en", nullptr, 0, &status);
+    it.bi = ubrk_open(break_type(type), locale, nullptr, 0, &status);
     if (U_FAILURE(status)) return std::string("open-error:") + u_errorName(status);
     std::vector<UChar> u16 = to_utf16(decode_utf8(text8));
     int32_t len;
@@ -258,13 +258,23 @@ std::string enumerate(const std::string& type, bool utf16, const std::string& te
     return out;
 }
 
-struct BreakCase { const char* name; const char* type; bool utf16; bool nav; };
+// The locale of ubrk_open: `en` (the root rules), and the locales whose bundles in Chromium's brkitr tree
+// select other rule files (ja, ko, zh, zh_Hant: line_normal_cj and friends; el: sent_el; the lb keyword:
+// line, line_loose), as SkUnicode_icu.cpp passes them after uloc_forLanguageTag.
+struct BreakCase { const char* name; const char* type; bool utf16; bool nav; const char* locale; };
 const BreakCase kBreakCases[] = {
-    {"char-u8", "char", false, false},   {"char-u16", "char", true, false},
-    {"line-u8", "line", false, false},   {"line-u16", "line", true, false},
-    {"word-u8", "word", false, false},   {"word-u16", "word", true, false},
-    {"sent-u8", "sent", false, false},   {"sent-u16", "sent", true, false},
-    {"nav-line-u8", "line", false, true}, {"nav-word-u16", "word", true, true},
+    {"char-u8", "char", false, false, "en"},   {"char-u16", "char", true, false, "en"},
+    {"line-u8", "line", false, false, "en"},   {"line-u16", "line", true, false, "en"},
+    {"word-u8", "word", false, false, "en"},   {"word-u16", "word", true, false, "en"},
+    {"sent-u8", "sent", false, false, "en"},   {"sent-u16", "sent", true, false, "en"},
+    {"nav-line-u8", "line", false, true, "en"}, {"nav-word-u16", "word", true, true, "en"},
+    {"line-zh-u8", "line", false, false, "zh_Hans_CN"},
+    {"line-ja-u8", "line", false, false, "ja_JP"},
+    {"line-ja-normal-u8", "line", false, false, "ja@lb=normal"},
+    {"line-strict-u8", "line", false, false, "en@lb=strict"},
+    {"line-loose-u8", "line", false, false, "en_US@lb=loose"},
+    {"line-ko-strict-u8", "line", false, false, "ko@lb=strict"},
+    {"sent-el-u8", "sent", false, false, "el_GR"},
 };
 
 void run_breaks(const std::vector<Source>& corpus) {
@@ -272,7 +282,7 @@ void run_breaks(const std::vector<Source>& corpus) {
         for (const Source& s : corpus) {
             for (size_t i = 0; i < s.strings.size(); i++) {
                 int n = 0;
-                std::string d = enumerate(c.type, c.utf16, s.strings[i], &n, c.nav);
+                std::string d = enumerate(c.type, c.utf16, s.strings[i], &n, c.nav, c.locale);
                 emit_row(c.name, s, i, (size_t)n, d);
             }
         }

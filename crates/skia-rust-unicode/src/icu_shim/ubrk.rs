@@ -25,7 +25,7 @@ use icu_segmenter::{GraphemeClusterSegmenter, LineSegmenter, SentenceSegmenter, 
 use super::data::{BreakDataSource, CompiledData, LineStrictness};
 use super::rule_status;
 use super::uloc::{LocaleParts, uloc_get_default};
-use super::utypes::{U_MISSING_RESOURCE_ERROR, UErrorCode};
+use super::utypes::{U_INVALID_FORMAT_ERROR, U_MISSING_RESOURCE_ERROR, UErrorCode};
 
 /// `UBRK_DONE`.
 pub const UBRK_DONE: i32 = -1;
@@ -136,8 +136,9 @@ fn rule_file(name: &str) -> Option<BreakRules> {
 /// table of the locale's bundle and its parents (`ures_getByKeyWithFallback`).
 ///
 /// # Errors
-/// `U_MISSING_RESOURCE_ERROR` when the key or its rule file does not exist (`ko@lb=strict`,
-/// `UBRK_TITLE`).
+/// `U_MISSING_RESOURCE_ERROR` when no bundle has the key; `U_INVALID_FORMAT_ERROR` when the key
+/// names a rule file that is not in the data (`ko@lb=strict`: `line_cj.brk`; `UBRK_TITLE`:
+/// `title.brk`), as Chromium's ICU reports (measured with `oracle/unicode-diff`, `line-ko-strict-u8`).
 pub fn resolve_rules(kind: UBreakIteratorType, locale: &str) -> Result<BreakRules, UErrorCode> {
     let parts = LocaleParts::parse(locale);
     let key = match kind {
@@ -173,7 +174,7 @@ pub fn resolve_rules(kind: UBreakIteratorType, locale: &str) -> Result<BreakRule
             .iter()
             .find(|(b, k, _)| b == bundle && *k == key)
         {
-            return rule_file(file).ok_or(U_MISSING_RESOURCE_ERROR);
+            return rule_file(file).ok_or(U_INVALID_FORMAT_ERROR);
         }
     }
     Err(U_MISSING_RESOURCE_ERROR)
@@ -395,7 +396,7 @@ impl UBreakIterator {
     /// default locale, as a null `locale` in ICU.
     ///
     /// # Errors
-    /// `U_MISSING_RESOURCE_ERROR` when ICU has no rules for the type and locale ([`resolve_rules`]).
+    /// When ICU has no rules for the type and locale ([`resolve_rules`]).
     #[doc(alias = "ubrk_open")]
     pub fn open(kind: UBreakIteratorType, locale: Option<&str>) -> Result<Self, UErrorCode> {
         Self::open_with_data(kind, locale, &CompiledData)
