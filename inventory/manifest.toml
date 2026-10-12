@@ -18713,8 +18713,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1061-L1061"
 module = "effects"
-status = "todo"
-reason = "needs TextureSetRenderer with color, image and mask filter paints (effects); not ported"
+status = "passing"
 span_hash = "a4a296604e5ae628158a09de482008e91ff1c1cad67625110dd9f06b6b402e12"
 
 [[test]]
@@ -18723,8 +18722,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1060-L1060"
 module = "raster"
-status = "todo"
-reason = "needs the YUV texture-set renderer (JPEG decoded to YUV planes) and TextureSetRenderer batching; not ported"
+status = "passing"
 span_hash = "e3c6f4ceb0fc30242793ca02a4d9ec886a7aa21225a11c2a558445463bfb8bd6"
 
 [[test]]
@@ -18733,8 +18731,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1059-L1059"
 module = "effects"
-status = "todo"
-reason = "needs TextureSetRenderer with shader paints (effects); not ported"
+status = "passing"
 span_hash = "9dca3a98ae0a2421a79916683e05a3bdf84662cf6859cfd9520dfea7a2751787"
 
 [[test]]
