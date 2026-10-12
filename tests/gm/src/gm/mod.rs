@@ -201,6 +201,7 @@ pub mod hairlines;
 pub mod hairmodes;
 pub mod hardstop_gradients;
 pub mod hardstop_gradients_many;
+pub mod hdr_pip_blur;
 pub mod highcontrastfilter;
 pub mod hittestpath;
 pub mod hsl;
