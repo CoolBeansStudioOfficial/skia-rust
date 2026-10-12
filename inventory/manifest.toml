@@ -28561,8 +28561,7 @@ kind = "unit"
 macro = "DEF_TEST_ICU_UNICODES"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L143-L158"
 module = "unicode"
-status = "todo"
-reason = "needs the bidi engine (M3, decision Q8): the test runs only on ICU / ICU4X, not on the client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "f345d66d79ef866feda6a33242247b8d685ad9bb5d942679243698c3266f7086"
 
 [[test]]
@@ -28571,8 +28570,7 @@ kind = "unit"
 macro = "DEF_TEST_ICU_UNICODES"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L177-L210"
 module = "unicode"
-status = "todo"
-reason = "needs the bidi engine (M3, decision Q8): the test runs only on ICU / ICU4X, not on the client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "e2cb3b4372027626a43864a4597312d224e0c2c1c7ff4d09a3b704c334f9bacb"
 
 [[test]]
@@ -28581,8 +28579,7 @@ kind = "unit"
 macro = "DEF_TEST_ICU_UNICODES"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L212-L235"
 module = "unicode"
-status = "todo"
-reason = "needs the bidi engine (M3, decision Q8): the test runs only on ICU / ICU4X, not on the client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "151fe5cbabce4f5b53478b87dcdbd8a95bd2300b903676e8727426148f17531b"
 
 [[test]]
@@ -28591,8 +28588,7 @@ kind = "unit"
 macro = "DEF_TEST_ICU_UNICODES"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L160-L175"
 module = "unicode"
-status = "todo"
-reason = "needs the bidi engine (M3, decision Q8): the test runs only on ICU / ICU4X, not on the client implementation (modules.md 3.2)"
+status = "passing"
 span_hash = "a741bcbb2e67e880db48897ba940cd9b19302d4aea1b4e7273bc2925576a2917"
 
 [[test]]
@@ -28631,8 +28627,7 @@ kind = "unit"
 macro = "DEF_TEST_UNICODES"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L286-L302"
 module = "unicode"
-status = "todo"
-reason = "needs the bidi engine (M3, decision Q8): DEF_TEST_UNICODES runs only with an ICU, ICU4X or libgrapheme implementation, not the client (modules.md 3.2)"
+status = "passing"
 span_hash = "8e87e6fe136cd582e6574dbd31bf00c4455c7611a768625a60c11b54544585ca"
 
 [[test]]

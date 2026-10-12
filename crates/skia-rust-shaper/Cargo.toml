@@ -1,0 +1,17 @@
+[package]
+name = "skia-rust-shaper"
+description = "The SkShaper module of skia-rust: the shaper API, run iterators, the primitive shaper and the shaper factories"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-unicode.workspace = true
+
+[lints]
+workspace = true
