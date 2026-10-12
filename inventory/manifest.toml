@@ -53474,8 +53474,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L17-L54"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "93fa00027f66a2a0e78cc04385abe16e594c537da0b4844bb32007f6f5a96e53"
 
 [[test]]
@@ -53484,8 +53483,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L56-L85"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "996f277b86123bd6ab8f12f801c462fad2722c5d5df794683e5ae7bdf284819f"
 
 [[test]]
@@ -53494,8 +53492,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L236-L266"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "69d6e620088158f4435a88aa613aef074197e90aae4e16220ec8595c278fca23"
 
 [[test]]
@@ -53504,8 +53501,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L268-L338"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "f3c496a72d45f8867c8de3f168fc3caf1eec8fc2ff5aff432e4a27b56766afb7"
 
 [[test]]
@@ -53514,8 +53510,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L87-L184"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "04acf4546249a04d1ae7d79bb7ad37bffd5a7ad163a9fc0470f9a49e4f800e41"
 
 [[test]]
@@ -53524,8 +53519,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L340-L396"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "18dba13598a45e3a9f071489495ee75d59d5373f3654ad5067b57888df82899f"
 
 [[test]]
@@ -53534,8 +53528,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L186-L234"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "a01e59db8ed139eb87ab9136fae8023bb141a705bda9a842bc5d680e06fb5440"
 
 [[test]]
@@ -53544,8 +53537,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/ClipTest.cpp#L192-L192"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "6a182e0ec52a781aa12be2ec8365cb6eaa4e3f2c0a0b72c49ee185bcbe931c73"
 
 [[test]]
@@ -53554,8 +53546,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/ClipTest.cpp#L194-L194"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "7cb71ec2e31c95e337e74ae8040d55ef97f999b25612ec5524794da71e08c9fa"
 
 [[test]]
@@ -53564,8 +53555,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L307-L315"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "d861c53351150872f2b1646f7ed9e32e24be276accd7505333420f11e7876358"
 
 [[test]]
@@ -53574,8 +53564,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L317-L325"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "f92d6c378bc3d0b673cf6343fcf24b8635ada25c6e5cd27f8869232aa353f933"
 
 [[test]]
@@ -53584,8 +53573,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L297-L305"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "a6b0585d72d6ecc3be9c1ad468f6cca6e00f96a3af86e84609f9ec1edcbde66b"
 
 [[test]]
@@ -53594,8 +53582,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L327-L334"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "677bc0d9e8c06f4b177ef75afee39f275bdf96a1a76dd2115b79aafd121457ab"
 
 [[test]]
@@ -53604,8 +53591,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L336-L343"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "d6ef276f110274b0dd9fe47face211f70954afdaa30c4b1e77acd7c48cbc69dd"
 
 [[test]]
@@ -53614,8 +53600,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/FlattenTest.cpp#L655-L657"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "ad30d99067d9307ed4267f0b190cb40edc8657bb8de3f6697810d6e9a3ab822c"
 
 [[test]]
@@ -53624,8 +53609,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/FlattenTest.cpp#L651-L653"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "383dee66b798045b2db43ffe7c2678e5c8f039c9a0e7dd1bf442b89a60974e5a"
 
 [[test]]
@@ -53634,8 +53618,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/LUTTest.cpp#L158-L164"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "2d760c9462a6ff86885854c9b016cd3da856873449dcabb5c4b75546660be5d7"
 
 [[test]]
@@ -53644,8 +53627,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/OracleTest.cpp#L238-L313"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "85680617c54c7928e88eaeb6f2ed16f0630f1f4bfc0fcffe642dc4e1a1c2cb1f"
 
 [[test]]
@@ -53654,8 +53636,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/OracleTest.cpp#L139-L236"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "d82e9a89a852a514e6f4da84d4c6a6ac2c1f4081a04e74188e2ec452defbc49e"
 
 [[test]]
@@ -53664,8 +53645,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/PolylineTest.cpp#L19-L154"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "f470115d1d74904f61aaa6dab23b415bf12f1c40750a20e69f605b65a832e026"
 
 [[test]]
@@ -53674,8 +53654,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/PolylineTest.cpp#L156-L435"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "failing"
+reason = "see notes/tests_graphite_sparse_strips_PolylineTest_cpp_SparseStrips_Polyline_Integrated.md (the pinned Flatten.cpp closes a contour of culled curves with its last and start points; the pinned test expects them deduplicated, which upstream main does after a later fix)"
 span_hash = "face46144c54733b57731aec0e76d81e387dbabfcbad03b07ee1951e963c8714"
 
 [[test]]
@@ -53684,8 +53664,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/TilerTest.cpp#L256-L258"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "ae00c747a15c1e7a538611786acffcb7ddd01daeeb789f1891b712a153274141"
 
 [[test]]
@@ -53694,8 +53673,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/TilerTest.cpp#L260-L262"
 module = "gpu"
-status = "todo"
-reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
+status = "passing"
 span_hash = "39a92d2e1fbd431fa1d5621991075bdf1a48d161a61e3028201016ebbadf3d81"
 
 [[test]]

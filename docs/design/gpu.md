@@ -759,6 +759,21 @@ with the full texts in the release, as in `rp-diff`.
   noop adapter. `CacheKeyTest` (2) needs `ImageProvider` and `Image_Graphite` (G10), and
   `PaintParamsKeyTest` (2) the Precompile API (G14).
 
+**Status after G17** (`port/gpu-sparse-strips`): `graphite::sparse_strips` is ported with the 23
+`tests/graphite/sparse_strips` tests (Q5): `Polyline`, `Flatten` (scalar and `skvx` flattening of
+lines, quads, conics, cubics, with culling and simplification), `MSAA_LUT`, `Tiler` (`Tile`,
+`Tiles`, `ClipToTile`), `StripProcessorScalar` and `StripProcessorSimd` (the SWAR bytes of the C++
+as `[u8; 8]` pixels; the byte operations are the same), `MakeStrips`, `StripGenerator`,
+`AlphaAtlasManager` (which takes the `Recorder` per call, like `DrawAtlas`, instead of keeping a
+pointer), `EndCaps` and `WideTiles`. `AtlasProvider` owns the `AlphaAtlasManager` and
+`GlobalCache::get_msaa8_mask_lut()` builds the 8x LUT lazily. The test helpers (`Oracle`,
+`OracleValidator`, `SkpValidator`, `CoverageTestUtils`, `TileTestCases`) are in
+`tests/src/tools/sparse_strips`. Not ported: `WideTileRenderStep`, `EndCapRenderStep`, the
+`Geometry::{EndCaps, WideTiles}` variants, `RendererProvider::sparseStrips*`,
+`PathRendererStrategy::kCPUSparseStripsMSAA8` and `Device`'s use of `StripGenerator`
+(`SK_ENABLE_SPARSE_STRIPS`, compiled out of the oracle build and used by no test or GM), nor the
+`endcap_coverage_fn` snippet of `sksl_graphite_frag.sksl`.
+
 **Status after G7c** (`port/gpu-g7c`): `RendererProvider` holds every renderer of the oracle build
 (the sparse-strip renderers excepted, Q5). `AnalyticBlurRenderStep` and `AnalyticRRectBlurRenderStep`
 are ported with their geometry (`Geometry::AnalyticBlur`, `AnalyticRRectBlur`), the

@@ -13,6 +13,8 @@ pub mod sksl_goldens;
 pub mod sksl_minify;
 pub mod sksl_trace_utils;
 pub mod skslc;
+#[cfg(test)]
+pub mod sparse_strips;
 pub mod test_surface;
 pub mod tool_utils;
 pub mod unique_key_utils;
