@@ -1,7 +1,8 @@
 # tag fn n xmode xlo xhi [ymode ylo yhi]   (see examples/probe.rs; earlier rounds: probe-jobs.round*.txt)
-# atan2f takes (y, x) = (first, second)
-atan2f_t1 atan2f 1000000 bits 0.001 0.1 bits 10 1000
-atan2f_t2 atan2f 1000000 bits 0.0001 0.01 bits 1 100
-atan2f_t3 atan2f 1000000 bits 0.01 1 bits 0.01 1
-atan2f_t4 atan2f 1000000 bits 1 1000 bits 0.01 1
-atan2f_t5 atan2f 1000000 symbits 0.00001 100000 symbits 0.00001 100000
+# cbrtf scale invariance: same mantissas (equal tag length and n give equal samples) in binades 2^0, 2^1, ... 2^5
+cbrtf_sa cbrtf 1000000 bits 1.0 1.9999999
+cbrtf_sc cbrtf 1000000 bits 2.0 3.9999998
+cbrtf_se cbrtf 1000000 bits 4.0 7.999999
+cbrtf_sb cbrtf 1000000 bits 8.0 15.999998
+cbrtf_sd cbrtf 1000000 bits 16.0 31.999996
+cbrtf_sf cbrtf 1000000 bits 32.0 63.99999
