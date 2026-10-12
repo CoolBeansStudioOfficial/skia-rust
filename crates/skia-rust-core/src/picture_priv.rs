@@ -142,6 +142,16 @@ pub const VERSION_RAW_IMAGE_SHADERS: u32 = 91;
 // Port of: src/core/SkPicturePriv.h#L161 (chrome/m156)
 pub const VERSION_NO_SHADER_LOCAL_MATRIX: u32 = 94;
 
+/// The version where runtime image filters started to serialize their sample radius
+/// (`kRuntimeImageFilterSampleRadius`).
+// Port of: src/core/SkPicturePriv.h#L164 (chrome/m156)
+pub const VERSION_RUNTIME_IMAGE_FILTER_SAMPLE_RADIUS: u32 = 97;
+
+/// The version where runtime image filters started to serialize their output restriction
+/// (`kRuntimeImageFilterRestrictedOutput`).
+// Port of: src/core/SkPicturePriv.h#L177 (chrome/m156)
+pub const VERSION_RUNTIME_IMAGE_FILTER_RESTRICTED_OUTPUT: u32 = 110;
+
 /// The shared ID of the resource cache entries made from picture `picture_id`
 /// (`SkPicturePriv::MakeSharedID`).
 // Port of: src/core/SkPicturePriv.h#L61-L64 (chrome/m156), `MakeSharedID`

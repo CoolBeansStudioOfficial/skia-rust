@@ -15,6 +15,7 @@
 use crate::canvas::Canvas;
 use crate::checksum::cheap_mix;
 use crate::drawable::{Drawable, DrawableBase};
+use crate::flattenable::FlattenableRegistry;
 use crate::font_types::GlyphId;
 use crate::mask::{Mask, MaskFormat};
 use crate::packed_glyph_id::PackedGlyphId;
@@ -1119,12 +1120,25 @@ impl PictureBackedGlyphDrawable {
         Drawable::new(std::sync::Arc::new(Self { picture }))
     }
 
-    /// `SkPictureBackedGlyphDrawable::MakeFromBuffer`: the drawable of the picture that the buffer
-    /// holds. `None` for an empty drawable (which is written as an empty byte array), and for an
-    /// invalid buffer or picture, which also invalidates the buffer.
+    /// `SkPictureBackedGlyphDrawable::MakeFromBuffer`, reading the flattenables of the picture
+    /// with no registry: a picture with shaders, color filters or blenders is rejected. Use
+    /// [`from_buffer_with_registry`](Self::from_buffer_with_registry) for those.
     // Port of: src/core/SkGlyph.cpp#L38-L65 (chrome/m156), MakeFromBuffer
     #[must_use]
     pub fn from_buffer(buffer: &mut ReadBuffer<'_>) -> Option<Drawable> {
+        Self::from_buffer_with_registry(buffer, &FlattenableRegistry::EMPTY)
+    }
+
+    /// `SkPictureBackedGlyphDrawable::MakeFromBuffer`: the drawable of the picture that the buffer
+    /// holds. `None` for an empty drawable (which is written as an empty byte array), and for an
+    /// invalid buffer or picture, which also invalidates the buffer. The picture's flattenables
+    /// are read with `registry` (Skia's are global; skia-rust passes them).
+    // Port of: src/core/SkGlyph.cpp#L38-L65 (chrome/m156), MakeFromBuffer
+    #[must_use]
+    pub fn from_buffer_with_registry(
+        buffer: &mut ReadBuffer<'_>,
+        registry: &FlattenableRegistry,
+    ) -> Option<Drawable> {
         let (data, size) = buffer.skip_byte_array();
         // Return nullptr if invalid or there an empty drawable, which is represented by nullptr.
         if !buffer.is_valid() || size == 0 {
@@ -1141,7 +1155,7 @@ impl PictureBackedGlyphDrawable {
             disallow_sksl: true,
             ..DeserialProcs::default()
         };
-        let picture = Picture::from_data(data, Some(&procs));
+        let picture = Picture::from_data_with_registry(data, Some(&procs), registry);
         if !buffer.validate(picture.is_some()) {
             return None;
         }

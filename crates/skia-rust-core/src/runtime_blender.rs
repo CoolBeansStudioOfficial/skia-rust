@@ -5,18 +5,19 @@
 
 //! `SkRuntimeBlender`: a blender that runs a [`RuntimeEffect`] through the Raster Pipeline.
 //!
-//! skia-rust: flattening is not ported.
-
 use core::fmt;
 
 use crate::blender::{BlenderBase, BlenderType};
 use crate::capabilities::Capabilities;
 use crate::data::Data;
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
 use crate::matrix::Matrix;
+use crate::read_buffer::ReadBuffer;
 use crate::runtime_effect::{ChildPtr, RuntimeEffect};
 use crate::runtime_effect_priv::{self as priv_, RuntimeEffectRpCallbacks};
 use crate::shaders::shader_base::MatrixRec;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// A blender that runs a [`RuntimeEffect`] (`SkRuntimeBlender`).
 // Port of: src/core/SkRuntimeBlender.h#L24-L51 (chrome/m156)
@@ -68,7 +69,36 @@ impl RuntimeBlender {
     }
 }
 
+/// `SkRuntimeBlender::CreateProc`: rebuilds a runtime blender from its effect, uniforms and
+/// children.
+// Port of: src/core/SkRuntimeBlender.cpp#L49-L89 (chrome/m156), CreateProc
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<crate::blender::Blender> {
+    let effect = priv_::read_effect(buffer, |sksl, options| {
+        RuntimeEffect::make_for_blender(sksl, options)
+    })?;
+    let uniforms = buffer
+        .read_byte_array_as_data()
+        .unwrap_or_else(Data::new_empty);
+    let children = priv_::read_child_effects(buffer, &effect, registry)?;
+    effect.make_blender(uniforms, &children)
+}
+
 impl BlenderBase for RuntimeBlender {
+    // Port of: src/core/SkRuntimeBlender.h#L41 (chrome/m156), SK_FLATTENABLE_HOOKS (getTypeName)
+    fn type_name(&self) -> &'static str {
+        "SkRuntimeBlender"
+    }
+
+    // Port of: src/core/SkRuntimeBlender.cpp#L37-L47 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        priv_::write_stable_key_or_source(buffer, &self.effect);
+        buffer.write_byte_array(self.uniforms.as_bytes());
+        priv_::write_child_effects(buffer, &self.children);
+    }
+
     // Port of: src/core/SkRuntimeBlender.cpp#L104-L125 (chrome/m156)
     fn on_append_stages(&self, rec: &mut StageRec<'_, '_>) -> bool {
         if !priv_::can_draw(Capabilities::raster_backend(), &self.effect) {

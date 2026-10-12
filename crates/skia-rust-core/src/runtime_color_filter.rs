@@ -6,7 +6,7 @@
 //! `SkRuntimeColorFilter`: a color filter that runs a [`RuntimeEffect`] through the Raster
 //! Pipeline.
 //!
-//! skia-rust: flattening and `asRuntimeEffect` are not ported.
+//! skia-rust: `asRuntimeEffect` is not ported.
 
 use core::fmt;
 
@@ -15,9 +15,7 @@ use crate::color_filter::{ColorFilterBase, ColorFilterType};
 use crate::data::Data;
 use crate::effect_priv::StageRec;
 use crate::flattenable::FlattenableRegistry;
-use crate::known_runtime_effects::{is_skia_known_runtime_effect, maybe_get_known_runtime_effect};
 use crate::matrix::Matrix;
-use crate::picture_priv;
 use crate::read_buffer::ReadBuffer;
 use crate::runtime_effect::{ChildPtr, RuntimeEffect};
 use crate::runtime_effect_priv::{self as priv_, RuntimeEffectRpCallbacks};
@@ -33,46 +31,21 @@ pub struct RuntimeColorFilter {
     children: Vec<ChildPtr>,
 }
 
-/// `SkRuntimeColorFilter::CreateProc`. An effect that is not a known stable key carries `SkSL`
-/// source, which is not compiled here, so such a filter is not read.
+/// `SkRuntimeColorFilter::CreateProc`: rebuilds a runtime color filter from its effect, uniforms
+/// and children.
 // Port of: src/effects/colorfilters/SkRuntimeColorFilter.cpp#L89-L125 (chrome/m156), CreateProc
 pub fn create_proc(
     buffer: &mut ReadBuffer<'_>,
-    _registry: &FlattenableRegistry,
+    registry: &FlattenableRegistry,
 ) -> Option<crate::color_filter::ColorFilter> {
-    // `buffer.allowSkSL()` is true by default, and the reader never turns it off.
-    let mut effect = None;
-    if !buffer.is_version_lt(picture_priv::VERSION_SERIALIZE_STABLE_KEYS) {
-        let candidate = buffer.read_uint();
-        effect = maybe_get_known_runtime_effect(candidate);
-        if effect.is_none() && !buffer.validate(candidate == 0) {
-            return None;
-        }
-    }
-    let Some(effect) = effect else {
-        // The SkSL source is read and compiled by Skia; the compiler is not ported.
-        let _ = buffer.read_string();
-        return None;
-    };
+    let effect = priv_::read_effect(buffer, |sksl, options| {
+        RuntimeEffect::make_for_color_filter(sksl, options)
+    })?;
     let uniforms = buffer
         .read_byte_array_as_data()
         .unwrap_or_else(Data::new_empty);
-
-    // `SkRuntimeEffectPriv::ReadChildEffects`: the count must match the effect's children.
-    let child_count = buffer.read32();
-    let matches = usize::try_from(child_count).ok() == Some(effect.children().len());
-    if !buffer.validate(matches) {
-        return None;
-    }
-    if child_count != 0 {
-        // Child effects are read with `readRawFlattenable`, which is not ported.
-        buffer.validate(false);
-        return None;
-    }
-    if !buffer.is_valid() {
-        return None;
-    }
-    effect.make_color_filter(uniforms, &[])
+    let children = priv_::read_child_effects(buffer, &effect, registry)?;
+    effect.make_color_filter(uniforms, &children)
 }
 
 impl fmt::Debug for RuntimeColorFilter {
@@ -123,27 +96,10 @@ impl ColorFilterBase for RuntimeColorFilter {
     }
 
     // Port of: src/effects/colorfilters/SkRuntimeColorFilter.cpp#L75-L85 (chrome/m156), flatten
-    // skia-rust: only the Skia-internal effects are written by stable key. An effect that is
-    // not one of them is written with its SkSL source, which is not ported, so its flatten fails.
     fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
-        let stable_key = self
-            .effect
-            .0
-            .stable_key
-            .load(std::sync::atomic::Ordering::Relaxed);
-        if is_skia_known_runtime_effect(stable_key.cast_signed()) {
-            buffer.write_uint(stable_key);
-        } else {
-            buffer.write_uint(0);
-            buffer.mark_flatten_failed();
-        }
+        priv_::write_stable_key_or_source(buffer, &self.effect);
         buffer.write_byte_array(self.uniforms.as_bytes());
-        // `WriteChildEffects`: the count, then each child (none are written here).
-        let child_count = u32::try_from(self.children.len()).unwrap_or(u32::MAX);
-        buffer.write_uint(child_count);
-        if !self.children.is_empty() {
-            buffer.mark_flatten_failed();
-        }
+        priv_::write_child_effects(buffer, &self.children);
     }
 
     // Port of: src/effects/colorfilters/SkRuntimeColorFilter.cpp#L43-L63 (chrome/m156)

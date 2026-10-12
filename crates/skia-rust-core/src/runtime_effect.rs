@@ -13,7 +13,8 @@
 //! program under a mutex, because the Raster Pipeline code generator needs `&mut Program`
 //! (it allocates literals in the program's pool) where Skia's takes `const Program&`. Color
 //! filters and blenders (`makeColorFilter`, `makeBlender`, `SkRuntimeColorFilter`,
-//! `SkRuntimeBlender`) are S19; tracing (`MakeTraced`) is S23; flattening is not ported.
+//! `SkRuntimeBlender`) are S19; tracing (`MakeTraced`) is S23. The flattening of the runtime
+//! effects is in [`crate::runtime_effect_priv`] and the `CreateProc` of each kind.
 
 use core::any::Any;
 use core::fmt;
