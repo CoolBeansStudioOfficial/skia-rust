@@ -16538,8 +16538,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L483-L489"
 module = "codec"
-status = "todo"
-reason = "YUV[A]420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
+status = "passing"
 span_hash = "c20c68c8ff2779eb0ecbd4fd15157002c23a2d63b9ae7a23fbf4e5fa5d58da04"
 
 [[test]]
@@ -16548,8 +16547,7 @@ kind = "gm"
 macro = "DEF_RESCALE_AND_READ_GRID_GM"
 source = "gm/asyncrescaleandread.cpp#L491-L497"
 module = "codec"
-status = "todo"
-reason = "YUV420 readback has no CPU implementation: SkSurface_Base::onAsyncRescaleAndReadPixelsYUV420 calls back with no result, so the GM skips on the raster sink; no golden to compare with"
+status = "passing"
 span_hash = "59cb3f4b6de73888618938253e0b6da6b3d2d0679009c532000efeda1ced7ead"
 
 [[test]]
@@ -23784,8 +23782,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/readpixels.cpp#L251-L251"
 module = "codec"
-status = "todo"
-reason = "needs a colour-space canvas: the harness canvas has none, so this GM skips on every config (DM also skips, no golden); not checkable here"
+status = "passing"
 span_hash = "690aaa8bcf5db1c548ac07c6de57c6d5c42f99fc28e03418f1edefe0c777cfa4"
 
 [[test]]
@@ -25461,8 +25458,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobrandomfont.cpp#L184-L184"
 module = "text"
-status = "todo"
-reason = "needs SkRandomTypeface (tools/fonts/RandomScalerContext, not ported) to build its blob"
+status = "passing"
 span_hash = "776042e03056c012e05ba439cb77657eeb20a3954def20d0fe79fc28ac511bbf"
 
 [[test]]
