@@ -1041,7 +1041,11 @@ fn copy_mask_intersection(src: &MaskBuilder, dst: &mut MaskBuilder) {
         dst.image.iter_mut().for_each(|b| *b = 0);
     }
     let width = usize::try_from(inter.width().max(0)).unwrap_or(0);
-    let height = usize::try_from(inter.height().max(0)).unwrap_or(0);
+    let mut height = usize::try_from(inter.height().max(0)).unwrap_or(0);
+    // `if (SkMask::k3D_Format == srcMask.fFormat) height *= 3;`: the three planes are stacked.
+    if src.format == MaskFormat::ThreeD {
+        height *= 3;
+    }
     let src_rb = src.row_bytes as usize;
     let dst_rb = dst.row_bytes as usize;
     let src_off = usize::try_from(inter.top - src.bounds.top).unwrap_or(0) * src_rb
