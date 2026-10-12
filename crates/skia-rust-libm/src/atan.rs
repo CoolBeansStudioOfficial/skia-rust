@@ -19,26 +19,37 @@ const A: [f64; 4] = [
 ];
 const B: [f64; 3] = [1.0, 1.248_594_539_087_201_3, 0.336_465_095_295_476_9];
 
-/// `atan(w)` for `0 <= w < 7/16`.
-fn core(w: f64) -> f64 {
-    let u = w * w;
-    let p = A.iter().rev().fold(0.0, |s, &c| s * u + c);
-    let q = B.iter().rev().fold(0.0, |s, &c| s * u + c);
-    w * p / q
+/// Rational core coefficients (numerator, denominator in `w^2`, lowest order first).
+pub(crate) struct Core {
+    pub(crate) a: &'static [f64],
+    pub(crate) b: &'static [f64],
 }
 
-/// `atan(t)` for `t >= 0`, in double precision.
-pub(crate) fn atan_pos(t: f64) -> f64 {
-    if t < 0.4375 {
-        core(t)
-    } else if t < 0.6875 {
-        ATAN_HALF + core((t - 0.5) / (1.0 + 0.5 * t))
-    } else if t < 1.1875 {
-        FRAC_PI_4 + core((t - 1.0) / (t + 1.0))
-    } else if t < 2.4375 {
-        ATAN_ONE_AND_HALF + core((t - 1.5) / (1.0 + 1.5 * t))
-    } else {
-        FRAC_PI_2 - core(1.0 / t)
+/// The core used by `atanf`.
+pub(crate) const ATANF_CORE: Core = Core { a: &A, b: &B };
+
+impl Core {
+    /// `atan(w)` for `0 <= w < 7/16`.
+    fn eval(&self, w: f64) -> f64 {
+        let u = w * w;
+        let p = self.a.iter().rev().fold(0.0, |s, &c| s * u + c);
+        let q = self.b.iter().rev().fold(0.0, |s, &c| s * u + c);
+        w * p / q
+    }
+
+    /// `atan(t)` for `t >= 0`, in double precision (five-interval reduction).
+    pub(crate) fn atan_pos(&self, t: f64) -> f64 {
+        if t < 0.4375 {
+            self.eval(t)
+        } else if t < 0.6875 {
+            ATAN_HALF + self.eval((t - 0.5) / (1.0 + 0.5 * t))
+        } else if t < 1.1875 {
+            FRAC_PI_4 + self.eval((t - 1.0) / (t + 1.0))
+        } else if t < 2.4375 {
+            ATAN_ONE_AND_HALF + self.eval((t - 1.5) / (1.0 + 1.5 * t))
+        } else {
+            FRAC_PI_2 - self.eval(1.0 / t)
+        }
     }
 }
 
@@ -48,7 +59,7 @@ pub fn atanf(x: f32) -> f32 {
     if x.is_nan() {
         return f32::from_bits(x.to_bits() | 0x0040_0000);
     }
-    (atan_pos(f64::from(x.abs())) as f32).copysign(x)
+    (ATANF_CORE.atan_pos(f64::from(x.abs())) as f32).copysign(x)
 }
 
 #[cfg(test)]

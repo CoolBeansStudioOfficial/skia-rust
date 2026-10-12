@@ -16435,8 +16435,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L238-L305"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_arcto_cpp_parsedpaths.md (47 pixels differ; float libm trig in SVG arc conversion)"
+status = "passing"
 span_hash = "cdcf24cf04f8bba56ab060d99c0c86890f5a548e2bfe4bd5a7b37e34c0177104"
 
 [[test]]
@@ -22042,8 +22041,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilterstransformed.cpp#L318-L363"
 module = "effects"
-status = "failing"
-reason = "Ignored: perspective (m2) rows differ from the golden by 1 f16 ulp on 202 pixels, on every tier. Hypothesis: the 1-ulp error comes from cot = 1/tan(PI/6) via host libm tanf (glibc gives 0.5773503, correctly rounded is 0.57735026), which the oracle's UCRT may round differently. Not confirmed; stopped per the libm rule."
+status = "passing"
 span_hash = "a2ce37f21d7f73a67469fbf45c00970de152a09f523d6b38a3cd49da871b2974"
 
 [[test]]
@@ -23589,8 +23587,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pictureshader.cpp#L239-L306"
 module = "effects"
-status = "failing"
-reason = "blocked on libm: glibc tanf(pi/6) is 1 ulp above the UCRT value used by the oracle (SkM44::Perspective cot); passes on every tier with the UCRT value (port/libm). See notes/gm_pictureshader_cpp_pictureshader_persp.md"
+status = "passing"
 span_hash = "f0ac1763cc55e0128c976cc379a7e2e53b0a2dbdfaf09c99f580111842281a2e"
 
 [[test]]
@@ -24480,8 +24477,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L230-L232"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave tessellation ported; residual per-pixel mismatch on all tiers, not yet isolated)"
+status = "passing"
 span_hash = "e998c0e03a2a4dc6709478caa6737aab22e29492cfce76d4a6ce541f10334c7c"
 
 [[test]]
@@ -24509,8 +24505,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L238-L240"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave tessellation ported; residual per-pixel mismatch on all tiers, not yet isolated)"
+status = "passing"
 span_hash = "6b6329a0627983f383fcf90eead9edaf707c56adf2efbe88146395be0ad87a46"
 
 [[test]]
@@ -24519,8 +24514,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L234-L236"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave tessellation ported; residual per-pixel mismatch on all tiers, not yet isolated)"
+status = "passing"
 span_hash = "e1fd7a221e94f4fc7217cdecda0638f1699ff6414b1b06d2fa1ab1a5058627da"
 
 [[test]]
