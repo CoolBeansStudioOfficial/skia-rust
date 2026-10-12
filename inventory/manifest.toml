@@ -45443,8 +45443,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1478-L1530"
 module = "sksl"
-status = "todo"
-reason = "needs GrSkSLFP (Ganesh only)"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope (#if defined(SK_GANESH), GrSkSLFP)"
 span_hash = "c4ff78dc59ba0c7ffa6daf62af4e26b736d8dc2c86c77c3191153c77b23d529f"
 
 [[test]]
