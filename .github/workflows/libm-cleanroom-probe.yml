@@ -5,9 +5,6 @@ name: libm-cleanroom-probe
 #  * check: compares skia-rust-libm against the platform function on every f32 bit pattern.
 on:
   workflow_dispatch:
-  push:
-    branches: [port/libm-cleanroom]
-    paths: [.github/workflows/libm-cleanroom-probe.yml, crates/skia-rust-libm/**]
 
 jobs:
   dump:

@@ -268,8 +268,8 @@ pub fn scalar_acos(val: scalar) -> scalar {
 #[doc(alias = "SkScalarATan2")]
 #[must_use]
 pub fn scalar_atan2(y: scalar, x: scalar) -> scalar {
-    // skia-rust: libm (bit-identical to the oracle's UCRT)
-    crate::libm::atan2f(y, x)
+    // skia-rust: libm (the clean-room atan2f is not bit-exact, so the platform function stays)
+    y.atan2(x)
 }
 
 /// `exp(x)`.

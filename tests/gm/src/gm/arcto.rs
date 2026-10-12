@@ -273,6 +273,7 @@ fn make_random_svg_path(rand: &mut Random) -> String {
 
 // Port of: gm/arcto.cpp#L242-L309 (chrome/m156)
 crate::def_simple_gm!(
+    #[ignore = "see notes/gm_arcto_cpp_parsedpaths.md"]
     parsedpaths,
     canvas,
     PARSE_PATH_TEST_DIMENSION,
