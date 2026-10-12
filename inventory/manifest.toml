@@ -42661,8 +42661,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderImageFilterTest.cpp#L213-L217"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::RuntimeShader (include/effects/SkImageFilters.h), which is not in the port"
+status = "passing"
 span_hash = "e0f4fe37e83622e4f04f5b9a1bcec2124116d93cc5f6a9b157242608d59b857f"
 
 [[test]]
@@ -43274,8 +43273,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L465-L498"
 module = "text"
-status = "todo"
-reason = "SkReadBuffer's allow-SkSL flag (and SkDeserialProcs::fAllowSkSL, set by SkPictureBackedGlyphDrawable::MakeFromBuffer) is ported; the test needs SkRuntimeShader/SkRuntimeColorFilter/SkRuntimeBlender/RuntimeShader image filter flatten and unflatten (picture serialization of runtime effects), not ported"
+status = "passing"
 span_hash = "c4da3936b011501e75a2e716fecf8a7a69f74d245d9063f44c8205b10abd5da1"
 
 [[test]]

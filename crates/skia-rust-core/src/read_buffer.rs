@@ -37,6 +37,7 @@ use crate::point::Point;
 use crate::rect::{IRect, Rect};
 use crate::region::Region;
 use crate::rrect::RRect;
+use crate::runtime_effect::ChildPtr;
 use crate::sampling_options::{CubicResampler, FilterMode, MipmapMode, SamplingOptions};
 use crate::serial_procs::DeserialProcs;
 use crate::shader::Shader;
@@ -804,13 +805,6 @@ impl ReadBuffer<'_> {
         rrect
     }
 
-    /// Reads a flattenable that is not ported yet, which can only be null here: the writer
-    /// wrote a zero word. Otherwise the buffer is invalidated. Returns whether it is still valid.
-    fn read_null_flattenable(&mut self) -> bool {
-        let word = self.read32();
-        self.validate(word == 0)
-    }
-
     /// Reads a shader written by `writeFlattenable` (`readShader`). `registry` maps the names to
     /// their factories. A null shader is `None`, as is an error (see the buffer's validity).
     // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), `readShader`
@@ -865,11 +859,49 @@ impl ReadBuffer<'_> {
         self.read_flattenable_body(|buffer| factory(buffer, registry))
     }
 
+    /// Reads a child of a runtime effect (`readRawFlattenable`, with the kinds a child may have):
+    /// a shader, color filter or blender, found by its name in `registry`. A null child is
+    /// [`ChildPtr::Empty`]. `None` if the buffer is invalid, or the flattenable is of another kind.
+    // Port of: src/core/SkReadBuffer.cpp#L470-L536 (chrome/m156), readRawFlattenable, for the
+    // flattenables that are children (`flattenable_is_valid_as_child` in SkRuntimeEffect.cpp#L391)
+    #[doc(alias = "readRawFlattenable")]
+    pub fn read_raw_child(&mut self, registry: &FlattenableRegistry) -> Option<ChildPtr> {
+        if !self.is_valid() {
+            return None;
+        }
+        let Some(name) = self.read_flattenable_name() else {
+            // The writer wrote the null marker, or the buffer became invalid.
+            return if self.is_valid() {
+                Some(ChildPtr::Empty)
+            } else {
+                None
+            };
+        };
+        let child = if let Some(factory) = registry.shader_factory(&name) {
+            self.read_flattenable_body(|buffer| factory(buffer, registry))
+                .map(ChildPtr::Shader)
+        } else if let Some(factory) = registry.color_filter_factory(&name) {
+            self.read_flattenable_body(|buffer| factory(buffer, registry))
+                .map(ChildPtr::ColorFilter)
+        } else if let Some(factory) = registry.blender_factory(&name) {
+            self.read_flattenable_body(|buffer| factory(buffer, registry))
+                .map(ChildPtr::Blender)
+        } else {
+            // An unknown name, or one of a kind that is not a child.
+            self.validate(false);
+            return None;
+        };
+        if !self.is_valid() {
+            return None;
+        }
+        // A factory that returns no object leaves a null child, which is valid.
+        Some(child.unwrap_or(ChildPtr::Empty))
+    }
+
     /// Reads a paint (`readPaint`, `SkPaintPriv::Unflatten`). The paint is reset if the buffer is
-    /// invalid afterwards. The shader, path effect, mask filter, color filter and blender are read
-    /// with `registry`; an image filter must be null, as it is not read yet.
-    // Port of: src/core/SkPaintPriv.cpp#L289-L331 (chrome/m156), with the arms of the
-    // flattenables that are ported; the image filter must be null
+    /// invalid afterwards. The path effect, shader, mask filter, color filter, image filter and
+    /// blender are read with `registry`.
+    // Port of: src/core/SkPaintPriv.cpp#L289-L331 (chrome/m156), Unflatten
     #[doc(alias = "readPaint")]
     pub fn read_paint(&mut self, registry: &FlattenableRegistry) -> Paint {
         let mut paint = Paint::default();
@@ -894,18 +926,18 @@ impl ReadBuffer<'_> {
             let shader = self.read_shader(registry);
             let mask_filter = self.read_mask_filter(registry);
             let color_filter = self.read_color_filter(registry);
-            let blender = if predates_blender {
+            let (image_filter, blender) = if predates_blender {
                 self.read32(); // drawLooper, now deprecated
-                self.read_null_flattenable(); // image filter
-                None
+                (self.read_image_filter(registry), None)
             } else {
-                self.read_null_flattenable(); // image filter
-                self.read_blender(registry)
+                let image_filter = self.read_image_filter(registry);
+                (image_filter, self.read_blender(registry))
             };
             paint.set_path_effect(path_effect);
             paint.set_shader(shader);
             paint.set_mask_filter(mask_filter);
             paint.set_color_filter(color_filter);
+            paint.set_image_filter(image_filter);
             paint.set_blender(blender);
         }
 
