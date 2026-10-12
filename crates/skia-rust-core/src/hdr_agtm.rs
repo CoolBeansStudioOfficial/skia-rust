@@ -313,7 +313,7 @@ impl AdaptiveGlobalToneMap {
                         36000.0 / std::f32::consts::PI,
                     );
                     // skia-rust: libm (tanf)
-                    cp.m = theta.tan();
+                    cp.m = crate::libm::tanf(theta);
                 }
             }
         }
@@ -471,7 +471,7 @@ impl AdaptiveGlobalToneMap {
                 }
                 for (c, cp) in cubic.control_points.iter().enumerate() {
                     // skia-rust: libm (atanf)
-                    let theta = cp.m.atan();
+                    let theta = crate::libm::atanf(cp.m);
                     syntax.gain_curve_control_points_theta[a][c] =
                         float_to_uint16(theta, 1, 35999, 18000, 36000.0 / std::f32::consts::PI);
                 }
