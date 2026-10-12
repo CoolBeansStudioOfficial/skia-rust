@@ -376,6 +376,7 @@ pub mod textblobblockreordering;
 pub mod textblobcolortrans;
 pub mod textblobgeometrychange;
 pub mod textblobmixedsizes;
+pub mod textblobrandomfont;
 pub mod textblobshader;
 pub mod textblobtransforms;
 pub mod textblobuseaftergpufree;
