@@ -29,7 +29,7 @@ const SHORT: f64 = 1.0 / 128.0;
 
 /// Up to this magnitude the quadrant comes from a double-precision product, beyond it from the
 /// exact expansion of 2/pi.
-const DOUBLE_N_LIMIT: f64 = 4_294_967_296.0;
+pub(crate) const DOUBLE_N_LIMIT: f64 = 2_147_483_648.0;
 
 fn sin_series(x: f64) -> f64 {
     let z = x * x;
@@ -51,7 +51,7 @@ fn cos_series(x: f64) -> f64 {
 
 /// The result when `x` is not finite: signalling `NaN`s are quieted, infinities give the default
 /// `NaN`.
-fn non_finite(x: f32) -> f32 {
+pub(crate) fn non_finite(x: f32) -> f32 {
     if x.is_nan() {
         f32::from_bits(x.to_bits() | 0x0040_0000)
     } else {
@@ -60,7 +60,7 @@ fn non_finite(x: f32) -> f32 {
 }
 
 /// `(n mod 4, r)` with `x = n*pi/2 + r`, for `|x| > pi/4`.
-fn reduce(xd: f64, double_limit: f64, fma_n: bool) -> (u32, f64) {
+pub(crate) fn reduce(xd: f64, double_limit: f64, fma_n: bool) -> (u32, f64) {
     let ax = xd.abs();
     let choice = (ax < double_limit).then(|| {
         let p = if fma_n {
