@@ -377,6 +377,15 @@ impl Xmp {
         None
     }
 
+    // Port of: include/private/SkXmp.h#L39 (chrome/m156), `getGainmapInfoHDRGM`.
+    //
+    // Extract HDRGM gainmap parameters. Forwards to `get_gainmap_info_adobe`.
+    #[doc(alias = "getGainmapInfoHDRGM")]
+    #[must_use]
+    pub fn get_gainmap_info_hdrgm(&self, info: &mut GainmapInfo) -> bool {
+        self.get_gainmap_info_adobe(Some(info))
+    }
+
     // Port of: src/codec/SkXmp.cpp#L425-L461 (chrome/m156), `getGainmapInfoApple`.
     //
     // Return true if the specified XMP metadata identifies this image as an HDR gainmap. If the
@@ -465,7 +474,6 @@ impl Xmp {
     // Extract gainmap parameters from http://ns.adobe.com/hdr-gain-map/1.0/. When `out` is None,
     // only the presence of a valid description is checked.
     #[doc(alias = "getGainmapInfoAdobe")]
-    #[doc(alias = "getGainmapInfoHDRGM")]
     #[must_use]
     #[allow(clippy::similar_names)] // offset_sdr / offset_hdr mirror the OffsetSDR / OffsetHDR keys
     pub fn get_gainmap_info_adobe(&self, out: Option<&mut GainmapInfo>) -> bool {
