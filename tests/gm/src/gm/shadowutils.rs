@@ -322,17 +322,38 @@ fn draw_paths(canvas: &Canvas, mode: ShadowMode) {
     }
 }
 
-crate::def_simple_gm!(shadow_utils, canvas, 800, 960, {
-    draw_paths(canvas, ShadowMode::DebugColorNoOccluders);
-});
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"]
+    shadow_utils,
+    canvas,
+    800,
+    960,
+    {
+        draw_paths(canvas, ShadowMode::DebugColorNoOccluders);
+    }
+);
 
-crate::def_simple_gm!(shadow_utils_occl, canvas, 800, 960, {
-    draw_paths(canvas, ShadowMode::DebugColorOccluders);
-});
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"]
+    shadow_utils_occl,
+    canvas,
+    800,
+    960,
+    {
+        draw_paths(canvas, ShadowMode::DebugColorOccluders);
+    }
+);
 
-crate::def_simple_gm!(shadow_utils_gray, canvas, 800, 960, {
-    draw_paths(canvas, ShadowMode::Grayscale);
-});
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"]
+    shadow_utils_gray,
+    canvas,
+    800,
+    960,
+    {
+        draw_paths(canvas, ShadowMode::Grayscale);
+    }
+);
 
 // Port of: gm/shadowutils.cpp#L245-L264 (chrome/m156)
 crate::def_simple_gm!(shadow_utils_gaussian_colorfilter, canvas, 512, 256, {

@@ -81,8 +81,9 @@ coefficient of w^2 is -1/3, as it must be); the exhaustive Windows check is the 
   (best margin -2.7e-4 half-ulps), and so is a (3,2)/(4,2)/(3,3)/(4,3) core fitted to the atan2f data
   alone (15-30 contradictory points remain, i.e. the pre-rounding value is not a smooth function of
   `y/x` there; float-rounded quotients fit some of them). Per-group cores gave 1416 mismatches, no
-  better. Two serious attempts made; callers keep using the module (3e-6 mismatch rate beats the
-  host libm) but the function is flagged non-exact, and the Windows test bounds the rate.
+  better. Two serious attempts made. Because it is not bit-exact, Skia code does NOT use it: `scalar_atan2`
+  stays on the platform `atan2`; the function remains in the crate, documented non-exact, covered
+  only by the cross-host digest test and excluded from the Windows bit-for-bit test.
 
 ## Functions not reproduced (measurements only)
 
@@ -130,8 +131,10 @@ https://github.com/CoolBeansStudioOfficial/skia-rust/actions/runs/38224425216
 Caveat: the probe runner's `ucrtbase.dll` is whatever `windows-latest` ships; the oracle used
 Windows 11. The functions agree with the oracle on every GM that exercises them (below).
 
-GMs verified byte-identical to the goldens on every tier after routing `scalar_sin/cos/tan/atan2`
-and `M44::Perspective` through the module: `parsedpaths`, `shadow_utils`, `shadow_utils_occl`,
-`shadow_utils_gray`, `pictureshader_persp`, `imagefilter_transformed_image`. Still failing for
-reasons outside this module: `longpathdash` (double sin/cos), `gradients_*` (cbrtf, atan2f noise),
+GMs verified byte-identical to the goldens on every tier after routing `scalar_sin/cos/tan` and
+`M44::Perspective` through the module: `pictureshader_persp`, `imagefilter_transformed_image`.
+(`parsedpaths`, `shadow_utils`, `shadow_utils_occl`, `shadow_utils_gray` also matched with the
+non-exact `atan2f`, but they stay `failing`: `scalar_atan2` uses the platform function until
+`atan2f` is exact.) Still failing for
+reasons outside this module: `longpathdash` (double sin/cos), `gradients_*` (cbrtf, atan2f noise), `parsedpaths` and `shadow_utils*` (atan2f),
 `shadow_utils_directional` (f16 ml tiers), `p3_ovals`, `skbug_14554`, `emboss`.
