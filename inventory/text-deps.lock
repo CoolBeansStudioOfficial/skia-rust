@@ -20,3 +20,15 @@ tree_sha256 = "551cff1acba142cb581faece64accde5ce41926211d8c54b8032e3b493d64ac2"
 # `common/icudtl.dat` (Skia's third_party/icu/BUILD.gn#L21-L40), served base64-encoded.
 data_url = "https://chromium.googlesource.com/chromium/deps/icu/+/d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/common/icudtl.dat?format=TEXT"
 data_sha256 = "9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe"
+
+[ucd]
+# The UAX conformance files of Unicode 17.0.0 (ICU 78 and ICU4X 2.3 both implement it), for
+# oracle/unicode-diff (docs/design/modules.md §3.3, M0c). Fetched into `<cache>/ucd-17.0.0/`.
+version = "17.0.0"
+base_url = "https://www.unicode.org/Public/17.0.0/ucd"
+# `<file> = "<path under base_url>|<sha256>"`
+GraphemeBreakTest.txt = "auxiliary/GraphemeBreakTest.txt|e2d134d2c52919bace503ebb6a551c1855fe1a1faec18478c78fff254a1793ec"
+WordBreakTest.txt = "auxiliary/WordBreakTest.txt|1de23a75f37904abc7d206239ee8d34f8fdf0fb4ab32a7174dfbabbde25419b2"
+SentenceBreakTest.txt = "auxiliary/SentenceBreakTest.txt|12cb47d028ded0c1cb8a28558f95479cbcd24559c46977015c82f3b50a1cc6e4"
+LineBreakTest.txt = "auxiliary/LineBreakTest.txt|e69884e0dde6a8724873f885d68c52dc14518abf9ae4ca9e2283b8773db3b752"
+BidiCharacterTest.txt = "BidiCharacterTest.txt|a3e6e905ab5afbe318a96df5401d0372a04cd73ef139ab5e3cf0ae241c255488"

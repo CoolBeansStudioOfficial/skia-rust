@@ -15,6 +15,8 @@ pub enum Dep {
     Harfbuzz,
     /// Chromium ICU `d578f2e8`: `source/common` and `common/icudtl.dat`.
     Icu,
+    /// The UAX conformance files of Unicode 17.0.0 (`[ucd]` of `inventory/text-deps.lock`).
+    Ucd,
     /// The `skparagraph` test fonts (release asset `test-fonts-m156`).
     Fonts,
 }
@@ -33,6 +35,10 @@ pub fn fetch(only: &[Dep]) -> Result<()> {
         let icu = skia_rust_text_deps::icu().map_err(|e| anyhow!(e))?;
         println!("icu common: {}", icu.common.display());
         println!("icu data: {}", icu.data.display());
+    }
+    if wanted(Dep::Ucd) {
+        let dir = skia_rust_text_deps::ucd().map_err(|e| anyhow!(e))?;
+        println!("ucd: {}", dir.display());
     }
     if wanted(Dep::Fonts) {
         let dir = skia_rust_text_deps::test_fonts().map_err(|e| anyhow!(e))?;

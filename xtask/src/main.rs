@@ -12,6 +12,7 @@ mod skia;
 mod sksl;
 mod sksl_lexer;
 mod text_deps;
+mod unicode_diff;
 mod verify;
 mod verify_benches;
 mod verify_fuzz;
@@ -175,6 +176,17 @@ enum OracleCommand {
         #[arg(long)]
         replay: bool,
     },
+    /// Run Chromium's ICU 78.2 at Skia's pin over the corpus (C++, needs g++) and compare with the
+    /// stored results, or with `--replay` run `ICU4X` and `unicode-bidi` against the stored results
+    /// (`oracle/unicode-diff`, design `docs/design/modules.md` §3.3).
+    UnicodeDiff {
+        /// Replace `oracle/unicode-diff/expected/*.txt` with the C++ driver's output.
+        #[arg(long)]
+        update: bool,
+        /// Only run the Rust twin against the stored results (no C++; any host).
+        #[arg(long)]
+        replay: bool,
+    },
     /// Compare a directory of skia-rust outputs (golden layout) against a tier's hashes.
     Compare {
         /// Tier name.
@@ -314,6 +326,9 @@ fn main() -> Result<()> {
             ),
             OracleCommand::ShaperDiff { update, replay } => {
                 shaper_diff::run_command(&root, &shaper_diff::Options { update, replay })
+            }
+            OracleCommand::UnicodeDiff { update, replay } => {
+                unicode_diff::run_command(&root, &unicode_diff::Options { update, replay })
             }
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
             OracleCommand::Publish { dry_run } => publish::publish(&root, dry_run),

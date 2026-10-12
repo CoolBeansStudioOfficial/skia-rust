@@ -1,0 +1,178 @@
+a
+\n
+\n\n
+a\nb
+a\r\nb
+a\rb
+a b c
+a\x0Bb\x0Cc\u0085d
+\u0020
+  leading and trailing
+a\tb
+Hello, world!
+The quick brown fox jumps over the lazy dog.
+Mr. Smith went to Washington. He said "Hi!" Then left.
+What?! Really... yes. OK
+e.g. this, i.e. that, etc. and U.S.A. too
+SkCanvas.h
+SkCanvas.cpp:123
+foo.bar.baz
+a.b
+a. b
+.a
+a.
+...
+1.5
+3.14159
+1,000.00
+$1,000.00
+1:2
+3:30
+12:30:45
+a:b
+a:
+:a
+x::y
+v1.2.3
+www.example.com
+user@example.com
+http://example.com/path?x=1&y=2#frag
+a．b
+a․b
+a‥b
+a·b
+a·b
+a‧b
+a︓b
+a﹕b
+a：b
+don't
+can’t
+rock 'n' roll
+“Quoted.” Next sentence.
+ABC.DEF
+abc.DEF
+ABC.def
+a_b_c
+a-b-c
+well-known state-of-the-art
+a/b/c
+(a) [b] {c}
+a­b
+a​b
+a‌b‍c
+a⁠b
+a b
+a b
+a b
+\u3000
+あいうえお
+アイウエオ
+ーカタカナ
+こんにちは世界。
+こんにちは、世界
+中文分词测试
+我爱北京天安门
+あぁいぃ
+ァィゥェォッ
+あっい
+한글 테스트
+한
+각
+각
+สวัสดีครับ
+ประเทศไทย
+การทดสอบ\nsecond line
+ສະບາຍດີ
+ສະບາຍດີ\n
+မြန်မာဘာသာ
+ខ្មែរ
+ខ្មែរ\nខ្មែរ
+ᨠᨡᨢᨣᨤ
+ᦁᦂᦃᦄᦅ
+العربية
+abc אבג def
+אבג abc דה
+abc العربية 123 def
+אב 123 גד
+ال 1,234.5 عرب
+a‫b‬c
+a‮b‬c
+a‪b‬c
+a‭b‬c
+a⁦b⁩c
+a⁧b⁩c
+a⁨b⁩c
+a‎b‏c
+؜a؜b
+á
+́a
+é̂̃
+क्ष
+क्षि
+नमस्ते
+தமிழ்
+ශ්‍රී
+\U0001F600
+\U0001F600\U0001F601
+\U0001F44D\U0001F3FD
+\U0001F468‍\U0001F469‍\U0001F467‍\U0001F466
+\U0001F1FA\U0001F1F8
+\U0001F1FA\U0001F1F8\U0001F1E8\U0001F1E6
+\U0001F1FA
+❤️
+❤︎
+#️⃣
+1️⃣
+©®™
+☝\U0001F3FB
+\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F
+\U00010000\U00010400\U00020000
+\U0001D11E\U0001D15E
+Å
+Åb
+abc　def
+abc def
+abc  def
+abc—def
+abc–def
+abc…def
+a‐b
+a‑b
+a֊b
+a  b
+$100
+100%
+100 %
+£1,000
+(1,000)
+“a”
+\u00ABa\u00BB
+¿Qué?
+¡Hola!
+Hola. ¿Qué tal?
+Hi! Hi? Hi. hi
+He said: "Go." She left.
+1. First 2. Second
+No. 5 is here
+Fig. 3 shows
+a;b
+Γειά; Σας.
+αβγ δεζ
+абв где
+istanbul İstanbul ISTANBUL ıı
+i̇
+İ
+ß straße STRASSE
+ﬀ ﬁ ﬂ ﬃ ﬄ ﬅ ﬆ
+ŉ ǰ ΐ ΰ և
+ẞ ẖ ẗ ẘ ẙ ẚ
+ᾀ ᾈ ᾳ ᾼ ῳ ῼ
+σς Σ
+̈́ ï ì i̇́
+j̇ į̇ Į
+ά ή ί ό ύ ώ ϊ ΐ
+Ά Έ Ή Ί Ό Ύ Ώ
+ΐ ΰ
+աւ և
+

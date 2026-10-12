@@ -1,0 +1,600 @@
+tests/Test.h
+include/core/SkData.h
+include/core/SkFont.h
+include/core/SkPoint.h
+include/core/SkRefCnt.h
+include/core/SkSpan.h
+include/core/SkStream.h
+include/core/SkTypeface.h
+include/core/SkTypes.h
+include/private/SkTo.h
+modules/skshaper/include/SkShaper.h
+modules/skshaper/include/SkShaper_harfbuzz.h
+modules/skshaper/include/SkShaper_skunicode.h
+modules/skunicode/include/SkUnicode.h
+src/core/SkZip.h
+tools/Resources.h
+tools/fonts/FontToolUtils.h
+modules/skunicode/include/SkUnicode_icu.h
+modules/skunicode/include/SkUnicode_libgrapheme.h
+modules/skunicode/include/SkUnicode_icu4x.h
+%s
+:
+ 
+%s range: %zu-%zu(%zu) glyphCount:%u font: "%s" "%s" #%d %zuB\nrangeText: "%.*s"\nrangeBytes: %s\nglyphs:%s\n\n
+%
+ >= %zu %s i:%u glyphCount:%u
+ < %zu %s i:%u glyphCount:%u
+Could not create unicode.
+Could not create shaper.
+en-US
+Could not get resource %s.
+empty
+text/
+.txt
+Line count should be monotonic. Width: %f, Line count: %zu, Prev: %zu
+Break at offset %zu for width %f is unexpected for '%s'!
+Text '%s' should fit on a single line at max width, but had %zu lines
+Observed breaks did not match expected breaks for: '%s'
+foo
+foobar
+foo bar
+foo, bar baz
+abra cadabra
+include/core/SkBitmap.h
+include/core/SkCanvas.h
+include/core/SkColor.h
+include/core/SkFontMgr.h
+include/core/SkFontStyle.h
+include/core/SkPaint.h
+include/core/SkRect.h
+include/core/SkScalar.h
+include/core/SkString.h
+include/encode/SkPngEncoder.h
+modules/skparagraph/include/DartTypes.h
+modules/skparagraph/include/FontCollection.h
+modules/skparagraph/include/Paragraph.h
+modules/skparagraph/include/ParagraphCache.h
+modules/skparagraph/include/ParagraphStyle.h
+modules/skparagraph/include/TextShadow.h
+modules/skparagraph/include/TextStyle.h
+modules/skparagraph/include/TypefaceFontProvider.h
+modules/skparagraph/src/OneLineShaper.h
+modules/skparagraph/src/ParagraphBuilderImpl.h
+modules/skparagraph/src/ParagraphImpl.h
+modules/skparagraph/src/Run.h
+modules/skparagraph/src/TextLine.h
+modules/skparagraph/tests/SkShaperJSONWriter.h
+modules/skparagraph/utils/TestFontCollection.h
+modules/skshaper/utils/FactoryHelpers.h
+src/core/SkOSFile.h
+src/core/SkTSort.h
+src/utils/SkOSPath.h
+tools/flags/CommandLineFlags.h
+Some tests are finicky and need certain system fonts. Set this to false to skip those.
+‮
+‭
+Found font file: %s\n
+%s/%s
+Reading font: %s\n
+%s not readable
+Creating: %s size: %zu\n
+Roboto-Italic.ttf
+%s was not turned into a Typeface. Did you set --nativeFonts?\n
+--paragraph_fonts set but no fonts found.Did you set --nativeFonts?
+--paragraph_fonts set but Roboto-Italic.ttf not found
+Cannot write a picture %s\n
+SkParagraphTests Fonts not found!\n
+Hello World Text Dialog
+Roboto
+AAAAAAAAAA
+Ahem
+SkParagraph_InlinePlaceholderParagraph.png
+012 34
+SkParagraph_InlinePlaceholderBaselineParagraph.png
+SkParagraph_InlinePlaceholderAboveBaselineParagraph.png
+SkParagraph_InlinePlaceholderBelowBaselineParagraph.png
+SkParagraph_InlinePlaceholderBottomParagraph.png
+SkParagraph_InlinePlaceholderTopParagraph.png
+SkParagraph_InlinePlaceholderMiddleParagraph.png
+SkParagraph_InlinePlaceholderIdeographicBaselineParagraph.png
+給能上目秘使
+Source Han Serif CN
+SkParagraph_InlinePlaceholderBreakParagraph.png
+SkParagraph_InlinePlaceholderGetRectsParagraph.png
+I am RED
+SkParagraph_RainbowParagraph.png
+Red Roboto
+big Greeen Default
+Defcolor Homemade Apple
+Small Blue Roboto
+Small Blue 
+Continue Last Style With lots of words to check if it overlaps properly or not
+RobotoContinue Last Style With lots of words to check if it overlaps properly or not
+Homemade Apple
+SkParagraph_DefaultStyleParagraph.png
+No TextStyle! Uh Oh!
+SkParagraph_BoldParagraph.png
+This is Red max bold text!
+SkParagraph_HeightOverrideParagraph.png
+01234満毎冠行来昼本可\nabcd\n満毎冠行来昼本可
+SkParagraph_BasicHalfLeading.png
+Cookies need love
+SkParagraph_ZeroHeightHalfLeading.png
+A
+SkParagraph_StrutHalfLeading.png
+SkParagraph_TrimHalfLeading.png
+SkParagraph_LeftAlignParagraph.png
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+SkParagraph_RightAlignParagraph.png
+SkParagraph_CenterAlignParagraph.png
+SkParagraph_JustifyAlignParagraph.png
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat.
+SkParagraph_JustifyRTL.png
+אאא בּבּבּבּ אאאא בּבּ אאא בּבּבּ אאאאא בּבּבּבּ אאאא בּבּבּבּבּ אאאאא בּבּבּבּבּ אאאבּבּבּבּבּבּאאאאא בּבּבּבּבּבּאאאאאבּבּבּבּבּבּ אאאאא בּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאאבּבּבּבּבּבּאאאאאבּבּבּבּבּבּאאאאאבּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ
+SkParagraph_JustifyRTLNewLine.png
+אאא בּבּבּבּ אאאא\nבּבּ אאא בּבּבּ אאאאא בּבּבּבּ אאאא בּבּבּבּבּ אאאאא בּבּבּבּבּ אאאבּבּבּבּבּבּאאאאא בּבּבּבּבּבּאאאאאבּבּבּבּבּבּ אאאאא בּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ
+#%zd: %f <= %d\n
+SkParagraph_LeadingSpaceRTL.png
+ leading space
+SkParagraph_DecorationsParagraph.png
+This text should be
+ decorated even when
+ wrapped around to
+ the next line.
+ Otherwise, bad things happen.
+SkParagraph_ItalicsParagraph.png
+No italic 
+Yes Italic 
+No Italic again.
+SkParagraph_ChineseParagraph.png
+     左線読設重説切後碁給能上目秘使約。満毎冠行来昼本可必図将発確年。今属場育図情闘陰野高備込制詩西校客。審対江置講今固残必託地集済決維駆年策。立得庭際輝求佐抗蒼提夜合逃表。注統天言件自謙雅載報紙喪。作画稿愛器灯女書利変探訃第金線朝開化建。子戦年帝励害表月幕株漠新期刊人秘。図的海力生禁挙保天戦聞条年所在口。
+SkParagraph_ArabicParagraph.png
+من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة بمباركة التقليدية قام عن. تصفح
+Katibeh
+SkParagraph_ArabicRectsParagraph.png
+بمباركة التقليدية قام عن. تصفح يد    
+Noto Naskh Arabic
+SkParagraph_ArabicRectsLTRLeftAlignParagraph.png
+Helloبمباركة التقليدية قام عن. تصفح يد 
+SkParagraph_ArabicRectsLTRRightAlignParagraph.png
+SkParagraph_GetGlyphPositionAtCoordinateParagraph.png
+12345 67890 12345 67890 12345 67890 12345 67890 12345 67890 12345 67890 12345
+SkParagraph_GetRectsForRangeParagraph.png
+12345,  "67890" 12345 67890 12345 67890 12345 67890 12345 67890 12345 67890 12345
+SkParagraph_GetRectsForRangeTight.png
+(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)
+Noto Sans CJK JP
+SkParagraph_GetRectsForRangeIncludeLineSpacingMiddle.png
+SkParagraph_GetRectsForRangeIncludeLineSpacingTop.png
+SkParagraph_GetRectsForRangeIncludeLineSpacingBottom.png
+SkParagraph_GetRectsForRangeIncludeCombiningCharacter.png
+ดีสวัสดีชาวโลกที่น่ารัก
+SkParagraph_GetRectsForRangeCenterParagraph.png
+01234  　 
+SkParagraph_GetRectsForRangeCenterParagraphNewlineCentered.png
+01234\n
+SkParagraph_GetRectsForRangeCenterMultiLineParagraph.png
+01234  　 \n0123　        
+SkParagraph_GetRectsForRangeStrut.png
+Chinese 字典
+SkParagraph_GetRectsForRangeStrutFallback.png
+SkParagraph_GetWordBoundaryParagraph.png
+12345  67890 12345 67890 12345 67890 12345 67890 12345 67890 12345 67890 12345
+SkParagraph_SpacingParagraph.png
+H
+|
+H 
+SkParagraph_LongWordParagraph.png
+A veryverylongwordtoseewherethiswillwraporifitwillatallandifitdoesthenthatwouldbeagoodthingbecausethebreakingisworking.
+SkParagraph_KernScaleParagraph.png
+AVAVAWAH A0 V0 VA To The Lo
+ Dialog Text List lots of words to see if kerning works on a bigger set of characters AVAVAW
+Droid Serif
+V
+SkParagraph_NewlineParagraph.png
+line1\nline2 test1 test2 test3 test4 test5 test6 test7\nline3\n\nline4 test1 test2 test3 test4
+SkParagraph_EmojiParagraph.png
+Noto Color Emoji
+width: %f
+height: %f
+SkParagraph_EmojiMultiLineRectsParagraph.png
+👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧i🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸❄🍕🍔🍟🥝🍱🕶🎩🏈⚽🚴‍♀️🎻🎼🎹🚨🚎🚐⚓🛳🚀🚁🏪🏢🖱⏰📱💾💉📉🛏🔑🔓📁🗓📊❤💯🚫🔻♠♣🕓❗🏳🏁🏳️‍🌈🇮🇹🇱🇷🇺🇸🇬🇧🇨🇳🇧🇴
+SkParagraph_RepeatLayoutParagraph.png
+Sentence to layout at diff widths to get diff line counts. short words short words short words short words short words short words short words short words short words short words short words short words short words end
+SkParagraph_Ellipsize.png
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. 
+…
+SkParagraph_UnderlineShiftParagraph.png
+fluttser 
+mdje
+fluttser mdje
+SkParagraph_SimpleShadow.png
+SkParagraph_ComplexShadow.png
+Text Chunk 
+SkParagraph_BaselineParagraph.png
+左線読設Byg後碁給能上目秘使約。満毎冠行来昼本可必図将発確年。今属場育図情闘陰野高備込制詩西校客。審対江置講今固残必託地集済決維駆年策。立得
+SkParagraph_FontFallbackParagraph.png
+Roboto 字典 
+Homemade Apple 字典
+Not a real font
+Also a fake font
+So fake it is obvious
+Next one should be a real font...
+another fake one in between
+SkParagraph_StrutParagraph1.png
+01234満毎冠p来É本可\nabcd\n満毎É行p昼本可
+BlahFake
+SkParagraph_StrutParagraph2.png
+01234ABCDEFGH\nabcd\nABCDEFGH
+SkParagraph_StrutParagraph3.png
+01234満毎p行来昼本可\nabcd\n満毎冠行来昼本可
+SkParagraph_StrutForceParagraph.png
+SkParagraph_StrutDefaultParagraph.png
+SkParagraph_FontFeaturesParagraph.png
+12ab\n
+tnum
+pnum
+English English 字典 字典 😀😃😄 😀😃😄
+👨‍👩‍👧‍👦
+p〠q
+text1
+text2
+text3
+text
+t
+ext
+te
+xt
+tex
+SkParagraph_ParagraphWithLineBreak.png
+abc\n\ndef
+Arial
+SkParagraph_Fallbacks.png
+A1!aÀàĀāƁƀḂⱠꜲꬰəͲἀἏЀЖԠꙐꙮՁخ‎ࡔࠇܦআਉઐଘஇఘಧൺඣᭆᯔᮯ᳇ꠈᜅᩌꪈ༇ꥄꡙꫤ᧰៘꧁꧂ᜰᨏᯤᢆᣭᗗꗃⵞ𐒎߷ጩꬤ𖠺‡₩℻Ⅷ↹⋇⏳ⓖ╋▒◛⚧⑆שׁ🅕㊼龜ポ䷤🂡\n
+sans-serif
+sans-serif-condensed
+serif
+monospace
+serif-monospace
+casual
+cursive
+sans-serif-smallcaps
+en_US
+SkParagraph_Bidi1.png
+‭abc
+‮DEF
+‭ghi
+‮JKL
+‭mno
+‭abc‮DEF‭ghi‮JKL‭mno
+SkParagraph_Bidi2.png
+‭abc‮D
+EF‭gh
+i‮JKL‭mno
+\n
+SkParagraph_FontResolutions.png
+fonts
+abc/abc.ttf
+abc
+abc/abc.ttf not found
+abc/abc+grave.ttf
+abc+grave
+abc/abc+grave.ttf not found
+abc/abc+agrave.ttf
+abc+agrave
+abc/abc+agrave.ttf not found
+à
+à
+SkParagraph_FontStyle.png
+Default text\n
+Bold and Italic\n
+back to normal
+SkParagraph_Shaping.png
+Eat0 apple0 pies0 | Eat1 apple1 pies1 | Eat2 apple2 pies2
+SkParagraph_Ellipsis.png
+This\nis a wrapping test. It should wrap at manual newlines, and if softWrap is true, also at spaces.
+Text 
+SkParagraph_FormattingInfinity.png
+Some text\nAnother line
+left
+right
+center
+justify LTR
+justify RTL
+SkParagraph_LineMetrics.png
+One line of text\n
+SkParagraph_PlaceholderHeightInf.png
+Limited by budget
+SkParagraph_LineMetricsTextAlign.png
+Some text that takes more than 200 px
+SkParagraph_FontResolutionInRTL.png
+ אאא בּבּבּבּ אאאא בּבּ אאא בּבּבּ אאאאא בּבּבּבּ אאאא בּבּבּבּבּ 
+SkParagraph_FontResolutionInLTR.png
+abc Ƣ Ƣ def
+Google Sans
+من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة عل بمباركة التقليدية قام عن. تصفح
+Long arabic text
+عل
++2 character at the end
+-2 characters from the end
++2 character at the start
+-2 characters from the start
+different strings
+0123456789 0123456789 0123456789 0123456789 0123456789
+SkParagraph_HeightCalculations.png
+Hello\nLine 2\nLine 3
+Hello
+SkParagraph_RTL_With_Styles.png
+قففغغغغقففغغغغقففغغغ
+   
+SkParagraph_PositionInsideEmoji.png
+👩‍👩‍👧‍👧👩👩👧👧
+SkParagraph_SingleLineHeight1.png
+Loooooooooooooooooooooooooooooooooooong text
+SkParagraph_SingleLineHeight2.png
+SkParagraph_PlaceholderWidth.png
+1 23 456 7890
+SkParagraph_GlyphPositionsInEmptyLines.png
+A\n\n
+SkParagraph_RTLGlyphPositions.png
+אאאא
+SkParagraph_RTLGlyphPositionsInEmptyLines.png
+בבבב\n\nאאאא
+SkParagraph_LTRGlyphPositionsForTrailingSpaces.png
+    
+hello               
+SkParagraph_RTLGlyphPositionsForTrailingSpaces.png
+               hello
+SkParagraph_LTRLineMetricsDoesNotIncludeNewLine.png
+one two\n\nthree four\nwith spaces     \n    \n______________________
+SkParagraph_RTLLineMetricsDoesNotIncludeNewLine.png
+______________________\none two\n\nthree four\nwith spaces     \n    
+SkParagraph_PlaceholderPosition.png
+abcd
+SkParagraph_LineEnd.png
+Hello 
+hello   
+hello\n
+hello   \n
+world
+%d %d %d\n
+SkParagraph_Utf16Indexes.png
+áéíóú\nxxxx
+SkParagraph_RTLFollowedByLTR.png
+אאאABC
+SkParagraph_StrutTopLine.png
+Atwater Peel Sherbrooke Bonaventure\nhi\nwasssup!
+SkParagraph_DifferentFontsTopLine.png
+Atwater Peel 
+Sherbrooke Bonaventure 
+hi wassup!
+SkParagraph_EllipsisGetRectForRange.png
+SkParagraph_NonMonotonicGlyphsLTR.png
+h́͐̒͗̌ͩ̅ͬ̄̐̿ͦ͐ 
+̷̵̴̷̨̢̛̛̛̞̟̪̱̯̲̮̳͓̠̜̟̼̥͕̬̥̺̓ͤͩ̑̉̎ͥ̀̀̀̀̕͟͢͞͠͠͠ͅͅą̢̇̒͋̈̒͆̓͆̄̇̈́̅͂ͨ͆ͪ͛̏ͥ̇̀͡҉͏̴̵̨͟͢҉̷̷̮̦̭͙̘̼̯̳͚͍̙̜͓̼͙̱̻̱̼́͘͠͞͠͝ͅ
+SkParagraph_NonMonotonicGlyphsRTL.png
+ٱلْرَّحْمَـانُ
+SkParagraph_TabSubstitution.png
+There is a tab>\t<right here
+hello
+hello world
+size: %zu
+SkParagraph_MultiStyle_Logo.png
+google_
+logo
+go
+ogle_logo
+google_lo
+SkParagraph_MultiStyle_FFI.png
+f
+i
+SkParagraph_MultiStyle_EmojiFamily.png
+SkParagraph_MultiStyle_Arabic.png
+ك
+ِّ
+ـ
+SkParagraph_MultiStyle_Zalgo.png
+>S̵̡͛ͭ̋͆̈̔̇͗̍͑̎ͪͮͧͣ̽ͫͣ́ͬ̀͌͑͂͗͒̍̔̄ͧ̏̉̌̊̊̿̀̌̃̄͐̓̓ͣ̚̚͜͟͝͠͏̸̵̷̡̧̡͇̜̘̻̺̘̟̝͙̬̘̩͇̭̼̥̖̤̦͎ͣ͜k͉̩̘͚̜̹̗̗͍̤̥̱͉̳͕͖̤̲̣͚̮̞̬̲͍͔̯̻̮̞̭͈̗̫͓̂ͨ̉ͪ̒͋͛̀̍͊ͧ̿̅͆̓̔̔ͬ̇̑̿ͩ͗ͮ̎͌̿̄ͅP̴̵̡̡̛̪͙̼̣̟̩̭̫̱͙̬͔͉͍̘̠͉̦̝̘̥̟̗͖̫̤͕̙̬̦͍̱̖̮̱͑͐̎̃̒͐͋̚͘͞a̶̶̵̵̵̶̶̡̧̢̢̺͔̣͖̭̺͍̤͚̱̜̰̥͕̬̥̲̞̥̘͇͚̺̰͚̪̺͔̤͍̓̿͆̎͋̓ͦ̈́ͦ̌́̄͗̌̓͌̕͜͜͟͢͝͡ŕ͎̝͕͉̻͎̤̭͚̗̳̖̙̘͚̫͖͓͚͉͔͈̟̰̟̬̗͓̟͚̱̕͡ͅͅͅa̸̶̷̵̶̢̢̡̛̛̜̮̦̜̥̜̯̙͓͔̼̗̻̽ͮͩ̅͒ͫ͗͂̎ͦ̈́̓ͣ̚͘͜͢͜͜͡ͅḡ̢̛͕̗͖̖̤̦̘͔ͨͨ̊͒ͩͭͤ̍̅̃ͪ̋̏̓̍̋͗̋ͨ̏̽̈́̔̀̋̉ͫ̅̂ͭͫ̏͒͋ͥ̚͜r̶̢̧̧̥̤̼̀̂̒ͪ͌̿͌̅͛ͨͪ͒̍ͥ̉ͤ̌̿̆́ͭ͆̃̒ͤ͛̊ͧ̽͘͝͠a̧̢̧̢͑͑̓͑ͮ̃͂̄͛́̈́͋̂͌̽̄͒̔́̇ͨͧͭ͐ͦ̋ͨ̍ͦ̍̋͆̔ͧ͑͋͌̈̓͛͛̚͢͜͜͏̴̢̧̛̳͍̹͚̰̹̻͔p̨̡̱͉͆ͦͣ͊̽̔͂̉ͣ̔ͣ̌̌̉̃̋̂͒ͫ̄̎̐͗̉̌̃̽̽́̀ͣ̚͘͜͟h̭̮̘̗͔̜̯͔͈̯̺͔̗̣̭͚̱̰̙̼̹͚̣̻̥̲̮͍̤͜͝<
+k
+P
+h
+SkParagraph_RtlEllipsis1.png
+1  2  3  4  5  6  7  8  9
+SkParagraph_RtlEllipsis2.png
+تظاهرات و تجمعات اعتراضی در سراسر کشور ۲۳ مهر
+SkParagraph_TextEditingFunctionality.png
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. 
+This\n1234567890ABCD
+一丁丂七
+fi
+لٔأ
+SkParagraph_laam_alif_diacritics.png
+Single dummy placeholder
+A text ending with line separator. 
+visitedCount: %d
+♻️🏴󠁧󠁢󠁳󠁣󠁴󠁿
+♻️
+'%s'\n
+  %d: %s %s\n
+isEmoji
+isEmojiComponent
+Graphemes:
+ %d
+0
+2nd
+99
+0️⃣
+0️⃣12
+#
+#️⃣
+#️⃣#
+#️⃣#️⃣
+*
+*️⃣
+*️⃣abc
+*️⃣😊
+😊
+😊abc
+😊*️⃣
+👨‍👩‍👦‍👦
+🇷🇺
+🏴󠁧󠁢󠁥󠁮󠁧󠁿
+👋🏼
+SkParagraph_NoSpacesArabicParagraph.png
+سلام
+SkParagraph_SpacedArabicParagraph.png
+س لا م
+inter­national
+su­per­cali­frag
+كلمة­طويلة
+src/core/SkUTF.h
+src/utils/SkJSONWriter.h
+Too many clusters
+ABCD
+AB
+ABC
+المادة
+ادة
+لم
+ا
+المادة 1 يولد جميع الناس أحرارًا متساوين في الكرامة والحقوق. وقد وهبوا عقلاً وضميرًا وعليهم أن يعامل بعضهم بعضًا بروح الإخاء.
+gm/gm.h
+include/core/SkFontTypes.h
+include/core/SkShader.h
+include/core/SkSize.h
+tools/ToolUtils.h
+Five score years ago, a great American, in whose symbolic shadow we stand today, signed the Emancipation Proclamation. This momentous decree came as a great beacon light of hope to millions of Negro slaves who had been seared in the flames of withering injustice. It came as a joyous daybreak to end the long night of their captivity.
+paragraph%s_%s
+_layout
+_underline
+_visitor
+Font manager had no fonts or could not build paragraph.
+modules/skottie/include/TextShaper.h
+tools/fonts/TestFontMgr.h
+Foo \rbar \rBaz.
+Serif
+Foo, bar.\rBaz.
+%f %f %f %f %d
+%f %f %f %f %u
+Foo bar baz
+onGetFamilyName called with bad index
+onCreateStyleSet called with bad index
+foo󟿿bar
+Foo 推动全球交通可
+modules/skshaper/include/SkShaper_coretext.h
+  foo  
+  foo bar  
+  foobar  
+f oobar
+  f oobar  
+fooba r
+  fooba r  
+f oobarba z
+  f oobarba z  
+modules/skottie/include/Skottie.h
+modules/skottie/include/SkottieProperty.h
+modules/skshaper/include/SkShaper_factory.h
+v
+5.2.1
+w
+fr
+ip
+op
+list
+fName
+f1
+fFamily
+fStyle
+Regular
+f2
+Medium
+f3
+Bold
+f4
+Light
+f5
+Extra
+f6
+ExtraBold
+f7
+Regular Italic
+f8
+Medium Italic
+f9
+Bold Italic
+f10
+Light Oblique
+f11
+Extra Oblique
+f12
+Extrabold Oblique
+f13
+Italic
+f14
+Oblique
+f15
+layers
+ty
+d
+s
+Foo Bar Baz
+fc
+lh
+ps
+sz
+mf
+rs
+Text layout failed
+family_1
+Font1
+family_2
+include/core/SkSurface.h
+{"v":" ","fr":3,"w":4,"h":3,"layers":[{"ty": 1, "sw": 10, "sh": 10, "sc":"#ffffff", "ks":{"o":{"a": true, "k": [{"t": 0, "s": 0, "e": 1, "i": {"x":[]}}]}}}]}
+ind
+ks
+o
+a
+sw
+sh
+sc
+#ffffff
+markers
+cm
+marker_1
+dr
+tm
+marker_2
+single_frame
+assets
+id
+p
+single_frame.png
+u
+images/
+multi_frame
+multi_frame.png
+refId
+5.12.0
+sr
+shapes
+rc
+r
+gf
+e
+g
+st
+bm
+src/core/SkBitmaskEnum.h
+modules/skunicode/include/SkUnicode_client.h
+󲀈
+1 22 333 4444 55555 666666 7777777
+en
+Hello world! Hello world? Hello world... Not a sentence end: 3.1415926
+الهيمنة على العالم عبارة قبيحة ، أفضل أن أسميها تحسين العالم.
+World ЛТР Domination هي عبارة قبيحة ، أفضل أن أسميها World ЛТР Optimization.
+abcdefghijklmnopqrstuvwxyz
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+1\n22 333 4444 55555 666666 7777777
+😄😁😆😅😂🤣
+満毎行昼本可

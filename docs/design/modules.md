@@ -345,6 +345,95 @@ So unicode-bidi and ICU4X data are exact now. Segmentation is exact for every no
 Normal strictness is chosen, except words around `.`/`:`, which M4's patched rules fix. SA
 dictionaries also need M4. The hard-status quirk needs the shim.
 
+M0c (§3.4) turned this pilot into a committed tool and found the raw-status, `following`/`preceding` and
+bidi-direction differences the pilot did not look at.
+
+### 3.4 Results of M0c (2026-10-12)
+
+`oracle/unicode-diff` implements the measurement of §3.3 for every call of `SKICU_EMIT_FUNCS` that has an
+ICU4X counterpart: `cpp/unicode_diff.cc` (Chromium ICU `d578f2e8`, `common/*.cpp` built by `build.sh` in
+about 150 s), the Rust twin (ICU4X `=2.3.0`: `icu_segmenter`, `icu_properties`, `icu_casemap`;
+`unicode-bidi =0.3.18` with ICU4X's `BidiClass`), `expected/*.txt`, `known-divergences.txt` and the replay
+test. The corpus is 869 strings: the 34 `resources/text` files whole (as paragraphs, so their newlines
+count), 600 string literals of the shaper, paragraph, Skottie and Unicode tests and the paragraph GM, 57
+Skottie text layers and 178 hand-written cases. `cargo test -p skia-rust-unicode-diff` replays everything
+in about 4 s on any host (the conformance test fetches the Unicode 17.0.0 UAX files like the test fonts);
+`cargo xtask oracle unicode-diff [--update|--replay]` rebuilds the C++ side. Every row, code point range
+and conformance line is exact or listed with a class, and a listed one that starts matching fails.
+
+| Section (rows = strings) | Compared | Exact | Divergent |
+|---|---|---|---|
+| Character boundaries, UTF-8 and UTF-16 | 1,738 | 1,738 | 0 |
+| Line boundaries with raw `ubrk_getRuleStatus` | 1,738 | 1,542 | 196 |
+| Word boundaries with raw status | 1,738 | 1,224 | 514 |
+| Sentence boundaries with raw status | 1,738 | 110 | 1,628 |
+| `ubrk_following` / `ubrk_preceding` at every offset (line UTF-8, word UTF-16) | 1,738 | 1,307 | 431 |
+| Bidi levels, direction, length (paragraph level LTR, RTL, default LTR, default RTL) | 3,476 | 3,399 | 77 |
+| `ubidi_reorderVisual`, all level sequences of two alphabets | 25,749 | 25,749 | 0 |
+| Binary and int properties, `u_iscntrl`, `u_isspace`, `u_isWhitespace`, script: 11 properties × 1,114,112 code points | 12,255,232 | all | 0 |
+| `u_strToUpper`: root, `tr`, `az`, `lt`, `el` × 1,112,064 scalar values, and 4 locales × the corpus | 5,563,796 | all | 0 |
+
+| Conformance file (Unicode 17.0.0) | Lines | ICU fails | ICU4X / unicode-bidi fails | Differ |
+|---|---|---|---|---|
+| `GraphemeBreakTest` | 766 | 0 | 0 | 0 |
+| `WordBreakTest` | 1,944 | 17 | 0 | 17 |
+| `SentenceBreakTest` | 512 | 0 | 0 | 0 |
+| `LineBreakTest` | 19,338 | 142 | 460 | 318 (the 142 are failed by both) |
+| `BidiCharacterTest` | 91,707 | 31 | 0 | 31 |
+
+Four things the pilot (§3.3) did not show:
+
+- **Character boundaries, properties, case mapping and `reorderVisual` are exact.** So are the
+  `u_isspace`/`u_isWhitespace`/`u_iscntrl` definitions of `uchar.cpp` over the General_Category, and
+  ICU4X's script and `Line_Break` values after `to_icu4c_value()` (deprecated upstream, icu4x#6067; M2 needs
+  the same table).
+- **Sentence and word boundary *positions* are exact except the data classes below; the raw rule status
+  is not.** ICU4X has no status at all for lines and sentences, and `WordType` (None, Number, Letter) for
+  words. The status differences are the bulk of the divergent rows.
+- **`BidiInfo::levels` has no rule L1.** ICU's `ubidi_getLevelAt` does (separators and trailing white space
+  at the paragraph level); the twin uses `reordered_levels_per_char` over the paragraph. With that,
+  `unicode-bidi` passes all 91,707 `BidiCharacterTest` lines; ICU fails 31 (embeddings mixed with
+  isolates), so ICU is the less conformant side there.
+- **`ubidi_getDirection` and the explicit-embedding levels follow ICU's own shortcuts** (`ubidi.cpp#L1007-L1020`),
+  which the corpus strings with U+202A-202E hit.
+
+Divergence classes (all 3,212 are classified; `unclassified` is rejected by the replay test). "Strings" are
+distinct corpus strings; "rows" count every case (UTF-8 and UTF-16, the four paragraph levels, navigation)
+separately; "places" are the differing boundaries, levels or lines, counted once (UTF-8 cases only).
+
+| Class | Strings | Rows | Places | What it is, and what fixes it |
+|---|---|---|---|---|
+| `word-dot` | 192 | 576 | 394 | `wordbrk.patch` (`.`, U+FF0E: MidNumLet → MidNum). **M4** (Chromium break data) |
+| `word-colon` | 3 | 26 | 23 | `wordbrk.patch` (`:` out of MidLetter); also 17 `WordBreakTest` lines (rule 6.0). **M4** |
+| `word-hangul-syllable-jamo` | 1 | 3 | 1 | ICU splits U+AC00 from a following U+11A8; UAX #29 does not. **M4**, to confirm against the rule sources |
+| `word-dictionary-cj` | 8 | 24 | 33 | cjdict vs ICU4X's dictionary. **M4** |
+| `word-dictionary-sa` | 10 | 30 | 164 | Thai, Lao, Khmer, Myanmar, Tai Tham, New Tai Lue: ICU dictionaries vs ICU4X LSTM. **M4** |
+| `line-dictionary-sa` | 13 | 39 | 456 | the same for line breaks. **M4** |
+| `line-normal-other` | 1 | 3 | 1 | a break after U+FE13 that ICU makes and ICU4X Normal does not. **M4** |
+| `icu4x-lb-<rule>` (15 rules) | - | 318 | 318 | `LineBreakTest` lines ICU passes and ICU4X fails: rule 9.0 (139), 999.0 (60), 28.0 (50), 20.1 (42), and 11 more rules (1-4 lines each). Not root-caused beyond the rule; ICU4X's line data. **M4** |
+| `word-status-trailing-extend` | 22 | 44 | 625 | ICU status 200, ICU4X `WordType::None` for a segment ending in a mark or Extend/Format. **M2** (compute the status from the segment) |
+| `word-status-ideographic` | 28 | 56 | 606 | ICU 400 (`UBRK_WORD_IDEO`), ICU4X Letter. **M2** |
+| `word-status-none-vs-letter` | 2 | 4 | 21 | ICU 0, ICU4X Letter (after U+203F before U+FF65; regional indicator before an emoji). **M2** |
+| `sentence-status-sep` | 814 | 1,628 | 926 | ICU 100 (`UBRK_SENTENCE_SEP`) for a sentence that ends at a paragraph separator or at the end of text without a terminator, 0 after `.?!`. **M2** |
+| `line-status-hard-break` | 93 | 186 | 237 | ICU 100 (`UBRK_LINE_HARD`) after LF, CR, VT, FF, NEL, LS, PS. **M2** |
+| `line-status-dictionary-hard` | 5 | 10 | 48 | ICU 100 for dictionary boundaries in a range that ends in a hard break (§3.2's Lao quirk). **M2** |
+| `nav-offset-inside-code-point` | 190 | 218 | - | `ubrk_preceding(i)` for an `i` inside a UTF-8 sequence or surrogate pair: ICU first moves `i` to the code point's start. **M2** |
+| `bidi-direction` | 30 | 47 | 47 | `ubidi_getDirection` is `directionFromFlags` (text content and paragraph level), not the levels. **M3** |
+| `bidi-uniform-direction-shortcut` | 11 | 36 | 67 | ICU does not resolve text without the opposite direction: embeddings and isolates in it have no effect. **M3** |
+| `bidi-x9-removed-levels` | 5 | 20 | 52 | levels of LRE/RLE/LRO/RLO/PDF/BN: ICU gives an opener the level it opens and a closer the outer level. **M3** |
+| `bidi-default-level-number-after-separator` | 1 | 1 | 1 | `UBIDI_DEFAULT_RTL`: a digit after an empty paragraph gets level 2 in ICU (`text-sinhala`). **M3** |
+| `icu-bidi-conformance` | - | 31 | 31 | `BidiCharacterTest` lines only ICU fails. Nothing to do: Skia would reproduce them only by using ICU's algorithm (M3 decides whether to emulate) |
+
+What this means for the tasks. **M2** has a precise list of what the shim must compute that ICU4X does not
+give: word status (None 0, Number 100, Letter 200, Kana 300, Ideo 400 from the segment's characters),
+line status 100 after hard breaks and for the dictionary range quirk, sentence status 100 after
+separators or the end of text, `following`/`preceding` at offsets inside code points, and the numeric tables. **M3** has the
+`directionFromFlags` shortcut, the removed-character levels and L1 over `unicode-bidi`. **M4** has the
+data classes: 192 strings with `word-dot`, the dictionaries and the rest; unicode-diff is clean for
+them exactly when the category rows in the table above disappear. Moving a class into the shim or the
+data deletes its rows from `known-divergences.txt` (the replay test fails until it does), so the list
+is the progress meter of M2, M3 and M4.
+
 ---
 
 ## 4. Paragraph (`modules/skparagraph`, 8.5k C++ lines)
@@ -682,6 +771,15 @@ The maintainer decided the open questions as follows. They bind the tasks of §9
 - **Q8: ICU4X `=2.3.x`.**
 - **Q9: Skottie expressions: port the interface only.** No JavaScript engine.
 
+### Status of M0c (2026-10-12)
+
+M0c is done: `oracle/unicode-diff` (C++ driver over Chromium ICU `d578f2e8`, Rust twin over ICU4X `=2.3.0` and
+`unicode-bidi =0.3.18`, expected files, `known-divergences.txt` with every divergence classified, replay
+test), `cargo xtask text-deps fetch --only ucd` (the Unicode 17.0.0 conformance files, digests in
+`inventory/text-deps.lock`) and `cargo xtask oracle unicode-diff [--update|--replay]`. Results and the class
+table are in §3.4. The locale argument of `ubrk_open` is fixed at `en`: tailoring by client locale (for example `ja` or `zh` line
+breaks) is not varied and is for M2's cases to add.
+
 ### Status of M0b and M8's font part (2026-10-12)
 
 M0b is done except that the release asset is not yet published (the session that built it could not
@@ -715,4 +813,6 @@ paragraph test port (M11).
   The Rust twin uses `icu_segmenter =2.3.0` (`new_auto`, `LineBreakStrictness`),
   `icu_properties =2.3.0` (`LineBreak` for hard breaks, `BidiClass` with feature `unicode_bidi`),
   and `unicode-bidi =0.3.18` (`BidiInfo::new_with_data_source`).
-- These drivers are the seeds of M0b and M0c and were not committed with this note.
+- These drivers are the seeds of M0b and M0c. M0b is `oracle/shaper-diff` (§2.5); M0c is `oracle/unicode-diff`
+  (§3.4), which also compiles the ICU `common/*.cpp` with Skia's defines (`U_ENABLE_DYLOAD=0`,
+  `U_USING_ICU_NAMESPACE=0`) and supplies an empty `icudt78_dat` instead of `source/stubdata`.

@@ -5,8 +5,10 @@
 //! (`docs/design/modules.md` §9, tasks M0b and M8).
 //!
 //! * **HarfBuzz** and **Chromium ICU** at Skia's `DEPS` pins (`inventory/text-deps.lock`), for the
-//!   differential tools (`oracle/shaper-diff`, later `oracle/unicode-diff`). They are only needed
+//!   differential tools (`oracle/shaper-diff`, `oracle/unicode-diff`). They are only needed
 //!   to *regenerate* expected files; `cargo test` replays the committed ones.
+//! * The **UAX conformance files** of Unicode 17.0.0 (`[ucd]` of the same lock file), which `oracle/unicode-diff`
+//!   replays like the fonts: fetched from unicode.org, verified and cached.
 //! * The **paragraph test fonts** (`inventory/test-fonts.lock`): the release asset
 //!   `test-fonts-m156`, fetched the way `tests/gm` fetches the goldens (curl, then `gh release
 //!   download`), verified against the lock and cached.
@@ -399,6 +401,73 @@ pub fn icu() -> Result<Icu, String> {
     }
     publish_dir(&staging, &dir)?;
     Ok(result)
+}
+
+// ---------------------------------------------------------------------------------------------
+// The UAX conformance files.
+
+/// The Unicode conformance files of `inventory/text-deps.lock` `[ucd]` (`GraphemeBreakTest.txt`,
+/// `WordBreakTest.txt`, `SentenceBreakTest.txt`, `LineBreakTest.txt`, `BidiCharacterTest.txt`),
+/// downloaded from unicode.org, verified and cached in `<cache>/ucd-<version>/`.
+///
+/// `$SKIA_RUST_UCD_DIR` names a directory that already holds them (verified all the same).
+///
+/// # Errors
+/// If a download fails or a file does not match the lock.
+pub fn ucd() -> Result<PathBuf, String> {
+    let lock = Lock::read("text-deps.lock")?;
+    let version = lock.get("ucd", "version")?.to_owned();
+    let base = lock.get("ucd", "base_url")?.to_owned();
+    let files: Vec<(String, String, String)> = lock
+        .section("ucd")
+        .into_iter()
+        .filter(|(_, v)| v.contains('|'))
+        .map(|(name, v)| {
+            let (path, sha) = v.split_once('|').unwrap_or((&v, ""));
+            (name, path.to_owned(), sha.to_owned())
+        })
+        .collect();
+    let stamp = {
+        let mut s = String::new();
+        for (name, _, sha) in &files {
+            let _ = writeln!(s, "{name} {sha}");
+        }
+        sha256_hex(s.as_bytes())
+    };
+    let dir = cache_root().join(format!("ucd-{version}"));
+    if stamp_ok(&dir, &stamp) {
+        return Ok(dir);
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(cache_root()).map_err(|e| e.to_string())?;
+    let staging = staging_dir(&dir)?;
+    let local = std::env::var_os("SKIA_RUST_UCD_DIR")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from);
+    let built = (|| {
+        for (name, path, sha) in &files {
+            let dest = staging.join(name);
+            if let Some(local) = &local {
+                std::fs::copy(local.join(name), &dest)
+                    .map_err(|e| format!("{}: {e}", local.join(name).display()))?;
+            } else {
+                curl(&format!("{base}/{path}"), &dest)?;
+            }
+            let got = sha256_file(&dest)?;
+            if &got != sha {
+                return Err(format!(
+                    "{name} has SHA-256 {got}, inventory/text-deps.lock says {sha}"
+                ));
+            }
+        }
+        std::fs::write(staging.join(".verified"), &stamp).map_err(|e| e.to_string())
+    })();
+    if let Err(e) = built {
+        let _ = std::fs::remove_dir_all(&staging);
+        return Err(e);
+    }
+    publish_dir(&staging, &dir)?;
+    Ok(dir)
 }
 
 // ---------------------------------------------------------------------------------------------

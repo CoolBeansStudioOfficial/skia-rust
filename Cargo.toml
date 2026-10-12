@@ -34,6 +34,7 @@ members = [
     "oracle/rp-diff",
     "oracle/text-deps",
     "oracle/shaper-diff",
+    "oracle/unicode-diff",
     "xtask",
 ]
 # The cargo-fuzz package needs nightly and libfuzzer-sys, so it is its own workspace and stable
@@ -95,6 +96,13 @@ font-types = "=0.12.0"
 # Shaping (docs/design/modules.md decision 3, Q1 approved 2026-10-12): the newest HarfRust that
 # shares Skia's read-fonts =0.40.1. Bumped only with a Skia milestone bump.
 harfrust = "=0.9.0"
+# Unicode (docs/design/modules.md decision 4 and Q8): ICU4X 2.3.x with compiled data, and
+# unicode-bidi with ICU4X's BidiClass data. Used so far by oracle/unicode-diff (M0c).
+icu_segmenter = "=2.3.0"
+icu_properties = { version = "=2.3.0", features = ["unicode_bidi"] }
+icu_casemap = "=2.3.0"
+icu_locale_core = "=2.3.0"
+unicode-bidi = "=0.3.18"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
