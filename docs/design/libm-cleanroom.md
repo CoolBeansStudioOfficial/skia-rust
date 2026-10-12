@@ -59,16 +59,50 @@ Fits: polynomial in x^2 up to degree 9 infeasible; sin/cos Taylor ratio mismatch
 (2,2) with numerator constant 1 is feasible with a larger margin, i.e. 4 free coefficients.
 Coefficients are fitted, not published. Final: 0 mismatches (run 38202467663).
 
-## atanf
+## atanf  (exact: 0 mismatches of 2^32)
 
 Error pattern (lobes with a gap at 0.45..0.65 and a second regime above 2.4) showed fdlibm's five
 intervals (7/16, 11/16, 19/16, 39/16 edges, atan(0.5), pi/4, atan(1.5), pi/2 offsets). Core
-`w*P(w^2)/Q(w^2)`: (2,2), (4,1), (5,0) infeasible; (3,2) feasible and reproduces all 5e5 ledger
-entries in every interval. Status: see "Results" below.
+`w*P(w^2)/Q(w^2)` fitted on the exhaustive near-midpoint ledger (5e5 entries, x in [2^-14, 2^27]):
+(2,2), (4,1), (5,0) infeasible; (3,2) feasible and reproduces every ledger entry in every interval.
+The coefficients are one point of a degenerate feasible set (numerator-minus-denominator
+coefficient of w^2 is -1/3, as it must be); the exhaustive Windows check is the evidence.
 
-## Other functions
+## atan2f  (NOT exact: 1326 mismatches of 4e8 random operand pairs)
 
-See "Results".
+* The quotient is formed in double precision (float quotient: thousands of mismatches).
+* Reduction: the same five intervals as atanf, `PI - a` for negative x, sign of y applied last.
+* Small quotients: `atan(q) = q` (no correction) when `q < 1e-4` or the biased exponent of `y`
+  is at least 14 below that of `x` (these two conditions together; dense data, kappa window of
+  the fit `p = q(1 + kappa q^2)` is [-0.0003, 0.0001] in both groups, and 0 mismatches over 2e6 samples).
+* Specials (784 pairs of zeros, infinities, NaNs, extremes): all match; NaN operand order: x wins.
+* Residual: 1326 of 4e8 random pairs (3.3e-6), all with `0.05 <= q <= 0.43` or `2.5 <= q <= 3.2`
+  (the core region). atanf's core is not the same function as atan2f's: a joint fit is infeasible
+  (best margin -2.7e-4 half-ulps), and so is a (3,2)/(4,2)/(3,3)/(4,3) core fitted to the atan2f data
+  alone (15-30 contradictory points remain, i.e. the pre-rounding value is not a smooth function of
+  `y/x` there; float-rounded quotients fit some of them). Per-group cores gave 1416 mismatches, no
+  better. Two serious attempts made; callers keep using the module (3e-6 mismatch rate beats the
+  host libm) but the function is flagged non-exact, and the Windows test bounds the rate.
+
+## Functions not reproduced (measurements only)
+
+CR = correctly rounded (mpmath, 200+ bits). "excess" = how far past the rounding boundary the true
+value lies when the platform result differs from CR (a lower bound on the platform's pre-rounding
+error, in result ulps).
+
+| function | platform differs from CR | max excess | what the data says |
+|---|---|---|---|
+| double `sin`, `cos` | 1.2% / 1.2% | 0.25 ulp | Not fdlibm (0.9% mismatch vs platform), not a Maclaurin series in Horner/Estrin/split form with or without FMA (best 2% mismatch on [0.1, pi/4]); table-driven or extended-precision structure suspected. Two attempts. |
+| `cbrtf` | 30% | 1.26 ulp | mean error 0 in every mantissa bucket, std 0.43..0.53 ulp, independent of mantissa: float-arithmetic noise, not a smooth approximation; exponent mod 3 changes the noise level. Operation sequence not identified. |
+| `cbrt` (double) | 13% | 0.9996 ulp | similar, double arithmetic. |
+| `asinf` / `acosf` | 1.2% / 0.34% | 0.32 / 0.14 ulp | noisy, float-arithmetic-like. |
+| `expf` | 7.5e-5 | 4.8e-4 ulp | error always one-sided (platform below truth) and not a smooth function of x: a polynomial in r = x - k ln2 of any degree 6..12 (round or floor reduction) and a (5,5) rational in r are all infeasible (best margin -4.4e-4 and -5.6e-4 half-ulps), and truncating the exact value to 26..49 bits does not explain it either; |x| < 2^-7 also has its own short form. |
+| `logf`, `log2f` | 1e-4 (3.8e-3 near 1) | 0.04 / 0.25 ulp | informative points dense with random signs (66,000 in [0.5, 2]): float-arithmetic noise, not LP-fittable. |
+| `powf` | 4e-4 | n/a | also returns 0 for results that would round to the smallest denormal. |
+| double `acos`, `exp`, `exp2`, `log`, `pow` | 2.7%, 0.5%, 2e-4, 3e-5, 3.9e-4 | 0.39, 0.91, 0.003, 0.003, 0.0015 ulp | `log`, `exp2`, `pow` are close to correctly rounded; matching would need the exact error terms. |
+
+Callers of these functions stay on the platform function. The clippy guard only covers the
+functions that are exact (`f32::sin/cos/tan/sin_cos`).
 
 ## Observation from the CI-hosted oracle workflow (coordinator, admissible black-box evidence)
 
@@ -84,4 +118,20 @@ functions are double evaluations rounded once.
 
 ## Results
 
-(filled in at the end)
+Final probe run (Windows Server runner, `windows-latest`):
+https://github.com/CoolBeansStudioOfficial/skia-rust/actions/runs/38224425216
+
+| function | mismatches |
+|---|---|
+| `sinf`, `cosf`, `tanf`, `atanf` | 0 of 4,294,967,296 bit patterns each (NaN payloads, infinities, zeros, subnormals included) |
+| `atan2f` | 1326 of 4e8 random pairs; 0 of 784 special pairs |
+| everything else | not implemented (see above) |
+
+Caveat: the probe runner's `ucrtbase.dll` is whatever `windows-latest` ships; the oracle used
+Windows 11. The functions agree with the oracle on every GM that exercises them (below).
+
+GMs verified byte-identical to the goldens on every tier after routing `scalar_sin/cos/tan/atan2`
+and `M44::Perspective` through the module: `parsedpaths`, `shadow_utils`, `shadow_utils_occl`,
+`shadow_utils_gray`, `pictureshader_persp`, `imagefilter_transformed_image`. Still failing for
+reasons outside this module: `longpathdash` (double sin/cos), `gradients_*` (cbrtf, atan2f noise),
+`shadow_utils_directional` (f16 ml tiers), `p3_ovals`, `skbug_14554`, `emboss`.
