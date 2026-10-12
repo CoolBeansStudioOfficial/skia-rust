@@ -579,7 +579,6 @@ B4 → B5 → B6. The sweeps (B10–B19) need only B1 and B2 and can run in para
 
 | # | Item | Plan |
 |---|---|---|
-| Q1 | **Build Skia's nanobench (and `dm` for validation) at the pin in CI** on hosted Linux x64 (later arm64, macOS, Windows). One cold build per pin per platform (about 45–60 min, estimate), cached; nightly comparison minutes (§5.3) | Recommended. Without it there are no C3 goldens and no perf comparison; rendering benches stay `ported` and perf stays unmeasured **Decided (2026-10-12): approved as recommended.** |
 | Q2 | **What `passing` means for benches** | Recommended: correctness only (C1–C3); perf is a separate ledger (§3.2). Alternative: `passing` requires perf parity, which would leave nearly all entries `todo` while the interpreter is slower **Decided (2026-10-12): approved as recommended.** |
 | Q3 | **Rendering benches before or without bench goldens** | Recommended: `ported` until C3 data exists. Alternative: `passing` on C1 and C2. Also decide whether C3 covers `565`/`f16` (recommended: `8888` only; the GM suite already covers the others) **Decided (2026-10-12): approved as recommended.** |
 | Q4 | **The noise margin δ on hosted runners**, with BH-FDR and a confirmation re-run | Recommended: δ measured by B5 (2–4% expected); PLAN's δ = 0 kept for a dedicated machine **Decided (2026-10-12): approved as recommended.** |

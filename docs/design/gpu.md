@@ -988,7 +988,6 @@ G8 → G9a → G11a alongside. Unit-test yield by wave: G-A 49 (40 `gpu` + 9 `co
 
 | # | Item | Plan |
 |---|---|---|
-| Q1 | **CI-hosted GPU oracle** (G0b): Actions minutes for a Skia+Dawn build on Linux and Windows (≈ 1–2 h per build on 4 vCPUs, cached by pin + GN args), a Mesa container to maintain, and new release assets in `goldens-m156` | Recommended. Without it, see §3.5: the exit criteria can't be met as written |
 | Q2 | **Revise PLAN §6.2/§7** to per-GM classes (decision 6) | Recommended; this note is the proposal. PLAN edits land with G0a **Decided (2026-10-12): approved as recommended.** |
 | Q3 | **What counts as passing for a `gm-gpu` entry** if a GM is `exact` on lavapipe but `divergent` on WARP | Proposed: `passing` = exact on every gating tier where the class table says `exact`, and at least one gating tier must say `exact`; the WARP divergence stays visible in the class table and the report **Decided (2026-10-12): approved as recommended.** |
 | Q4 | **`unsafe` for test diagnostics.** `PASSTHROUGH_SHADERS` (Tint blobs in `gpu-replay --tint`) and `create_shader_module_trusted` (Dawn's `disable_robustness`) are `unsafe` wgpu APIs | Proposed: allow them only in `oracle/` tooling (outside the shipped crates), never in `skia-rust-gpu`; decide before G0c needs `--tint` **Decided (2026-10-12): approved as recommended.** |
