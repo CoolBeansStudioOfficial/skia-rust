@@ -1,0 +1,2 @@
+# The upstream style of HarfRust 0.9.0 (edition 2021 defaults), not the 2024 style of the workspace.
+style_edition = "2021"

@@ -1,10 +1,13 @@
 # name mode size subpixel      (docs/design/modules.md §2.4; both drivers read this file)
 # mode a: HarfBuzz's/HarfRust's own OpenType font functions. Size "-" leaves the scale at the
 #         font's units per em; a size sets the scale to round(size * 65536).
-# mode b: Skia's font functions (SkShaper_harfbuzz.cpp#L72-L238) over per-font tables written by
-#         `shaper-diff tables`; the scale is skhb_position(size).
-# mode c: the empty face of the portable TestTypeface (no tables, upem 2048) with synthetic
-#         callbacks (src/synthetic.rs); the scale is skhb_position(size).
+# mode b: Skia's font functions (SkShaper_harfbuzz.cpp#L72-L238) over the Font of the Fontations
+#         typeface of each test font; HarfBuzz gets them as per-font tables written by
+#         `shaper-diff tables`. The scale is skhb_position(size).
+# mode c: the empty face of the portable TestTypeface (no tables, upem 2048) with Skia's font
+#         functions over TestTypeface's numbers (also tables for HarfBuzz); the Rust side builds
+#         the face as skia-rust-shaper does for a typeface without an sfnt (the synthesized sfnt).
+#         The scale is skhb_position(size).
 a-none a - 0
 a-12 a 12 0
 a-30 a 30 0

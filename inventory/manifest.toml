@@ -28190,7 +28190,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L277-L477"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "de27c726b22d48f5d72f523d5ee326a8777ed179488d918f08fb8951b804f956"
 
 [[test]]
@@ -28199,7 +28199,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L238-L238"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "8fe3cc2f21c19e2257be7f21a4e4876d6de472aa52379f7c227670d4d317f1e8"
 
 [[test]]
@@ -28208,7 +28208,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L241-L241"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "3acbb14986b32fb2a73031c5ccaa2cc8ae9e4a8a55aa66aa0bc4ddab736aa872"
 
 [[test]]
@@ -28217,7 +28217,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L242-L242"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "382eb5fb12909ad3cd2d5d46e4cd2f737f7d9fa841e3708e8166ab3baea025c7"
 
 [[test]]
@@ -28226,7 +28226,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L243-L243"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "71f08d5eee8f40cc08003e1fb727c0877ce666f92bf8f9cacdb9ddc893bd48c4"
 
 [[test]]
@@ -28235,7 +28235,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L269-L269"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "41545442d105d4641d591a35da47489e5ce2a5bc329945a60cc988a2f56311b8"
 
 [[test]]
@@ -28244,7 +28244,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L244-L244"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "c1d7b2432cf33eee3ad44e32e3db2d9ba8865387e9419db32dbb98c9d28c25ce"
 
 [[test]]
@@ -28253,7 +28253,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L245-L245"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "b6497cad932b380d577101261c9f9b464d20ac3daee48565bd588eded4ba82f7"
 
 [[test]]
@@ -28262,7 +28262,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L246-L246"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "0fcdc8582935ff66154faf153dcfc415c5f77a1fcc6fa5a2848b286fd06040e8"
 
 [[test]]
@@ -28271,7 +28271,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L270-L270"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "40dbb8d7bf65f97f15f67f95ab2c9f9ce2cc6084b14f5b893078ec962929002c"
 
 [[test]]
@@ -28280,7 +28280,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L247-L247"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "2b1e91a6e76e2b0e010e440ab85a76e29bd3fd11d33c589a7974b200d11cc14a"
 
 [[test]]
@@ -28289,7 +28289,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L248-L248"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "0c1c9f2cea93c55de5fc329f5b89656e991dbe003abd74d6d97bdebbedcfbe00"
 
 [[test]]
@@ -28298,7 +28298,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L249-L249"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "270502f08e284536cb6cc7ff884d7793cf4f821a6bb2f99582593db8c215ff38"
 
 [[test]]
@@ -28307,7 +28307,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L250-L250"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "8a33ce98f70b728e5c6348f7211a325554adb971333cc87d51db75c08a94c318"
 
 [[test]]
@@ -28316,7 +28316,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L252-L252"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "d9750e3b6adb9dba7d0ca3755a3713d65c77a475777f54caf0571d6bd5d3ca14"
 
 [[test]]
@@ -28325,7 +28325,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L253-L253"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "2284808924f2cafd02da50b1cc8edf3d5a008fb8c1ff5525503aa6c9f8c5ff74"
 
 [[test]]
@@ -28334,7 +28334,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L251-L251"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "0acdeecb94f4346485e90a0c6c4ab63144797b08b4b80a38788980164646c188"
 
 [[test]]
@@ -28343,7 +28343,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L254-L254"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "a32986a0b50bfa80ee0d895b9c8d119a7e4b0d22c1ae9dfa6cd378c0baa3df01"
 
 [[test]]
@@ -28352,7 +28352,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L255-L255"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "23f091e8232f438d18b3e10fd2010dcfb891d005482d190407c33f8c3644405d"
 
 [[test]]
@@ -28361,7 +28361,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L256-L256"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "33c0852ef86b1a9d11a5241981d7319bc70485c47bc1e10081d90764bbdc9bbc"
 
 [[test]]
@@ -28370,7 +28370,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L271-L271"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "3f0c9f51c97ee8f99b1146c4bd7d9e74d841f97c342f43bb39f0ff28bec6ef12"
 
 [[test]]
@@ -28379,7 +28379,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L257-L257"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "f02b1d02521b7908e5c0ea939722d3ebbdd779058ddd77051b8a80d24d17bad4"
 
 [[test]]
@@ -28388,7 +28388,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L258-L258"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "b57f898e0a55e8da4f188f5184c98030772cef066319f7b95d034798c1348479"
 
 [[test]]
@@ -28397,7 +28397,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L272-L272"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "18d55c19ebc0af2f753aaf52d5fd4ca5de8b568aacd4b9d5ef132c8e848aba7f"
 
 [[test]]
@@ -28406,7 +28406,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L259-L259"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "df4c8d7332ed912e252021d9d315167f05460dad5502c6e9ae3beb82a5387bbe"
 
 [[test]]
@@ -28415,7 +28415,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L260-L260"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "5404a60c1c599b23caeac29b4859b122479df423efa8341205fdf9949188a01e"
 
 [[test]]
@@ -28424,7 +28424,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L261-L261"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "d6f6921c3ee17bd6581d7857b103836417b45b97ecfef74446e13c7d9d4089ce"
 
 [[test]]
@@ -28433,7 +28433,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L262-L262"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "fa805e4ade025f5e293dab370bd23017ac4f6e3d80afeaad653507ddfc5f5984"
 
 [[test]]
@@ -28442,7 +28442,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L263-L263"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "287acb8b3635be72f13ef371ca4aa7c1e28c095630c8b4f7911760818ded62b9"
 
 [[test]]
@@ -28451,7 +28451,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L273-L273"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "8d36f142f556d986c736c885a1be2ba128f7948a98e2a8bda838713b0606d124"
 
 [[test]]
@@ -28460,7 +28460,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L274-L274"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "46f2cde50c658a449e41880ab0e96bb886ea8ccc786cfc2f28521b6de33bf7bb"
 
 [[test]]
@@ -28469,7 +28469,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L264-L264"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "afe14e1e7dc442e9f9881fbad7f53787d7c1f682d0dd304b93c31e86423b5dcd"
 
 [[test]]
@@ -28478,7 +28478,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L265-L265"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "798e6f52c1363dbfcb063e9f5771089e00de54b2a08d043268445f661dda57ac"
 
 [[test]]
@@ -28487,7 +28487,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L266-L266"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "cfef16948624130753006c03954db32ee46ebdd5cd0d802907ffeb8ba10185e1"
 
 [[test]]
@@ -28496,7 +28496,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L267-L267"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "1092585c3db87ec60f724c560205c3e485ca4d9232fdb0dfa4834bc509fc33bd"
 
 [[test]]
@@ -28505,7 +28505,7 @@ kind = "unit"
 macro = "SHAPER_TEST"
 source = "modules/skshaper/tests/ShaperTest.cpp#L268-L268"
 module = "shaper"
-status = "todo"
+status = "passing"
 span_hash = "0527796e941717ddbb208642a61323e4bb9d2442a7e3d3a79d273c3bbc9cf39d"
 
 [[test]]

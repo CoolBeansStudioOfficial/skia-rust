@@ -74,6 +74,42 @@ pub trait ShaperBackend: fmt::Debug + Send + Sync {
         options: &Options,
         handler: &mut dyn RunHandler,
     );
+
+    // Port of: modules/skshaper/src/SkShaper.cpp#L142-L153 (chrome/m156), the legacy
+    // `SkShaperPrimitive::shape(utf8, const SkFont&, leftToRight, width, handler)`, which has no
+    // fallback manager: `leftToRight` is unused by the primitive shaper, and the font manager is
+    // null, so a missing glyph keeps the primary font (see `run_iterator::FontMgrRunIterator`).
+    /// The legacy `shape` with one font, a direction and a width. The default is the primitive
+    /// shaper's: the HarfBuzz shapers override it.
+    fn shape_font(
+        &self,
+        utf8: &[u8],
+        font: &Font,
+        left_to_right: bool,
+        width: scalar,
+        handler: &mut dyn RunHandler,
+    ) {
+        let _ = left_to_right; // Unused by the primitive shaper, as in Skia.
+        let mut font_runs = make_font_mgr_run_iterator(utf8, font, None);
+        // bidi, script and language are unused, so they are built with empty data.
+        let mut bidi_runs = TrivialBiDiRunIterator::new(0, 0);
+        let mut script_runs = TrivialScriptRunIterator::new(0, 0);
+        let mut language_runs = TrivialLanguageRunIterator::new("", 0);
+        let options = Options {
+            width,
+            ..Options::default()
+        };
+        self.shape(
+            utf8,
+            &mut font_runs,
+            &mut bidi_runs,
+            &mut script_runs,
+            &mut language_runs,
+            &[],
+            &options,
+            handler,
+        );
+    }
 }
 
 /// `SkShaper`: shapes UTF-8 text into runs of glyphs, reported to a [`RunHandler`].
@@ -95,24 +131,32 @@ impl Shaper {
         }
     }
 
-    // Port of: modules/skshaper/src/SkShaper.cpp#L26-L38 (chrome/m156), `SkShaper::Make`. In the
-    // oracle build the HarfBuzz shaper is tried first, with the font manager as fallback. The
-    // HarfBuzz shapers are milestone M6, so the primitive shaper is the result for now (the same
-    // result as Skia without HarfBuzz). `fallback` is kept for the HarfBuzz path.
+    /// A shaper over `backend`.
+    #[must_use]
+    pub fn from_backend(backend: Box<dyn ShaperBackend>) -> Self {
+        Self { backend }
+    }
+
+    // Port of: modules/skshaper/src/SkShaper.cpp#L26-L38 (chrome/m156), `SkShaper::Make`: the
+    // HarfBuzz shaper driven by the shaper (`MakeShaperDrivenWrapper`, with the Unicode of
+    // `get_unicode()`) when there is one, else the primitive shaper.
     /// `SkShaper::Make(sk_sp<SkFontMgr> fallback)`.
     #[must_use]
     #[doc(alias = "Make")]
-    #[allow(clippy::needless_pass_by_value)] // the HarfBuzz shaper (M6) takes the font manager
     pub fn new(fallback: Option<FontMgr>) -> Self {
-        let _ = fallback; // Used by the HarfBuzz shaper (M6).
+        if let Some(unicode) = skia_rust_unicode::unicode_icu::make() {
+            return crate::harfbuzz::shaper_driven_wrapper(unicode, fallback);
+        }
         Self::new_primitive()
     }
 
-    // Port of: modules/skshaper/src/SkShaper.cpp#L40-L44 (chrome/m156), `SkShaper::PurgeCaches`.
-    // The only caches are the HarfBuzz ones (M6), so nothing is purged yet.
+    // Port of: modules/skshaper/src/SkShaper.cpp#L40-L44 (chrome/m156), `SkShaper::PurgeCaches`:
+    // the only caches are the HarfBuzz ones.
     /// `SkShaper::PurgeCaches()`.
     #[doc(alias = "PurgeCaches")]
-    pub fn purge_caches() {}
+    pub fn purge_caches() {
+        crate::harfbuzz::purge_caches();
+    }
 
     /// `SkShaper::shape(utf8, FontRunIterator&, BiDiRunIterator&, ScriptRunIterator&,
     /// LanguageRunIterator&, features, options, handler)`.
@@ -186,20 +230,7 @@ impl Shaper {
         width: scalar,
         handler: &mut dyn RunHandler,
     ) {
-        let _ = left_to_right; // Unused by the primitive shaper, as in Skia.
-        let mut font_runs = make_font_mgr_run_iterator(utf8, font, None);
-        // bidi, script and language are unused, so they are built with empty data.
-        let mut bidi_runs = TrivialBiDiRunIterator::new(0, 0);
-        let mut script_runs = TrivialScriptRunIterator::new(0, 0);
-        let mut language_runs = TrivialLanguageRunIterator::new("", 0);
-        self.shape_with_iterators(
-            utf8,
-            &mut font_runs,
-            &mut bidi_runs,
-            &mut script_runs,
-            &mut language_runs,
-            width,
-            handler,
-        );
+        self.backend
+            .shape_font(utf8, font, left_to_right, width, handler);
     }
 }

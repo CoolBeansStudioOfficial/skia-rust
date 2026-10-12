@@ -496,8 +496,6 @@ dependencies = [
 [[package]]
 name = "harfrust"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2428703078f884a910b19e632719e4f2b3778aa0fd071e3bb18eb9786474a051"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -1513,6 +1511,8 @@ dependencies = [
 name = "skia-rust-shaper"
 version = "0.156.0"
 dependencies = [
+ "harfrust",
+ "read-fonts",
  "skia-rust-core",
  "skia-rust-unicode",
 ]
@@ -1525,7 +1525,10 @@ dependencies = [
  "read-fonts",
  "sha2",
  "skia-rust-core",
+ "skia-rust-shaper",
+ "skia-rust-text",
  "skia-rust-text-deps",
+ "skia-rust-tools",
  "skrifa",
 ]
 
@@ -1598,6 +1601,7 @@ dependencies = [
  "skia-rust-pdf",
  "skia-rust-raster",
  "skia-rust-resources",
+ "skia-rust-shaper",
  "skia-rust-simd",
  "skia-rust-skcms",
  "skia-rust-skottie",

@@ -932,6 +932,28 @@ break-data`), the port of ICU's `RuleBasedBreakIterator`, caches and dictionary 
 `ChromiumData` as the default break data. unicode-diff's `breaks` section and the break conformance files are
 exact; only bidi remains in `known-divergences.txt`.
 
+### Status of M6 (2026-10-12)
+
+M6 is done: `skia_rust_shaper::harfbuzz` (`SkShaper_harfbuzz.cpp`: `ShaperDrivenWrapper`, `ShapeThenWrap`,
+`ShapeDontWrapOrReorder`, `LanguageBasedLineBreaker`, the script run iterator, the `skhb_*` font functions as
+HarfRust `FontFuncs`, the face from the typeface's sfnt or, for a typeface without one, from a synthesized
+sfnt of its tables and units per em, variations, the 16.16 scale and `HBLockedFaceCache`) and
+`unicode_shaper` (`SkShaper_skunicode.cpp`). `SkShapers::BestAvailable` and `SkShaper::Make` use them
+whenever a Unicode implementation exists. The 36 `ShaperTest` entries pass.
+
+HarfRust is the vendored `third_party/harfrust` (`SKIA-RUST.md` lists the patches). shaper-diff found
+two more classes than §2.5: `fallback-space-advance` (HarfBuzz divides the font's scale for the fallback
+space widths) and HarfBuzz's own `roundf` (`floorf (x + .5f)`, `hb-algs.hh#L329-L337`), which the anchor
+patch needed. Modes b and c now shape through `skia-rust-shaper` with the real `Font` of a Fontations
+typeface and the real `TestTypeface`, and the C++ driver reads their numbers as tables: every row of both
+modes is exact (5,184 and 72). Mode a (HarfRust's own font functions, which Skia's callbacks replace) keeps
+108 rows: `builtin-extents` 82, `builtin-advance-rounding` 26.
+
+Differences from the C++ that a caller can see: `BidiRunIterator` returns `None` instead of null (the
+`Factory` method then returns one run at the given level); the buffer context (five code points on each
+side, `hb_buffer_add_utf8`) is decoded with Rust's UTF-8 rules, which differ from HarfBuzz's only for
+invalid UTF-8 in the context.
+
 ### Status of M0b and M8's font part (2026-10-12)
 
 M0b is done except that the release asset is not yet published (the session that built it could not

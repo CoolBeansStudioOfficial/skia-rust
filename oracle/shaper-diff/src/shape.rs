@@ -5,12 +5,14 @@
 
 use std::fmt::Write as _;
 
-use harfrust::funcs::FontFuncs;
-use harfrust::{BufferClusterLevel, FontRef, ShapeOptions, Shaper, ShaperData, UnicodeBuffer};
+use harfrust::{
+    BufferClusterLevel, FontRef, GlyphBuffer, ShapeOptions, Shaper, ShaperData, UnicodeBuffer,
+};
 use sha2::{Digest, Sha256};
+use skia_rust_core::font::Font;
+use skia_rust_core::typeface::Typeface;
+use skia_rust_shaper::harfbuzz::{shape_buffer, skhb_position};
 
-use crate::synthetic::{self, SyntheticFuncs};
-use crate::tables::{FontTable, skhb_position};
 use crate::{Corpus, Row, crate_dir, read_table};
 
 /// The three modes of `docs/design/modules.md` §2.4.
@@ -18,9 +20,9 @@ use crate::{Corpus, Row, crate_dir, read_table};
 pub enum Mode {
     /// (a) The library's own OpenType font functions.
     Builtin,
-    /// (b) Skia's font functions over per-font tables.
+    /// (b) Skia's font functions, over the `Font` of a Fontations typeface of the test font.
     SkiaFuncs,
-    /// (c) The empty face with synthetic callbacks.
+    /// (c) The empty face of the portable `TestTypeface`, with Skia's font functions.
     EmptyFace,
 }
 
@@ -95,28 +97,24 @@ impl ShapeConfig {
             if self.subpixel { "1" } else { "0" }
         )
     }
+
+    /// The `Font` of a typeface under this config (modes b and c).
+    ///
+    /// # Panics
+    /// If the config has no size.
+    #[must_use]
+    pub fn font(&self, typeface: &Typeface) -> Font {
+        let mut font = Font::from_size(
+            typeface.clone(),
+            self.size.expect("modes b and c have a size"),
+        );
+        font.set_subpixel(self.subpixel);
+        font
+    }
 }
 
-/// Shapes `text` as one run and serializes it as `gid:cluster:xa:ya:xo:yo` records.
-///
-/// The buffer is built as the C++ driver does: UTF-8, monotone-characters cluster level, segment
-/// properties guessed. An empty line is not shaped.
-#[must_use]
-pub fn shape_line(
-    shaper: &Shaper<'_>,
-    text: &str,
-    scale: Option<i32>,
-    funcs: Option<&mut dyn FontFuncs>,
-) -> String {
+fn serialize(glyphs: &GlyphBuffer) -> String {
     let mut out = String::new();
-    if text.is_empty() {
-        return out;
-    }
-    let mut buffer = UnicodeBuffer::new();
-    buffer.set_cluster_level(BufferClusterLevel::MonotoneCharacters);
-    buffer.push_str(text);
-    buffer.guess_segment_properties();
-    let glyphs = shaper.shape(buffer, ShapeOptions::new().scale(scale).font_funcs(funcs));
     for (i, (info, pos)) in glyphs
         .glyph_infos()
         .iter()
@@ -135,66 +133,91 @@ pub fn shape_line(
     out
 }
 
+fn buffer_of(text: &str) -> UnicodeBuffer {
+    let mut buffer = UnicodeBuffer::new();
+    buffer.set_cluster_level(BufferClusterLevel::MonotoneCharacters);
+    buffer.push_str(text);
+    buffer.guess_segment_properties();
+    buffer
+}
+
+/// Mode a: shapes `text` as one run and serializes it as `gid:cluster:xa:ya:xo:yo` records.
+///
+/// The buffer is built as the C++ driver does: UTF-8, monotone-characters cluster level, segment
+/// properties guessed. An empty line is not shaped.
+#[must_use]
+pub fn shape_line(shaper: &Shaper<'_>, text: &str, scale: Option<i32>) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+    serialize(&shaper.shape(buffer_of(text), ShapeOptions::new().scale(scale)))
+}
+
+/// Modes b and c: the same, through `skia-rust-shaper`: the cached face of the typeface of `font`,
+/// Skia's font functions and the scale of the font size.
+#[must_use]
+pub fn shape_line_skia(font: &Font, text: &str) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+    shape_buffer(font, buffer_of(text), &[]).map_or_else(String::new, |g| serialize(&g))
+}
+
 /// What a run needs to shape one font under one config.
-pub struct Run<'a> {
-    font: FontRef<'a>,
-    data: ShaperData,
-    scale: Option<i32>,
-    funcs: Option<Box<dyn FontFuncs>>,
+pub enum Run<'a> {
+    /// Mode a: HarfRust over the font file, with its own font functions.
+    Builtin {
+        /// The font.
+        font: FontRef<'a>,
+        /// Its shaper data.
+        data: Box<ShaperData>,
+        /// The scale, if any.
+        scale: Option<i32>,
+    },
+    /// Modes b and c: Skia's `Font`.
+    Skia(Font),
 }
 
 impl std::fmt::Debug for Run<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Run")
-            .field("scale", &self.scale)
-            .finish_non_exhaustive()
+        f.debug_struct("Run").finish_non_exhaustive()
     }
 }
 
 impl<'a> Run<'a> {
-    /// Prepares `font_data` (a font file; face 0) for `config`; `table` is mode b's table.
+    /// Mode a over `font_data` (face 0).
     ///
     /// # Errors
     /// If the font cannot be parsed.
-    pub fn new(
-        config: &ShapeConfig,
-        font_data: &'a [u8],
-        table: Option<FontTable>,
-    ) -> Result<Run<'a>, String> {
+    pub fn builtin(config: &ShapeConfig, font_data: &'a [u8]) -> Result<Run<'a>, String> {
         let font = FontRef::from_index(font_data, 0).map_err(|e| format!("font: {e}"))?;
-        // A fresh `ShaperData` per run: it caches the code point to glyph mapping, which depends
-        // on the font functions.
-        let data = ShaperData::new(&font);
-        let funcs: Option<Box<dyn FontFuncs>> = match config.mode {
-            Mode::Builtin => None,
-            Mode::SkiaFuncs => Some(Box::new(table.ok_or("mode b needs a table")?)),
-            Mode::EmptyFace => Some(Box::new(SyntheticFuncs {
-                subpixel: config.subpixel,
-            })),
-        };
-        Ok(Run {
+        let data = Box::new(ShaperData::new(&font));
+        Ok(Run::Builtin {
             font,
             data,
             scale: config.scale(),
-            funcs,
         })
     }
 
     /// Shapes every line of `corpus` and returns the rows for `font_name` under `config`.
-    pub fn rows(&mut self, config: &ShapeConfig, font_name: &str, corpus: &Corpus) -> Vec<Row> {
+    #[must_use]
+    pub fn rows(&self, config: &ShapeConfig, font_name: &str, corpus: &Corpus) -> Vec<Row> {
         let mut rows = Vec::new();
-        let shaper = self.data.shaper(&self.font).build();
+        let shaper = match self {
+            Run::Builtin { font, data, .. } => Some(data.shaper(font).build()),
+            Run::Skia(_) => None,
+        };
         // SHAPER_DIFF_DUMP=1 prints every shaped line (`L <config> <font> <source> <index> <glyphs>`).
         let dump = std::env::var_os("SHAPER_DIFF_DUMP").is_some();
         for (id, lines) in &corpus.sources {
             let mut sha = Sha256::new();
             let mut glyphs = 0;
             for (index, line) in lines.iter().enumerate() {
-                let funcs: Option<&mut dyn FontFuncs> = match self.funcs.as_mut() {
-                    Some(f) => Some(&mut **f),
-                    None => None,
+                let mut s = match (self, &shaper) {
+                    (Run::Builtin { scale, .. }, Some(shaper)) => shape_line(shaper, line, *scale),
+                    (Run::Skia(font), _) => shape_line_skia(font, line),
+                    (Run::Builtin { .. }, None) => unreachable!("a builtin run has a shaper"),
                 };
-                let mut s = shape_line(&shaper, line, self.scale, funcs);
                 if !s.is_empty() {
                     glyphs += 1 + s.bytes().filter(|&b| b == b' ').count();
                 }
@@ -219,10 +242,4 @@ impl<'a> Run<'a> {
         }
         rows
     }
-}
-
-/// The font data of the empty face (mode c).
-#[must_use]
-pub fn empty_face_data() -> Vec<u8> {
-    synthetic::empty_sfnt()
 }

@@ -19,7 +19,6 @@
 
 mod compute;
 pub mod shape;
-pub mod synthetic;
 pub mod tables;
 
 pub use compute::{compute, write_tables};

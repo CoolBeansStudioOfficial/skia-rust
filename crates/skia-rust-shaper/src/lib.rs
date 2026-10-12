@@ -4,11 +4,12 @@
 // SkShaper.cpp, SkShaper_primitive.cpp, SkShaper_factory.cpp, modules/skshaper/utils/
 // FactoryHelpers.h.
 //
-// Milestone M5 of docs/design/modules.md. The HarfBuzz shapers (`SkShaper_harfbuzz.cpp`,
-// `SkShaper_skunicode.cpp`) are milestone M6: until they land, `Shaper::new` and
-// `factory::best_available` return the primitive shaper, and the run iterators that M6 replaces
-// (the bidi and script iterators of the unicode and HarfBuzz paths) return their trivial forms.
-// Each such place says so where it is defined.
+// Milestones M5 and M6 of docs/design/modules.md. The HarfBuzz shapers (`SkShaper_harfbuzz.cpp`,
+// `SkShaper_skunicode.cpp`) run on HarfRust (third_party/harfrust); `Shaper::new` and
+// `factory::best_available` use them whenever there is a Unicode implementation.
+
+// `HarfBuzz` and `HarfRust` are proper names, not code.
+#![allow(clippy::doc_markdown)]
 
 //! The `SkShaper` module: text shaping into runs of positioned glyphs.
 //!
@@ -18,15 +19,19 @@
 //!   trivial ones that cover a whole text with one value.
 //! - [`primitive`] is `SkShapers::Primitive`: one glyph per code point, no shaping, with
 //!   line breaking at the advance widths.
+//! - [`harfbuzz`] is `SkShapers::HB`: the HarfBuzz shapers on HarfRust, the script run iterator and
+//!   the cache of faces. [`unicode_shaper`] is `SkShapers::unicode`: the bidi run iterator.
 //! - [`factory`] holds `SkShapers::Factory` and `SkShapers::BestAvailable`.
 
 pub mod factory;
+pub mod harfbuzz;
 pub mod primitive;
 pub mod run_handler;
 pub mod run_iterator;
 pub mod shaper;
+pub mod unicode_shaper;
 
-pub use factory::{Factory, best_available};
+pub use factory::{Factory, best_available, harfbuzz_factory};
 pub use run_handler::{Buffer, RunHandler, RunInfo, TextBlobBuilderRunHandler};
 pub use run_iterator::{
     BiDiRunIterator, FontRunIterator, LanguageRunIterator, RunIterator, ScriptRunIterator,

@@ -286,6 +286,12 @@ impl TypefaceBase for UserTypeface {
         Some((wstream.detach_as_stream(), 0))
     }
 
+    /// `onOpenExistingStream`: none; the data is only synthesized on demand.
+    // Port of: src/utils/SkCustomTypeface.cpp#L121 (chrome/m156)
+    fn on_open_existing_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)> {
+        None
+    }
+
     /// `SkUserTypeface::onGetFamilyName`: the empty name.
     // Port of: src/utils/SkCustomTypeface.cpp#L240-L242 (chrome/m156)
     fn on_get_family_name(&self) -> String {

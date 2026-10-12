@@ -157,6 +157,13 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
     // Port of: include/core/SkTypeface.h#L400 (chrome/m156)
     fn on_open_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)>;
 
+    /// `SkTypeface::onOpenExistingStream`: the font data when the typeface already has it in
+    /// memory. The default is [`on_open_stream`](Self::on_open_stream).
+    // Port of: src/core/SkTypeface.cpp#L544-L546 (chrome/m156)
+    fn on_open_existing_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)> {
+        self.on_open_stream()
+    }
+
     /// `SkTypeface::onGetFamilyName`.
     // Port of: include/core/SkTypeface.h#L426 (chrome/m156)
     fn on_get_family_name(&self) -> String;
@@ -512,6 +519,15 @@ impl Typeface {
     #[must_use]
     pub fn open_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)> {
         self.0.on_open_stream()
+    }
+
+    /// `SkTypeface::openExistingStream`: the font data and its collection index, if the typeface
+    /// has them in memory already, or `None`.
+    // Port of: src/core/SkTypeface.cpp#L342-L349 (chrome/m156)
+    #[doc(alias = "openExistingStream")]
+    #[must_use]
+    pub fn open_existing_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)> {
+        self.0.on_open_existing_stream()
     }
 
     /// `SkTypeface::getVariationDesignPosition`: the axes, or `None` when unknown.

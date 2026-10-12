@@ -46,7 +46,7 @@ fn header(file: &str) -> String {
             "mode b: HarfBuzz 9cb1fee5 with Skia's font functions (SkShaper_harfbuzz.cpp#L72-L238)"
         }
         _ => {
-            "mode c: HarfBuzz 9cb1fee5, empty face (no tables, upem 2048) with synthetic callbacks"
+            "mode c: HarfBuzz 9cb1fee5, empty face (no tables, upem 2048) with Skia's callbacks over TestTypeface"
         }
     };
     format!(

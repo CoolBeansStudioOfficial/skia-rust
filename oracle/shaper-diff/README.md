@@ -6,7 +6,7 @@ HarfRust `=0.9.0` against HarfBuzz at Skia's pin (`9cb1fee5`, 13.1.0). Design:
 | File | What |
 |---|---|
 | `cpp/shaper_diff.cc`, `build.sh` | The HarfBuzz driver. `build.sh <harfbuzz src dir> <binary>`; the sources come from `cargo xtask text-deps fetch`. |
-| `src/` | The Rust twin (`shape.rs`), mode b's per-font tables (`tables.rs`), mode c's synthetic callbacks (`synthetic.rs`), the `shaper-diff` binary. |
+| `src/` | The Rust twin (`shape.rs`, `compute.rs`: modes b and c shape through `skia-rust-shaper` with the real `Font` and `TestTypeface`), the tables of their font functions for the C++ driver (`tables.rs`), the `shaper-diff` binary. |
 | `configs.txt`, `fonts.txt`, `corpus/` | What both sides shape: modes and sizes, the 36 sfnt fonts of `inventory/test-fonts.lock`, the text sources (`gen_corpus.py` makes `corpus/` from the pinned Skia tree). |
 | `expected/*.txt` | The driver's output per mode: `config font source lines glyphs sha256`. Committed. |
 | `known-divergences.txt` | Rows where HarfRust differs, with a class (`classify.py` writes it). Every other row is exact. |

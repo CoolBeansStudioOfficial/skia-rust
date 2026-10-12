@@ -1,5 +1,6 @@
 /target
-/third_party/
+/third_party/*
+!/third_party/harfrust/
 /oracle/out/
 /oracle/rp-bench/out/
 /oracle/rp-builder/out/

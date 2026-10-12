@@ -41,7 +41,7 @@ members = [
 ]
 # The cargo-fuzz package needs nightly and libfuzzer-sys, so it is its own workspace and stable
 # builds of this one never see it (docs/design/fuzz.md §4).
-exclude = ["fuzz/libfuzzer"]
+exclude = ["fuzz/libfuzzer", "third_party/harfrust"]
 
 [workspace.package]
 version = "0.156.0"
@@ -98,8 +98,10 @@ skrifa = "=0.43.2"
 read-fonts = "=0.40.1"
 font-types = "=0.12.0"
 # Shaping (docs/design/modules.md decision 3, Q1 approved 2026-10-12): the newest HarfRust that
-# shares Skia's read-fonts =0.40.1. Bumped only with a Skia milestone bump.
-harfrust = "=0.9.0"
+# shares Skia's read-fonts =0.40.1. Bumped only with a Skia milestone bump. It is the vendored copy
+# `third_party/harfrust` (HarfRust 0.9.0 plus the patches of third_party/harfrust/SKIA-RUST.md,
+# docs/design/modules.md decision 5).
+harfrust = { path = "third_party/harfrust", version = "=0.9.0" }
 # Unicode (docs/design/modules.md decision 4 and Q8): ICU4X 2.3.x with compiled data, and
 # unicode-bidi with ICU4X's BidiClass data. Used by skia-rust-unicode (M2) and oracle/unicode-diff.
 icu_segmenter = "=2.3.0"

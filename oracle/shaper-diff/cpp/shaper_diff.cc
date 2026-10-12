@@ -11,9 +11,10 @@
 //   b  Skia's font functions of SkShaper_harfbuzz.cpp#L72-L238 (nominal_glyph(s), glyph_h_advance(s),
 //      glyph_extents), installed on a sub font of the hb_ot font exactly as create_sub_hb_font does
 //      (#L274-L356). Their numbers come from a table file the Rust tool writes (nominal map, 16.16
-//      advances, 16.16 extents), so both sides shape with identical inputs.
+//      advances, 16.16 extents) by calling the same `Font` callbacks that the Rust shaper installs
+//      (skia-rust-shaper's SkiaFontFuncs), so both sides shape with identical inputs.
 //   c  The "empty face" of TestTypeface: hb_face_create_for_tables with no tables, upem 2048
-//      (#L274-L311), with synthetic callbacks (the same formulas as src/synthetic.rs).
+//      (#L274-L311), with Skia's callbacks over TestTypeface's numbers (also a table file).
 //
 // Usage: shaper_diff --fonts DIR --font-list FILE --configs FILE --corpus DIR --tables DIR
 //                    [--config NAME] [--font NAME] [--dump]
@@ -257,76 +258,14 @@ hb_bool_t skhb_glyph_extents(hb_font_t*, void* font_data, hb_codepoint_t g,
     return true;
 }
 
-// Mode c's synthetic callbacks: the formulas of src/synthetic.rs.
-struct Synthetic { bool subpixel; };
-
-uint32_t syn_glyph(uint32_t cp) {
-    if (cp % 11 == 0) return 0;
-    return 1 + ((cp * 2654435761u) >> 16) % 2999;
-}
-int32_t syn_advance(uint32_t g, bool subpixel) {
-    int32_t adv = (int32_t)(((g * 37) % 900 + 300) << 12);
-    if (!subpixel) adv = ((adv + 32768) >> 16) << 16;
-    return adv;
-}
-
-hb_bool_t syn_nominal_glyph(hb_font_t*, void*, hb_codepoint_t unicode, hb_codepoint_t* glyph, void*) {
-    *glyph = syn_glyph(unicode);
-    return *glyph != 0;
-}
-unsigned syn_nominal_glyphs(hb_font_t*, void*, unsigned count, const hb_codepoint_t* unicodes,
-                            unsigned unicode_stride, hb_codepoint_t* glyphs, unsigned glyph_stride,
-                            void*) {
-    unsigned done;
-    for (done = 0; done < count; done++) {
-        uint32_t g = syn_glyph(*unicodes);
-        if (g == 0) break;
-        *glyphs = g;
-        glyphs = (hb_codepoint_t*)((char*)glyphs + glyph_stride);
-        unicodes = (const hb_codepoint_t*)((const char*)unicodes + unicode_stride);
-    }
-    return done;
-}
-hb_position_t syn_h_advance(hb_font_t*, void* font_data, hb_codepoint_t g, void*) {
-    return syn_advance(g, ((Synthetic*)font_data)->subpixel);
-}
-void syn_h_advances(hb_font_t*, void* font_data, unsigned count, const hb_codepoint_t* glyphs,
-                    unsigned glyph_stride, hb_position_t* advances, unsigned advance_stride, void*) {
-    bool sp = ((Synthetic*)font_data)->subpixel;
-    for (unsigned i = 0; i < count; i++) {
-        *advances = syn_advance(*glyphs, sp);
-        advances = (hb_position_t*)((char*)advances + advance_stride);
-        glyphs = (const hb_codepoint_t*)((const char*)glyphs + glyph_stride);
-    }
-}
-hb_bool_t syn_extents(hb_font_t*, void*, hb_codepoint_t g, hb_glyph_extents_t* e, void*) {
-    if (g % 5 == 0) {
-        e->x_bearing = e->y_bearing = e->width = e->height = 0;
-    } else {
-        e->x_bearing = (int32_t)((g % 7) << 14);
-        e->y_bearing = (int32_t)(((g * 3) % 11 + 5) << 14);
-        e->width = (int32_t)(((g * 5) % 9 + 4) << 14);
-        e->height = -(int32_t)(((g * 7) % 13 + 4) << 14);
-    }
-    return true;
-}
-
-hb_font_funcs_t* make_funcs(bool synthetic) {
+hb_font_funcs_t* make_funcs() {
     hb_font_funcs_t* funcs = hb_font_funcs_create();
-    if (synthetic) {
-        hb_font_funcs_set_nominal_glyph_func(funcs, syn_nominal_glyph, nullptr, nullptr);
-        hb_font_funcs_set_nominal_glyphs_func(funcs, syn_nominal_glyphs, nullptr, nullptr);
-        hb_font_funcs_set_glyph_h_advance_func(funcs, syn_h_advance, nullptr, nullptr);
-        hb_font_funcs_set_glyph_h_advances_func(funcs, syn_h_advances, nullptr, nullptr);
-        hb_font_funcs_set_glyph_extents_func(funcs, syn_extents, nullptr, nullptr);
-    } else {
-        // skhb_get_font_funcs, SkShaper_harfbuzz.cpp#L228-L256
-        hb_font_funcs_set_nominal_glyph_func(funcs, skhb_nominal_glyph, nullptr, nullptr);
-        hb_font_funcs_set_nominal_glyphs_func(funcs, skhb_nominal_glyphs, nullptr, nullptr);
-        hb_font_funcs_set_glyph_h_advance_func(funcs, skhb_glyph_h_advance, nullptr, nullptr);
-        hb_font_funcs_set_glyph_h_advances_func(funcs, skhb_glyph_h_advances, nullptr, nullptr);
-        hb_font_funcs_set_glyph_extents_func(funcs, skhb_glyph_extents, nullptr, nullptr);
-    }
+    // skhb_get_font_funcs, SkShaper_harfbuzz.cpp#L228-L256
+    hb_font_funcs_set_nominal_glyph_func(funcs, skhb_nominal_glyph, nullptr, nullptr);
+    hb_font_funcs_set_nominal_glyphs_func(funcs, skhb_nominal_glyphs, nullptr, nullptr);
+    hb_font_funcs_set_glyph_h_advance_func(funcs, skhb_glyph_h_advance, nullptr, nullptr);
+    hb_font_funcs_set_glyph_h_advances_func(funcs, skhb_glyph_h_advances, nullptr, nullptr);
+    hb_font_funcs_set_glyph_extents_func(funcs, skhb_glyph_extents, nullptr, nullptr);
     hb_font_funcs_make_immutable(funcs);
     return funcs;
 }
@@ -403,8 +342,7 @@ int main(int argc, char** argv) {
     for (auto& row : read_table(corpusDir + "/index.txt")) corpusNames.push_back(row[0]);
     std::vector<Source> corpus = read_corpus(corpusDir, corpusNames);
 
-    hb_font_funcs_t* skiaFuncs = make_funcs(false);
-    hb_font_funcs_t* synFuncs = make_funcs(true);
+    hb_font_funcs_t* skiaFuncs = make_funcs();
 
     for (const Config& cfg : configs) {
         if (!onlyConfig.empty() && cfg.name != onlyConfig) continue;
@@ -414,7 +352,6 @@ int main(int argc, char** argv) {
             hb_face_t* face;
             std::string fontData;  // must outlive the face
             FontTable table;
-            Synthetic synthetic{cfg.subpixel};
             if (cfg.mode == 'c') {
                 // create_hb_face's fallback (#L298-L311) for a typeface without an sfnt stream.
                 face = hb_face_create_for_tables(no_table, nullptr, nullptr);
@@ -434,13 +371,9 @@ int main(int argc, char** argv) {
             if (cfg.mode == 'b' || cfg.mode == 'c') {
                 // create_sub_hb_font (#L339-L356)
                 font = hb_font_create_sub_font(otFont);
-                if (cfg.mode == 'b') {
-                    table = load_table(tablesDir + "/" + fontName + "@" + cfg.size + "@" +
-                                       (cfg.subpixel ? "1" : "0") + ".tbl");
-                    hb_font_set_funcs(font, skiaFuncs, &table, nullptr);
-                } else {
-                    hb_font_set_funcs(font, synFuncs, &synthetic, nullptr);
-                }
+                table = load_table(tablesDir + "/" + fontName + "@" + cfg.size + "@" +
+                                   (cfg.subpixel ? "1" : "0") + ".tbl");
+                hb_font_set_funcs(font, skiaFuncs, &table, nullptr);
             }
             if (cfg.mode != 'a' || cfg.size != "-") {
                 int scale = (int)(cfg.sizeValue * 65536.0 + 0.5);
