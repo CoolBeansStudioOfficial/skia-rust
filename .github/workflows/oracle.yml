@@ -12,6 +12,8 @@ name: Oracle (CI-hosted)
 # Nothing is published from here; the maintainer publishes the artifacts.
 
 on:
+  push:
+    branches: [oracle/ci-hosted-register]
   workflow_dispatch:
     inputs:
       builds:
