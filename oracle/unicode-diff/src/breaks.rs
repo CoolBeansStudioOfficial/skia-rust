@@ -10,7 +10,7 @@
 
 use std::fmt::Write as _;
 
-use skia_rust_unicode::icu_shim::{UBRK_DONE, UBreakIterator, UBreakIteratorType};
+use skia_rust_unicode::icu_shim::{UBRK_DONE, UBreakIterator, UBreakIteratorType, u_error_name};
 
 use crate::{Source, row, utf16};
 
@@ -36,24 +36,32 @@ pub enum Text<'a> {
     Utf16(&'a [u16]),
 }
 
-/// `ubrk_open(kind, "en")` + `ubrk_setUText(text)`.
+/// `ubrk_open(kind, locale)` + `ubrk_setUText(text)`, or ICU's error.
 ///
-/// # Panics
-/// Never: the root rules of every kind exist.
-#[must_use]
-pub fn open(kind: Kind, text: Text<'_>) -> UBreakIterator {
+/// # Errors
+/// The `UErrorCode` of `ubrk_open`.
+pub fn open_locale(kind: Kind, text: Text<'_>, locale: &str) -> Result<UBreakIterator, i32> {
     let kind = match kind {
         Kind::Char => UBreakIteratorType::Character,
         Kind::Word => UBreakIteratorType::Word,
         Kind::Line => UBreakIteratorType::Line,
         Kind::Sentence => UBreakIteratorType::Sentence,
     };
-    let mut it = UBreakIterator::open(kind, Some("en")).expect("the root rules exist");
+    let mut it = UBreakIterator::open(kind, Some(locale))?;
     match text {
         Text::Utf8(s) => it.set_text_utf8(s.as_bytes()),
         Text::Utf16(s) => it.set_text_utf16(s),
     }
-    it
+    Ok(it)
+}
+
+/// `ubrk_open(kind, "en")` + `ubrk_setUText(text)`.
+///
+/// # Panics
+/// Never: the root rules of every kind exist.
+#[must_use]
+pub fn open(kind: Kind, text: Text<'_>) -> UBreakIterator {
+    open_locale(kind, text, "en").expect("the root rules exist")
 }
 
 /// `(position, rule status)` for `first()` and every `next()` until `UBRK_DONE`.
@@ -73,8 +81,17 @@ pub fn boundaries(kind: Kind, text: Text<'_>) -> Vec<(usize, i32)> {
     out
 }
 
-fn enumerate(kind: Kind, text: Text<'_>) -> (String, usize) {
-    let b = boundaries(kind, text);
+fn enumerate(kind: Kind, text: Text<'_>, locale: &str) -> (String, usize) {
+    let mut it = match open_locale(kind, text, locale) {
+        Ok(it) => it,
+        Err(e) => return (format!("open-error:{}", u_error_name(e)), 0),
+    };
+    let mut b = Vec::new();
+    let mut pos = it.first();
+    while pos != UBRK_DONE {
+        b.push((pos, it.get_rule_status()));
+        pos = it.next();
+    }
     let mut out = String::new();
     for (i, (p, s)) in b.iter().enumerate() {
         if i > 0 {
@@ -101,25 +118,35 @@ fn navigate(kind: Kind, text: Text<'_>, len: usize) -> (String, usize) {
     (out, len + 1)
 }
 
-/// The cases of the driver: name, kind, UTF-16 text, navigation instead of enumeration.
-const CASES: [(&str, Kind, bool, bool); 10] = [
-    ("char-u8", Kind::Char, false, false),
-    ("char-u16", Kind::Char, true, false),
-    ("line-u8", Kind::Line, false, false),
-    ("line-u16", Kind::Line, true, false),
-    ("word-u8", Kind::Word, false, false),
-    ("word-u16", Kind::Word, true, false),
-    ("sent-u8", Kind::Sentence, false, false),
-    ("sent-u16", Kind::Sentence, true, false),
-    ("nav-line-u8", Kind::Line, false, true),
-    ("nav-word-u16", Kind::Word, true, true),
+/// The cases of the driver: name, kind, UTF-16 text, navigation instead of enumeration, locale.
+const CASES: [(&str, Kind, bool, bool, &str); 17] = [
+    ("char-u8", Kind::Char, false, false, "en"),
+    ("char-u16", Kind::Char, true, false, "en"),
+    ("line-u8", Kind::Line, false, false, "en"),
+    ("line-u16", Kind::Line, true, false, "en"),
+    ("word-u8", Kind::Word, false, false, "en"),
+    ("word-u16", Kind::Word, true, false, "en"),
+    ("sent-u8", Kind::Sentence, false, false, "en"),
+    ("sent-u16", Kind::Sentence, true, false, "en"),
+    ("nav-line-u8", Kind::Line, false, true, "en"),
+    ("nav-word-u16", Kind::Word, true, true, "en"),
+    ("line-zh-u8", Kind::Line, false, false, "zh_Hans_CN"),
+    ("line-ja-u8", Kind::Line, false, false, "ja_JP"),
+    ("line-ja-normal-u8", Kind::Line, false, false, "ja@lb=normal"),
+    ("line-strict-u8", Kind::Line, false, false, "en@lb=strict"),
+    ("line-loose-u8", Kind::Line, false, false, "en_US@lb=loose"),
+    ("line-ko-strict-u8", Kind::Line, false, false, "ko@lb=strict"),
+    ("sent-el-u8", Kind::Sentence, false, false, "el_GR"),
 ];
+
+/// The number of per-string cases of the section.
+pub const CASE_COUNT: usize = CASES.len();
 
 /// Prints the section.
 #[must_use]
 pub fn run(corpus: &[Source], dump: bool) -> String {
     let mut out = String::new();
-    for (name, kind, is16, nav) in CASES {
+    for (name, kind, is16, nav, locale) in CASES {
         for s in corpus {
             for (i, text) in s.strings.iter().enumerate() {
                 let u16s = utf16(text);
@@ -131,7 +158,7 @@ pub fn run(corpus: &[Source], dump: bool) -> String {
                 let (detail, n) = if nav {
                     navigate(kind, t, len)
                 } else {
-                    enumerate(kind, t)
+                    enumerate(kind, t, locale)
                 };
                 out += &row(name, s, i, n, &detail, dump);
             }

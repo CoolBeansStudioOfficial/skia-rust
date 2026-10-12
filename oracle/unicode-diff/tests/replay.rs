@@ -82,7 +82,7 @@ fn expected_files_cover_the_corpus() {
         .map(|s| s.strings.len())
         .sum();
     for (section, cases) in [
-        (Section::Breaks, 10),
+        (Section::Breaks, skia_rust_unicode_diff::breaks::CASE_COUNT),
         (Section::Bidi, 4),
         (Section::Case, 4),
     ] {
