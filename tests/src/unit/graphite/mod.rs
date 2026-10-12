@@ -31,6 +31,7 @@ pub mod recording_surfaces_test;
 pub mod rect_test;
 pub mod rt_effect_test;
 pub mod shape_test;
+pub mod sparse_strips;
 pub mod storage_context_test;
 pub mod submit_with_finish_proc_test;
 pub mod swizzle_test;

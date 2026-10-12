@@ -76,6 +76,7 @@ pub mod serialization_utils;
 pub mod shader_code_dictionary;
 pub mod shader_info;
 pub mod shared_context;
+pub mod sparse_strips;
 pub mod special_image;
 pub mod storage_context;
 pub mod surface_graphite;
