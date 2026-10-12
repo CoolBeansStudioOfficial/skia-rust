@@ -15,6 +15,7 @@
 use crate::canvas::Canvas;
 use crate::checksum::cheap_mix;
 use crate::drawable::{Drawable, DrawableBase};
+use crate::flattenable::FlattenableRegistry;
 use crate::font_types::GlyphId;
 use crate::mask::{Mask, MaskFormat};
 use crate::packed_glyph_id::PackedGlyphId;
@@ -26,6 +27,7 @@ use crate::rect::IRect;
 use crate::rect::Rect;
 use crate::scalar::{scalar, scalar_floor_to_int};
 use crate::scaler_context::AxisAlignment;
+use crate::serial_procs::DeserialProcs;
 use crate::write_buffer::BinaryWriteBuffer;
 
 /// `SkGlyph::kMaxGlyphWidth`: glyphs at least this wide have no image in the atlas.
@@ -342,6 +344,47 @@ impl GlyphDigest {
         let mask = Self::ACTION_MASK << shift;
         self.bits &= !mask;
         self.bits |= (action as u64) << shift;
+    }
+
+    /// `SkGlyphDigest::setActionFor(actionType, glyph, strike)`: decides the action for
+    /// `action_type`. `prepare` stands for the `strike->prepareForImage/Path/Drawable(glyph)`
+    /// calls; it is given the action type (`DirectMaskCpu` for an image, `Path`, or `Drawable`)
+    /// and returns whether the glyph then has the data.
+    // Port of: src/core/SkGlyph.cpp#L640-L688 (chrome/m156)
+    #[doc(alias = "setActionFor")]
+    pub fn set_action_for(
+        &mut self,
+        action_type: ActionType,
+        prepare: &mut dyn FnMut(ActionType) -> bool,
+    ) {
+        // We don't have to do any more if the glyph is marked as kDrop because it was isEmpty().
+        if self.action_for(action_type) != GlyphAction::Unset {
+            return;
+        }
+        let mut action = GlyphAction::Reject;
+        match action_type {
+            ActionType::DirectMask => {
+                if self.fits_in_atlas_direct() {
+                    action = GlyphAction::Accept;
+                }
+            }
+            ActionType::DirectMaskCpu | ActionType::Path | ActionType::Drawable => {
+                if prepare(action_type) {
+                    action = GlyphAction::Accept;
+                }
+            }
+            ActionType::Mask => {
+                if self.fits_in_atlas_interpolated() {
+                    action = GlyphAction::Accept;
+                }
+            }
+            ActionType::Sdft => {
+                if self.fits_in_atlas_direct() && self.mask_format() == MaskFormat::Sdf {
+                    action = GlyphAction::Accept;
+                }
+            }
+        }
+        self.set_action(action_type, action);
     }
 
     /// `SkGlyphDigest::maxDimension`.
@@ -1077,12 +1120,25 @@ impl PictureBackedGlyphDrawable {
         Drawable::new(std::sync::Arc::new(Self { picture }))
     }
 
-    /// `SkPictureBackedGlyphDrawable::MakeFromBuffer`: the drawable of the picture that the buffer
-    /// holds. `None` for an empty drawable (which is written as an empty byte array), and for an
-    /// invalid buffer or picture, which also invalidates the buffer.
+    /// `SkPictureBackedGlyphDrawable::MakeFromBuffer`, reading the flattenables of the picture
+    /// with no registry: a picture with shaders, color filters or blenders is rejected. Use
+    /// [`from_buffer_with_registry`](Self::from_buffer_with_registry) for those.
     // Port of: src/core/SkGlyph.cpp#L38-L65 (chrome/m156), MakeFromBuffer
     #[must_use]
     pub fn from_buffer(buffer: &mut ReadBuffer<'_>) -> Option<Drawable> {
+        Self::from_buffer_with_registry(buffer, &FlattenableRegistry::EMPTY)
+    }
+
+    /// `SkPictureBackedGlyphDrawable::MakeFromBuffer`: the drawable of the picture that the buffer
+    /// holds. `None` for an empty drawable (which is written as an empty byte array), and for an
+    /// invalid buffer or picture, which also invalidates the buffer. The picture's flattenables
+    /// are read with `registry` (Skia's are global; skia-rust passes them).
+    // Port of: src/core/SkGlyph.cpp#L38-L65 (chrome/m156), MakeFromBuffer
+    #[must_use]
+    pub fn from_buffer_with_registry(
+        buffer: &mut ReadBuffer<'_>,
+        registry: &FlattenableRegistry,
+    ) -> Option<Drawable> {
         let (data, size) = buffer.skip_byte_array();
         // Return nullptr if invalid or there an empty drawable, which is represented by nullptr.
         if !buffer.is_valid() || size == 0 {
@@ -1092,7 +1148,14 @@ impl PictureBackedGlyphDrawable {
             buffer.validate(false);
             return None;
         };
-        let picture = Picture::from_data(data, None);
+        // Glyphs have a limited set of what they can be. We explicitly disable sksl for security
+        // purposes (see b/40064011, b/40064341). The allowed picture tags (`fAllowTagsProc`) are
+        // not a choice of the Rust picture reader, which reads only those it knows.
+        let procs = DeserialProcs {
+            disallow_sksl: true,
+            ..DeserialProcs::default()
+        };
+        let picture = Picture::from_data_with_registry(data, Some(&procs), registry);
         if !buffer.validate(picture.is_some()) {
             return None;
         }

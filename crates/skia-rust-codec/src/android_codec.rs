@@ -328,8 +328,8 @@ impl<'a> AndroidCodec<'a> {
     /// Port of `SkAndroidCodec::getAndroidPixels`: decodes the image, or a subset of it, scaled by
     /// `options.sample_size`, into `pixels` (`row_bytes` apart). `None` options decode the whole image
     /// unscaled.
-    // Port of: src/codec/SkAndroidCodec.cpp#L332-L382 (chrome/m156), without the frame-callback
-    // recursion, which only animated codecs need (none is ported).
+    // Port of: src/codec/SkAndroidCodec.cpp#L332-L382 (chrome/m156), with the frame-callback
+    // recursion flattened to the codec's `getPixels` (see below).
     #[doc(alias = "getAndroidPixels")]
     pub fn get_android_pixels(
         &mut self,
@@ -356,9 +356,12 @@ impl<'a> AndroidCodec<'a> {
             }
         }
 
-        let frame_result = self
-            .codec
-            .handle_frame_index(request_info, &mut [], 0, &options.base);
+        // The required frame is decoded into `pixels`. Skia's `getPixelsFn` goes through
+        // `getAndroidPixels` again; for the adapter codecs (the only animated ones) that is the
+        // codec's own `getPixels`, which `handle_frame_index` calls.
+        let frame_result =
+            self.codec
+                .handle_frame_index(request_info, pixels, row_bytes, &options.base);
         if frame_result != Result::Success {
             return frame_result;
         }

@@ -567,9 +567,11 @@ impl ScalerContext {
         self.internal_make_glyph(packed_id, self.base.rec.mask_format)
     }
 
-    /// `SkScalerContext::internalMakeGlyph`.
+    /// `SkScalerContext::internalMakeGlyph`. Public for the debug typeface `SkRandomTypeface`,
+    /// which is a friend of `SkScalerContext` in C++ and makes its proxy's glyphs in another
+    /// mask format.
     // Port of: src/core/SkScalerContext.cpp#L256-L314 (chrome/m156)
-    fn internal_make_glyph(&mut self, packed_id: PackedGlyphId, format: MaskFormat) -> Glyph {
+    pub fn internal_make_glyph(&mut self, packed_id: PackedGlyphId, format: MaskFormat) -> Glyph {
         let mut glyph = Glyph::new(packed_id);
         glyph.set_mask_format(format); // subclass may return a different value
         let mut mx = self.imp.generate_metrics(&glyph, &self.base);
@@ -722,6 +724,13 @@ impl ScalerContext {
     // Port of: src/core/SkScalerContext.cpp#L860-L864 (chrome/m156)
     pub fn get_font_metrics(&mut self) -> FontMetrics {
         self.imp.generate_font_metrics(&self.base)
+    }
+
+    /// `SkScalerContext::generatePath`, the backend's virtual, called directly. Public for the
+    /// debug typeface `SkRandomTypeface`, a friend of `SkScalerContext` in C++.
+    // Port of: src/core/SkScalerContext.h#L436 (chrome/m156)
+    pub fn generate_path(&mut self, glyph: &Glyph) -> Option<GeneratedPath> {
+        self.imp.generate_path(glyph, &self.base)
     }
 
     /// `SkScalerContext::internalGetPath`: the glyph's path, with the fake bold stroke, the path

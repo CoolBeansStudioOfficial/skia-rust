@@ -15,15 +15,18 @@
 //! opaque handle here; the GPU phase (`skia_rust_gpu::text_gpu::slug_impl`) implements
 //! [`SlugBase`].
 //!
-//! Not ported: `serialize`, `Deserialize`, `MakeFromBuffer` and `AddDeserialProcs` (they need the
-//! remote glyph cache, T23).
+//! Serializing a slug writes it with the back end's [`SlugBase::do_flatten`]. Reading one back
+//! needs the back end that made it, so `Deserialize`, `MakeFromBuffer` and `AddDeserialProcs` are
+//! in the GPU phase (`skia_rust_gpu::text_gpu::slug_impl::deserialize`).
 
 use core::any::Any;
 use core::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use crate::data::Data;
 use crate::rect::Rect;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// What a GPU back end provides for a [`Slug`] (the virtual functions of `sktext::gpu::Slug`).
 // Port of: include/private/chromium/Slug.h#L28-L66 (chrome/m156)
@@ -33,6 +36,9 @@ pub trait SlugBase: Any + fmt::Debug + Send + Sync {
 
     /// `sourceBoundsWithOrigin()`: the bounds of the glyphs in the canvas' coordinates.
     fn source_bounds_with_origin(&self) -> Rect;
+
+    /// `doFlatten(buffer)`: writes the slug.
+    fn do_flatten(&self, buffer: &mut BinaryWriteBuffer);
 
     /// The slug as `Any`, so a device can recover its own type.
     fn as_any(&self) -> &dyn Any;
@@ -75,6 +81,15 @@ impl Slug {
     #[must_use]
     pub fn source_bounds_with_origin(&self) -> Rect {
         self.base.source_bounds_with_origin()
+    }
+
+    /// `serialize()`: the slug as bytes.
+    // Port of: src/text/gpu/Slug.cpp#L28-L32 (chrome/m156)
+    #[must_use]
+    pub fn serialize(&self) -> Data {
+        let mut buffer = BinaryWriteBuffer::new();
+        self.base.do_flatten(&mut buffer);
+        buffer.snapshot_as_data()
     }
 
     /// `uniqueID()`.

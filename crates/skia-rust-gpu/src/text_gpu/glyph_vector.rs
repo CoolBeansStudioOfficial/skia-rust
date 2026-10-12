@@ -15,13 +15,15 @@
 //!
 //! skia-rust: C++ stores the glyphs in untyped storage that holds a packed id and then a backend
 //! `Glyph` in place, with templated backend data. Graphite is the only backend here, so the
-//! backend data is [`GlyphData`] and the ids stay available beside it. Not ported: `flatten` and
-//! `MakeFromBuffer` (the remote glyph cache, T23).
+//! backend data is [`GlyphData`] and the ids stay available beside it.
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use skia_rust_core::packed_glyph_id::PackedGlyphId;
-use skia_rust_core::strike::StrikePromise;
+use skia_rust_core::read_buffer::ReadBuffer;
+use skia_rust_core::strike::{StrikePromise, TypefaceIdTranslator};
+use skia_rust_core::strike_cache::StrikeCache;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::gpu::mask_format::MaskFormat;
 use crate::graphite::recorder::Recorder;
@@ -71,6 +73,63 @@ impl GlyphVector {
             strike_promise: Mutex::new(promise),
             packed_ids: packed_ids.to_vec(),
             backend: Mutex::new(None),
+        }
+    }
+
+    /// `MakeFromBuffer(buffer, client, alloc)`: reads a glyph vector that
+    /// [`flatten`](Self::flatten) wrote. The strike is looked up in the global strike cache,
+    /// after the typeface id is translated if there is a client. Returns `None` if the data is
+    /// bad.
+    // Port of: src/text/gpu/GlyphVector.cpp#L62-L91 (chrome/m156)
+    #[must_use]
+    pub fn make_from_buffer(
+        buffer: &mut ReadBuffer<'_>,
+        client: Option<&dyn TypefaceIdTranslator>,
+    ) -> Option<GlyphVector> {
+        let promise = StrikePromise::make_from_buffer(buffer, client, StrikeCache::global());
+        if !buffer.validate(promise.is_some()) {
+            return None;
+        }
+        let promise = promise?;
+
+        let glyph_count = buffer.read32();
+        // Since the glyph count can never be zero. There was a buffer reading problem.
+        if !buffer.validate(glyph_count > 0) {
+            return None;
+        }
+
+        // Make sure we won't overflow the glyphCount math or allocation below.
+        if !buffer.validate(will_count_fit_glyph_bytes(glyph_count)) {
+            return None;
+        }
+
+        // Check for enough bytes to populate the packedGlyphID array. If not enough something has
+        // gone wrong.
+        let count = usize::try_from(glyph_count).ok()?;
+        if !buffer.validate(count * size_of::<u32>() <= buffer.available()) {
+            return None;
+        }
+
+        let packed_ids: Vec<PackedGlyphId> = (0..count)
+            .map(|_| PackedGlyphId::from_raw(buffer.read_uint()))
+            .collect();
+        Some(GlyphVector::make(promise, &packed_ids))
+    }
+
+    /// `flatten(buffer)`: writes the strike's descriptor, the glyph count and the packed ids.
+    ///
+    /// # Panics
+    /// If the glyph count does not fit an `int32_t`.
+    // Port of: src/text/gpu/GlyphVector.cpp#L93-L109 (chrome/m156)
+    pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        // There should never be a glyph vector with zero glyphs.
+        debug_assert_ne!(self.packed_ids.len(), 0);
+        self.strike_promise().flatten(buffer);
+
+        // Write out the span of packedGlyphIDs.
+        buffer.write_int(i32::try_from(self.packed_ids.len()).expect("SkTo<int32_t>"));
+        for id in &self.packed_ids {
+            buffer.write_uint(id.value());
         }
     }
 
@@ -144,4 +203,16 @@ impl GlyphVector {
         // Drop the reference to the strike so that it can be purged from the cache if needed.
         promise.reset_strike();
     }
+}
+
+/// `BagOfBytes::WillCountFit<GlyphBytes>(n)`: whether `n` glyphs (of `sizeof(void*)` bytes each
+/// in C++) fit an allocation block.
+// Port of: src/text/gpu/SubRunAllocator.h#L119-L123 (chrome/m156)
+fn will_count_fit_glyph_bytes(n: i32) -> bool {
+    /// `BagOfBytes::kMaxByteSize`: `INT_MAX - k4K`.
+    const MAX_BYTE_SIZE: i32 = i32::MAX - (1 << 12);
+    /// `GlyphVector_Concepts::kMaxGlyphTypeSize`: `sizeof(void*)` on 64-bit targets.
+    const GLYPH_BYTES_SIZE: i32 = 8;
+    const MAX_N: i32 = MAX_BYTE_SIZE / GLYPH_BYTES_SIZE;
+    (0..MAX_N).contains(&n)
 }

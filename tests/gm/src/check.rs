@@ -51,7 +51,9 @@ use skia_rust_simd::{Estimates, Selection, Tier};
 use crate::diff;
 use crate::goldens::{GoldenStore, sha256_hex};
 use crate::registry::GmRegistration;
-use crate::sink::{Config, GmSrc, RasterSink, Status, oracle_n32, packed_bytes, uses_rgba_goldens};
+use crate::sink::{
+    Config, GmSrc, RasterSink, Src, Status, oracle_n32, packed_bytes, uses_rgba_goldens,
+};
 use skia_rust_core::color_type::ColorType;
 
 /// Oracle tiers that only approximate the tier they stand for (design §4.5).
@@ -290,19 +292,20 @@ enum Render {
 
 /// Renders `src` for `config` as the oracle build whose goldens it is compared with: on the CPU
 /// tier `sel`, with that build's `kN32_SkColorType` (`oracle_n32`).
-fn render(src: GmSrc, config: Config, sel: Selection, oracle_n32: ColorType) -> Render {
+fn render(src: &dyn Src, config: Config, sel: Selection, oracle_n32: ColorType) -> Render {
+    let fatal_has_pixels = src.fatal_pixels_are_results();
     let result = catch_unwind(AssertUnwindSafe(|| {
         let _guard = force_tier(sel).map_err(|e| e.to_string())?;
         let _n32 = force_oracle_n32(oracle_n32);
-        Ok::<_, String>(RasterSink::new(config).draw(&src))
+        Ok::<_, String>(RasterSink::new(config).draw(src))
     }));
     match result {
         Err(payload) => Render::Panicked(panic_message(payload.as_ref())),
         Ok(Err(unsupported)) => Render::Panicked(unsupported),
         Ok(Ok(rendered)) => match rendered.result.status {
             Status::Skip => Render::Skipped(rendered.result.msg),
-            Status::Fatal => Render::Failed(rendered.result.msg),
-            Status::Ok => {
+            Status::Fatal if !fatal_has_pixels => Render::Failed(rendered.result.msg),
+            Status::Fatal | Status::Ok => {
                 let bitmap = rendered.bitmap.expect("an Ok result has pixels");
                 Render::Pixels {
                     bytes: packed_bytes(&bitmap),
@@ -336,17 +339,30 @@ fn no_variant_check(config: Config, tp: &TierPlan, host_n32: ColorType) -> Check
 #[must_use]
 pub fn check_gm(
     key: &str,
-    src: &GmSrc,
+    src: &dyn Src,
     store: &GoldenStore,
     plan: &[TierPlan],
     opts: &Options,
 ) -> GmReport {
     let name = src.name();
+    let dir = src.id_dir();
     let mut checks = Vec::new();
     for &config in &opts.configs {
-        let id = config.result_id(&name);
+        let id = config.src_result_id(&dir, &name);
+        let diff_name = if dir == "gm" {
+            name.clone()
+        } else {
+            format!("{}_{name}", dir.replace('/', "_"))
+        };
         for tp in plan.iter().filter(|tp| !tp.oracle_tiers.is_empty()) {
-            let oracle_tiers = tp.oracle_tiers_for(config, opts.host_n32);
+            // The goldens of DM's file sources hold some configs on some tiers only.
+            let oracle_tiers: Vec<&'static str> = tp
+                .oracle_tiers_for(config, opts.host_n32)
+                .iter()
+                .copied()
+                .filter(|ot| dir == "gm" || store.has_config(ot, config.tag()))
+                .collect();
+            let oracle_tiers = oracle_tiers.as_slice();
             if oracle_tiers.is_empty() {
                 checks.push(no_variant_check(config, tp, opts.host_n32));
                 continue;
@@ -371,7 +387,7 @@ pub fn check_gm(
                     continue;
                 }
             };
-            match render(*src, config, sel, oracle_n32(config, opts.host_n32)) {
+            match render(src, config, sel, oracle_n32(config, opts.host_n32)) {
                 Render::Panicked(msg) => push(Some(sel), None, Outcome::Panicked { msg }),
                 Render::Failed(msg) => push(Some(sel), None, Outcome::DrawFailed { msg }),
                 Render::Skipped(msg) => {
@@ -399,7 +415,7 @@ pub fn check_gm(
                                         .object(golden)
                                         .and_then(|g| {
                                             diff::write_diff(
-                                                root, ot, config, &name, size, &bytes, &g,
+                                                root, ot, config, &diff_name, size, &bytes, &g,
                                             )
                                         })
                                         .map_or_else(

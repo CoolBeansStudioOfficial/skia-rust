@@ -111,6 +111,11 @@ pub fn fill(info: &ImageInfo, dst: &mut [u8], row_bytes: usize, zero_init: ZeroI
     let row_len = width * bytes_per_pixel;
     for row in 0..info.height() as usize {
         let start = row * row_bytes;
-        dst[start..start + row_len].fill(0);
+        // skia-rust: Skia writes past the end of `dst` when the caller offsets it into a row (a
+        // subset decode into the middle of a buffer); stop at the rows that fit instead.
+        let Some(row_dst) = dst.get_mut(start..start + row_len) else {
+            break;
+        };
+        row_dst.fill(0);
     }
 }

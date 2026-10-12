@@ -7,7 +7,8 @@
 //! `SkRuntimeEffectPriv`: the hooks Skia's own code (and tests) use on runtime effects, and the
 //! Raster Pipeline callbacks that run an effect's children.
 //!
-//! skia-rust: `ReadChildEffects`/`WriteChildEffects` (flattening) are not ported.
+//! The flattening helpers (`ReadChildEffects`, `WriteChildEffects`, and the stable-key or SkSL
+//! source that each runtime flattenable writes) are here too.
 
 use std::sync::Arc;
 
@@ -28,8 +29,12 @@ use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::color_type::ColorType;
 use crate::data::Data;
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
+use crate::known_runtime_effects::{is_skia_known_runtime_effect, maybe_get_known_runtime_effect};
 use crate::matrix::Matrix;
+use crate::picture_priv;
 use crate::raster_pipeline::RasterPipeline;
+use crate::read_buffer::ReadBuffer;
 use crate::rect::Rect;
 use crate::runtime_effect::{
     Child, ChildPtr, ChildType, Options, RuntimeEffect, Uniform, init_uniform_type, uniform,
@@ -38,6 +43,7 @@ use crate::shader::Shader;
 use crate::shaders::runtime_shader::RuntimeShader;
 use crate::shaders::shader_base::MatrixRec;
 use crate::surface_props::SurfaceProps;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// What a [`UniformsCallback`] is told (`SkRuntimeEffectPriv::UniformsCallbackContext`).
 // Port of: src/core/SkRuntimeEffectPriv.h#L50-L52 (chrome/m156)
@@ -441,6 +447,124 @@ pub fn make_deferred_shader(
 
 /// `RuntimeEffectRPCallbacks`: appends the stages of an effect's children, and the color space
 /// conversions its intrinsics ask for.
+/// Writes the key of a runtime effect that Skia knows, or else its `0` marker and its `SkSL`
+/// source (the start of `flatten` in `SkRuntimeShader`, `SkRuntimeColorFilter` and
+/// `SkRuntimeBlender`). Only Skia's own stable keys are written, not those of other effects.
+// Port of: src/shaders/SkRuntimeShader.cpp#L138-L146 (chrome/m156), flatten; the same code is in
+// src/effects/colorfilters/SkRuntimeColorFilter.cpp#L75-L85 and src/core/SkRuntimeBlender.cpp#L37-L47
+pub fn write_stable_key_or_source(buffer: &mut BinaryWriteBuffer, effect: &RuntimeEffect) {
+    let stable_key = stable_key(effect);
+    if is_skia_known_runtime_effect(stable_key.cast_signed()) {
+        // We only serialize Skia-internal stableKeys. First party stable keys are not serialized.
+        buffer.write_uint(stable_key);
+    } else {
+        buffer.write_uint(0);
+        buffer.write_string(Some(effect.source()));
+    }
+}
+
+/// Writes a child: its flattenable, or the null marker (`writeFlattenable(child.flattenable())`).
+// Port of: src/core/SkRuntimeEffect.cpp#L464-L470 (chrome/m156), WriteChildEffects (one child)
+pub fn write_child(buffer: &mut BinaryWriteBuffer, child: &ChildPtr) {
+    match child {
+        ChildPtr::Empty => buffer.write_shader(None),
+        ChildPtr::Shader(shader) => buffer.write_shader(Some(shader)),
+        ChildPtr::ColorFilter(filter) => buffer.write_color_filter(Some(filter)),
+        ChildPtr::Blender(blender) => buffer.write_blender(Some(blender)),
+    }
+}
+
+/// `SkRuntimeEffectPriv::WriteChildEffects`: the number of children, then each one.
+// Port of: src/core/SkRuntimeEffect.cpp#L464-L470 (chrome/m156), WriteChildEffects
+pub fn write_child_effects(buffer: &mut BinaryWriteBuffer, children: &[ChildPtr]) {
+    buffer.write_int(i32::try_from(children.len()).unwrap_or(i32::MAX));
+    for child in children {
+        write_child(buffer, child);
+    }
+}
+
+/// `SkRuntimeEffectPriv::ReadChildEffects`: the children of `effect`, which must have one child
+/// per child of the effect, of the matching kinds. `None` if the buffer is invalid. The callers
+/// read the effect first and validate it, so `effect` is never null here (Skia's lenient path is
+/// not used).
+// Port of: src/core/SkRuntimeEffect.cpp#L429-L462 (chrome/m156), ReadChildEffects
+pub fn read_child_effects(
+    buffer: &mut ReadBuffer<'_>,
+    effect: &RuntimeEffect,
+    registry: &FlattenableRegistry,
+) -> Option<Vec<ChildPtr>> {
+    let child_count = buffer.read32();
+    let expected = effect.children();
+    if !buffer.validate(usize::try_from(child_count).ok() == Some(expected.len())) {
+        return None;
+    }
+
+    let mut children = Vec::with_capacity(expected.len());
+    for _ in 0..expected.len() {
+        let Some(child) = buffer.read_raw_child(registry) else {
+            buffer.validate(false);
+            return None;
+        };
+        children.push(child);
+    }
+
+    // Any (non-null) child must be of the type that the effect declares for it.
+    for (child, info) in children.iter().zip(expected) {
+        if let Some(ty) = child.ty()
+            && ty != info.ty()
+        {
+            buffer.validate(false);
+        }
+    }
+
+    buffer.is_valid().then_some(children)
+}
+
+/// The effect a flattened runtime shader, color filter or blender is made from: the known effect
+/// its stable key names, or else the one compiled from its `SkSL` source. The buffer must allow
+/// `SkSL` (`allowSkSL`). `None` if neither is possible, and the buffer is then invalid.
+// Port of: src/shaders/SkRuntimeShader.cpp#L140-L155 (chrome/m156), CreateProc (the effect part,
+// shared by the color filter and blender CreateProc)
+pub fn read_effect(
+    buffer: &mut ReadBuffer<'_>,
+    make: fn(&str, Option<&Options<'_>>) -> Result<RuntimeEffect, String>,
+) -> Option<RuntimeEffect> {
+    if !buffer.validate(buffer.allow_sksl()) {
+        return None;
+    }
+
+    let mut effect = None;
+    if !buffer.is_version_lt(picture_priv::VERSION_SERIALIZE_STABLE_KEYS) {
+        let candidate = buffer.read_uint();
+        effect = maybe_get_known_runtime_effect(candidate);
+        if effect.is_none() && !buffer.validate(candidate == 0) {
+            return None;
+        }
+    }
+
+    if effect.is_none() {
+        let sksl = buffer.read_string().unwrap_or_default();
+        effect = make_cached_runtime_effect(make, &sksl);
+    }
+    if !buffer.validate(effect.is_some()) {
+        return None;
+    }
+    effect
+}
+
+/// `SkMakeCachedRuntimeEffect`: compiles `sksl` with private access allowed, as the deserializers
+/// need it. Skia keeps a process-wide cache of the compiled effects; skia-rust keeps no global
+/// state, so each call compiles again. The effect that results is the same.
+// Port of: src/core/SkRuntimeEffect.cpp#L707-L736 (chrome/m156), SkMakeCachedRuntimeEffect
+pub fn make_cached_runtime_effect(
+    make: fn(&str, Option<&Options<'_>>) -> Result<RuntimeEffect, String>,
+    sksl: &str,
+) -> Option<RuntimeEffect> {
+    let mut options = Options::default();
+    allow_private_access(&mut options);
+    make(sksl, Some(&options)).ok()
+}
+
 // Port of: src/core/SkRuntimeEffectPriv.h#L220-L255 (chrome/m156)
 #[derive(Debug)]
 pub struct RuntimeEffectRpCallbacks<'a, 'c> {

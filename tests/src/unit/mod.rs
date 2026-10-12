@@ -9,6 +9,8 @@ pub mod annotation_test;
 #[cfg(test)]
 pub mod as_a_dash_test;
 #[cfg(test)]
+pub mod atlas_oob_test;
+#[cfg(test)]
 pub mod bad_ico_test;
 #[cfg(test)]
 pub mod bezier_curve_test;
@@ -138,6 +140,10 @@ pub mod gainmap_shader_test;
 pub mod geometry_test;
 #[cfg(test)]
 pub mod gif_test;
+#[cfg(test)]
+pub mod gr_glyph_vector_test;
+#[cfg(test)]
+pub mod gr_text_blob_test;
 #[cfg(test)]
 pub mod gradient_test;
 #[cfg(test)]
@@ -507,6 +513,8 @@ pub mod src_over_test;
 pub mod srgb_test;
 #[cfg(test)]
 pub mod stream_test;
+#[cfg(test)]
+pub mod strike_for_gpu_test;
 #[cfg(test)]
 pub mod stroke_test;
 #[cfg(test)]

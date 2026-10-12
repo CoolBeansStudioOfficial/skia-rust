@@ -1324,9 +1324,15 @@ impl<'a> Codec<'a> {
         // A sampled decode writes rows of the sampler's width, which is narrower than the native
         // destination, so the check uses the width the sampler fills. The stride only separates
         // rows, so a single line (`count == 1`) takes any `row_bytes`, as Skia's does.
-        let row_width = match self.imp.on_get_sampler(&self.base, false) {
-            Some(sampler) => sampler.fill_width(),
-            None => self.base.dst_info.width(),
+        // Without a sampler, a subset decode writes only the subset's columns of each row (the
+        // caller offsets `dst` to the subset's left edge, as DM's `kCroppedScanline_Mode` does).
+        let row_width = match (
+            self.imp.on_get_sampler(&self.base, false),
+            self.base.options.subset,
+        ) {
+            (Some(sampler), _) => sampler.fill_width(),
+            (None, Some(subset)) => subset.width(),
+            (None, None) => self.base.dst_info.width(),
         };
         let min_row_bytes = self.base.dst_info.with_wh(row_width, 1).min_row_bytes();
         let Ok(count_usize) = usize::try_from(count) else {
@@ -1454,7 +1460,7 @@ impl<'a> Codec<'a> {
     /// Port of `SkCodec::incrementalDecode` with the rows as `int`, for the codecs that drive it
     /// (sampled and ICO decodes need the count for filling).
     // Port of: include/codec/SkCodec.h#L521-L526 (incrementalDecode)
-    pub(crate) fn incremental_decode_rows(&mut self, dst: &mut [u8]) -> (Result, i32) {
+    pub fn incremental_decode_rows(&mut self, dst: &mut [u8]) -> (Result, i32) {
         if !self.base.started_incremental_decode {
             return (Result::InvalidParameters, 0);
         }
@@ -1477,7 +1483,7 @@ impl<'a> Codec<'a> {
     // Port of: src/codec/SkCodec.cpp#L781-L797 (chrome/m156)
     // Line counts are non-negative, so the cast to usize is exact.
     #[allow(clippy::cast_sign_loss)]
-    pub(crate) fn fill_incomplete_image(
+    pub fn fill_incomplete_image(
         &mut self,
         info: &ImageInfo,
         dst: &mut [u8],
@@ -1504,12 +1510,10 @@ impl<'a> Codec<'a> {
             lines_decoded as usize * row_bytes
         };
         let fill_info = info.with_wh(fill_width, lines_remaining);
-        sampler::fill(
-            &fill_info,
-            &mut dst[fill_offset..],
-            row_bytes,
-            ZeroInitialized::No,
-        );
+        // skia-rust: a destination shorter than the rows decoded (see `sampler::fill`).
+        if let Some(rest) = dst.get_mut(fill_offset..) {
+            sampler::fill(&fill_info, rest, row_bytes, ZeroInitialized::No);
+        }
     }
 
     /// Port of `SkCodec::MakeFromStream(stream, decoders)` for a single decoder list: sniffs the

@@ -400,6 +400,22 @@ impl Typeface {
         Arc::ptr_eq(&self.0, &other.0)
     }
 
+    /// The backend as its concrete type, if it is one. skia-rust has no RTTI: C++ casts the
+    /// `SkTypeface*` (`(SkTypefaceProxy*)this->getTypeface()`), here the cast can fail.
+    #[must_use]
+    pub fn downcast_ref<T: TypefaceBase>(&self) -> Option<&T> {
+        let base: &dyn Any = &*self.0;
+        base.downcast_ref::<T>()
+    }
+
+    /// The number of handles that share the typeface (`SkRefCnt::getRefCnt`), for tests that
+    /// assert who owns a typeface.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        Arc::strong_count(&self.0)
+    }
+
     /// `SkTypeface::makeClone`: a typeface with the given arguments applied.
     // Port of: src/core/SkTypeface.cpp#L186-L188 (chrome/m156)
     #[must_use]

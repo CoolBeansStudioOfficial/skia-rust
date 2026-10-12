@@ -4,13 +4,20 @@
 // Ported from Skia: modules/skottie/utils/SkottieUtils.cpp, SkottieUtils.h (chrome/m156)
 //
 // `CustomPropertyManager`: collects the color, opacity and transform property handles of an
-// animation by key, and gets and sets them by key. The precomp interceptor (`ExternalAnimationPrecompInterceptor`), which no ported GM uses.
+// animation by key, and gets and sets them by key, including the text properties. `ExternalAnimationPrecompInterceptor` is at the end
+// of the file (DM's `SkottieSrc` uses it).
 
 use std::cell::{Ref, RefCell};
 use std::collections::BTreeMap;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
-use crate::skottie::MarkerObserver;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::size::Size;
+use skia_rust_resources::ResourceProvider;
+
+use crate::external_layer::{ExternalLayer, PrecompInterceptor};
+use crate::skottie::{Animation, Builder, MarkerObserver, RenderFlags};
 use crate::skottie_property::{
     ColorPropertyHandle, ColorPropertyValue, LazyHandle, NodeType, OpacityPropertyHandle,
     OpacityPropertyValue, PropertyObserver, TextPropertyHandle, TextPropertyValue,
@@ -473,4 +480,76 @@ fn set_value<T: HandleAccess>(key: &str, value: &T::Value, container: &PropMap<T
         handle.set_value(value);
     }
     true
+}
+
+// Port of: modules/skottie/utils/SkottieUtils.cpp#L246-L269 (chrome/m156) (`ExternalAnimationLayer`)
+struct ExternalAnimationLayer {
+    animation: Animation,
+    size: Size,
+}
+
+impl ExternalLayer for ExternalAnimationLayer {
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L254-L263 (chrome/m156) (`render`)
+    fn render(&self, canvas: &Canvas, t: f64) {
+        self.animation.seek_frame_time(t);
+
+        // The main animation will layer-isolate if needed - we don't want the nested animation
+        // to override that decision.
+        let flags = RenderFlags::SKIP_TOP_LEVEL_ISOLATION;
+        let dst_rect = Rect::from_wh(self.size.width, self.size.height);
+        self.animation
+            .render_with_flags(canvas, Some(&dst_rect), flags);
+    }
+}
+
+/// Attempts to substitute all precomp layers matching the given pattern (name prefix) with
+/// external Lottie animations (`ExternalAnimationPrecompInterceptor`).
+// Port of: modules/skottie/utils/SkottieUtils.h#L133-L147 (chrome/m156)
+#[doc(alias = "skottie_utils::ExternalAnimationPrecompInterceptor")]
+pub struct ExternalAnimationPrecompInterceptor {
+    resource_provider: Rc<dyn ResourceProvider>,
+    prefix: String,
+    /// `sk_ref_sp(this)`.
+    this: Weak<Self>,
+}
+
+impl std::fmt::Debug for ExternalAnimationPrecompInterceptor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ExternalAnimationPrecompInterceptor")
+            .field("prefix", &self.prefix)
+            .finish_non_exhaustive()
+    }
+}
+
+impl ExternalAnimationPrecompInterceptor {
+    /// An interceptor loading the precomps whose name starts with `prefix` from
+    /// `resource_provider`.
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L271-L275 (chrome/m156)
+    #[must_use]
+    pub fn new(resource_provider: Rc<dyn ResourceProvider>, prefix: &str) -> Rc<Self> {
+        Rc::new_cyclic(|this| Self {
+            resource_provider,
+            prefix: prefix.to_owned(),
+            this: this.clone(),
+        })
+    }
+}
+
+impl PrecompInterceptor for ExternalAnimationPrecompInterceptor {
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L279-L297 (chrome/m156) (`onLoadPrecomp`)
+    fn on_load_precomp(&self, _id: &str, name: &str, size: Size) -> Option<Rc<dyn ExternalLayer>> {
+        // strncmp(name, fPrefix.c_str(), fPrefix.size())
+        let rest = name.strip_prefix(self.prefix.as_str())?;
+
+        let data = self.resource_provider.load("", rest)?;
+
+        let mut builder = Builder::new();
+        builder.set_resource_provider(Rc::clone(&self.resource_provider));
+        if let Some(this) = self.this.upgrade() {
+            builder.set_precomp_interceptor(this);
+        }
+        let animation = builder.make(data.as_bytes())?;
+
+        Some(Rc::new(ExternalAnimationLayer { animation, size }))
+    }
 }

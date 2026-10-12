@@ -16,6 +16,7 @@ mod text_deps;
 mod unicode_diff;
 mod verify;
 mod verify_benches;
+mod verify_dm;
 mod verify_fuzz;
 mod verify_gms;
 mod verify_sksl;

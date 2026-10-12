@@ -89,7 +89,14 @@ impl Config {
     /// The oracle result id: `<config>/gm/<name>`.
     #[must_use]
     pub fn result_id(self, gm_name: &str) -> String {
-        format!("{}/gm/{gm_name}", self.tag())
+        self.src_result_id("gm", gm_name)
+    }
+
+    /// The oracle result id of a source: `<config>/<dir>/<name>` (`dir` is `gm`, or
+    /// `image/<options>`; see [`Src::id_dir`]).
+    #[must_use]
+    pub fn src_result_id(self, dir: &str, name: &str) -> String {
+        format!("{}/{dir}/{name}", self.tag())
     }
 }
 
@@ -139,9 +146,42 @@ pub struct DmResult {
 }
 
 impl DmResult {
-    fn new(status: Status, msg: String) -> Self {
+    /// A result with `status` and `msg`.
+    #[must_use]
+    pub fn new(status: Status, msg: String) -> Self {
         Self { status, msg }
     }
+}
+
+/// `DM::Src`: something DM draws into a canvas for each config (`dm/DMSrcSink.h`). The sinks
+/// and the per-tier checker ([`crate::check::check_gm`]) work on this, so the GM source and the
+/// `--src image` sources ([`crate::dm_image`]) share them.
+pub trait Src: Send + Sync {
+    /// `Src::draw()` for a raster sink (no Graphite test context).
+    fn draw(&self, canvas: &crate::canvas::Canvas) -> DmResult;
+
+    /// `Src::size()`; empty if the source cannot be read.
+    fn size(&self) -> ISize;
+
+    /// `Src::name()`.
+    fn name(&self) -> String;
+
+    /// `Src::modifySurfaceProps()`.
+    fn modify_surface_props(&self, _props: &mut SurfaceProps) {}
+
+    /// Whether the pixels of a fatal draw (`Result::Fatal`) are compared with the goldens. DM
+    /// fails the task but still writes its bitmap, which is what the oracle recorded
+    /// (`progressive_kitten_missing_eof.jpg`: its scanline decoders cannot start on the truncated
+    /// progressive JPEG, and the goldens are the blank bitmaps). For a GM a fatal draw is always
+    /// a failure.
+    fn fatal_pixels_are_results(&self) -> bool {
+        false
+    }
+
+    /// The part of the oracle result id between the config and the name: `gm`, or for DM's
+    /// `--src image` `image/<options>` (`<config>/<tag>/<options>/<name>`, as `cargo xtask
+    /// oracle` builds ids from the DM output path).
+    fn id_dir(&self) -> String;
 }
 
 /// `DM::GMSrc`: renders a registered GM, creating a fresh GM for every query as DM does.
@@ -208,6 +248,28 @@ impl GmSrc {
     }
 }
 
+impl Src for GmSrc {
+    fn draw(&self, canvas: &crate::canvas::Canvas) -> DmResult {
+        GmSrc::draw(self, canvas)
+    }
+
+    fn size(&self) -> ISize {
+        GmSrc::size(self)
+    }
+
+    fn name(&self) -> String {
+        GmSrc::name(self)
+    }
+
+    fn modify_surface_props(&self, props: &mut SurfaceProps) {
+        GmSrc::modify_surface_props(self, props);
+    }
+
+    fn id_dir(&self) -> String {
+        "gm".to_owned()
+    }
+}
+
 /// What a sink produced: the DM result and, unless skipped, the bitmap.
 #[derive(Debug)]
 pub struct Rendered {
@@ -239,7 +301,7 @@ impl RasterSink {
     /// If the stub surface cannot wrap freshly allocated pixels (never).
     // Port of: dm/DMSrcSink.cpp#L2160-L2175 (chrome/m156)
     #[must_use]
-    pub fn draw(&self, src: &GmSrc) -> Rendered {
+    pub fn draw(&self, src: &dyn Src) -> Rendered {
         let size = src.size();
         if size.is_empty() {
             return Rendered {

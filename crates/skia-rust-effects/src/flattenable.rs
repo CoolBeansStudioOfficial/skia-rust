@@ -97,6 +97,15 @@ const SHADERS: &[(&str, ShaderFactory)] = &[
         "SkPerlinNoiseShaderImpl",
         crate::perlin_noise_shader::create_proc,
     ),
+    (
+        "SkRuntimeShader",
+        skia_rust_core::shaders::runtime_shader::create_proc,
+    ),
+    // The previous name of the runtime shader.
+    (
+        "SkRTShader",
+        skia_rust_core::shaders::runtime_shader::create_proc,
+    ),
     ("SkLinearGradient", crate::linear_gradient::create_proc),
     ("SkRadialGradient", crate::radial_gradient::create_proc),
     ("SkSweepGradient", crate::sweep_gradient::create_proc),
@@ -128,14 +137,24 @@ const COLOR_FILTERS: &[(&str, ColorFilterFactory)] = &[
 
 /// The blenders registered by Skia, by name (`SkFlattenable::Register`), the ones that are ported.
 // Port of: src/ports/SkGlobalInitialization_default.cpp#L59-L60 (chrome/m156)
-const BLENDERS: &[(&str, BlenderFactory)] = &[("SkBlendModeBlender", blend_mode_blender)];
+const BLENDERS: &[(&str, BlenderFactory)] = &[
+    ("SkBlendModeBlender", blend_mode_blender),
+    (
+        "SkRuntimeBlender",
+        skia_rust_core::runtime_blender::create_proc,
+    ),
+];
 
 /// The image filters registered by Skia, by name (`SkFlattenable::Register`), the ones that are
-/// ported. The runtime image filter, the legacy drop shadow and the legacy lighting filters
+/// ported. The legacy drop shadow and the legacy lighting filters
 /// (`SkDiffuseLightingImageFilter`, `SkSpecularLightingImageFilter`) are not ported.
 // Port of: src/ports/SkGlobalInitialization_default.cpp (chrome/m156), and the
 // `SkRegister*ImageFilterFlattenable` functions of `src/effects/imagefilters/`
 const IMAGE_FILTERS: &[(&str, ImageFilterFactory)] = &[
+    (
+        "SkRuntimeImageFilter",
+        crate::image_filters::runtime_image_filter::create_proc,
+    ),
     (
         "SkBlendImageFilter",
         crate::image_filters::blend_filter::create_proc,

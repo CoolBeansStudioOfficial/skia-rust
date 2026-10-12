@@ -65,6 +65,18 @@ impl StrikeSpec {
         }
     }
 
+    /// `SkStrikeSpec(descriptor, typeface)`: the spec of a descriptor made elsewhere (the remote
+    /// glyph cache client), with no path effect or mask filter.
+    // Port of: src/core/SkStrikeSpec.cpp#L23-L25 (chrome/m156)
+    #[must_use]
+    pub fn from_descriptor(descriptor: &Descriptor, typeface: Typeface) -> Self {
+        Self {
+            auto_descriptor: AutoDescriptor::from_descriptor(descriptor),
+            typeface,
+            effects: ScalerContextEffects::default(),
+        }
+    }
+
     /// `SkStrikeSpec::MakeMask`.
     // Port of: src/core/SkStrikeSpec.cpp#L31-L37 (chrome/m156)
     #[doc(alias = "MakeMask")]

@@ -8,13 +8,21 @@
 
 use std::sync::Mutex;
 
-use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::data::Data;
+use skia_rust_core::flattenable::FlattenableRegistry;
+use skia_rust_core::image_filter::{
+    ImageFilter, ImageFilterBase, ImageFilterCommon, flatten_common, unflatten_common,
+};
 use skia_rust_core::image_filter_result::{Builder, FilterResult, ShaderFlags, default_sampling};
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability, size_ceil};
+use skia_rust_core::picture_priv;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect, rect_priv};
-use skia_rust_core::runtime_effect::{ChildPtr, ChildType, RuntimeShaderBuilder};
+use skia_rust_core::runtime_effect::{ChildPtr, ChildType, RuntimeEffect, RuntimeShaderBuilder};
+use skia_rust_core::runtime_effect_priv as priv_;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 /// `SkRuntimeImageFilter`: the builder is kept behind a lock because the child shaders are set on
 /// it while the filter is evaluated (`fRuntimeEffectLock` in Skia).
@@ -65,6 +73,33 @@ impl RuntimeImageFilter {
 impl ImageFilterBase for RuntimeImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkRuntimeImageFilter.cpp#L67 (chrome/m156),
+    // SK_FLATTENABLE_HOOKS (getTypeName)
+    fn type_name(&self) -> &'static str {
+        "SkRuntimeImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkRuntimeImageFilter.cpp#L234-L249 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        let builder = self
+            .runtime_effect_builder
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        buffer.write_string(Some(builder.effect().source()));
+        buffer.write_byte_array(builder.uniforms().as_bytes());
+        for name in &self.child_shader_names {
+            buffer.write_string(Some(name));
+        }
+        for child in builder.children() {
+            priv_::write_child(buffer, child);
+        }
+        drop(builder);
+
+        buffer.write_scalar(self.max_sample_radius);
+        buffer.write_bool(self.restrict_output_to_input_bounds);
     }
 
     // Port of: src/effects/imagefilters/SkRuntimeImageFilter.cpp#L65-L66 (chrome/m156),
@@ -213,6 +248,92 @@ impl ImageFilterBase for RuntimeImageFilter {
         // Can't predict what the RT Shader will generate (see onGetOutputLayerBounds).
         rect_priv::make_large_s32()
     }
+}
+
+/// `SkRuntimeImageFilter::CreateProc`: rebuilds the filter from its inputs, its `SkSL` source,
+/// uniforms, child shader names, children, and (from later versions) its sample radius and output
+/// restriction.
+// Port of: src/effects/imagefilters/SkRuntimeImageFilter.cpp#L159-L219 (chrome/m156), CreateProc
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    // We don't know how many inputs to expect yet. Passing -1 allows any number of children.
+    let (inputs, crop_rect) = unflatten_common(buffer, -1, registry)?;
+    if crop_rect.is_some() {
+        return None;
+    }
+
+    // Read the SkSL string and convert it into a runtime effect (if allowed)
+    if !buffer.validate(buffer.allow_sksl()) {
+        return None;
+    }
+    let sksl = buffer.read_string().unwrap_or_default();
+    let effect = priv_::make_cached_runtime_effect(
+        |sksl, options| RuntimeEffect::make_for_shader(sksl, options),
+        &sksl,
+    );
+    if !buffer.validate(effect.is_some()) {
+        return None;
+    }
+    let effect = effect?;
+
+    // Read the uniform data and make sure it matches the size from the runtime effect
+    let uniforms = buffer
+        .read_byte_array_as_data()
+        .unwrap_or_else(Data::new_empty);
+    if !buffer.validate(uniforms.size() == effect.uniform_size()) {
+        return None;
+    }
+
+    // Read the child shader names
+    let child_shader_names: Vec<String> = (0..inputs.len())
+        .map(|_| buffer.read_string().unwrap_or_default())
+        .collect();
+
+    let mut builder = RuntimeShaderBuilder::new_with_uniforms(effect.clone(), uniforms);
+
+    // Populate the builder with the corresponding children
+    for child in effect.children() {
+        let name = child.name();
+        let value = match child.ty() {
+            ChildType::Blender => buffer
+                .read_blender(registry)
+                .map_or(ChildPtr::Empty, ChildPtr::Blender),
+            ChildType::ColorFilter => buffer
+                .read_color_filter(registry)
+                .map_or(ChildPtr::Empty, ChildPtr::ColorFilter),
+            ChildType::Shader => buffer
+                .read_shader(registry)
+                .map_or(ChildPtr::Empty, ChildPtr::Shader),
+        };
+        builder.child(name).assign(value);
+    }
+
+    // The default before the sample radius was exposed in the factory.
+    let mut max_sample_radius = 0.0;
+    if !buffer.is_version_lt(picture_priv::VERSION_RUNTIME_IMAGE_FILTER_SAMPLE_RADIUS) {
+        max_sample_radius = buffer.read_scalar();
+    }
+
+    // The default before it was exposed in the factory.
+    let mut restrict_output_to_input_bounds = false;
+    if !buffer.is_version_lt(picture_priv::VERSION_RUNTIME_IMAGE_FILTER_RESTRICTED_OUTPUT) {
+        restrict_output_to_input_bounds = buffer.read_bool();
+    }
+
+    if !buffer.is_valid() {
+        return None;
+    }
+
+    let names: Vec<&str> = child_shader_names.iter().map(String::as_str).collect();
+    runtime_shader_children(
+        &builder,
+        max_sample_radius,
+        &names,
+        &inputs,
+        restrict_output_to_input_bounds,
+    )
 }
 
 /// `SkImageFilters::RuntimeShader(builder, maxSampleRadius, childShaderNames, inputs, count,

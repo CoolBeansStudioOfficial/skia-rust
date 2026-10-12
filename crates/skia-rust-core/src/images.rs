@@ -5,12 +5,15 @@
 
 //! `SkImages`: the raster image factories (`skia_safe::images`).
 //!
-//! skia-rust: `RasterFromCompressedTextureData` (needs `SkDecompress`) and the lazy and GPU factories
-//! are not ported. `MakeWithFilter` is `skia_rust_raster::image_filter_backend::make_with_filter`.
+//! skia-rust: the lazy and GPU factories are not ported. `MakeWithFilter` is `skia_rust_raster::image_filter_backend::make_with_filter`.
 
 use std::sync::{Mutex, PoisonError};
 
+use crate::alpha_type::AlphaType;
 use crate::bitmap::Bitmap;
+use crate::compressed_data_utils::{
+    compressed_format_data_size, decompress, texture_compression_type_is_opaque,
+};
 use crate::data::Data;
 use crate::image::Image;
 use crate::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
@@ -19,6 +22,8 @@ use crate::image_info::ImageInfo;
 use crate::image_lazy::{ImageLazy, SharedGenerator, Validator};
 use crate::image_raster::{CopyPixelsMode, ImageRaster};
 use crate::pixmap::Pixmap;
+use crate::size::ISize;
+use crate::texture_compression_type::TextureCompressionType;
 
 /// Whether `info` and `row_bytes` make a valid raster image, and the number of bytes it takes
 /// (`valid_args`).
@@ -195,6 +200,47 @@ pub fn raster_from_data(
 
     ImageRaster::from_data(info, data, row_bytes, None, NEED_NEW_IMAGE_UNIQUE_ID)
         .map(Image::from_base)
+}
+
+/// Creates an N32 raster [`Image`] by decoding `data`, which holds one mip level of
+/// `compression_type` at `width` x `height` (`RasterFromCompressedTextureData`). Returns `None`
+/// if `data` is too small or the decode fails.
+// Port of: src/image/SkImage_RasterFactories.cpp#L130-L159 (chrome/m156)
+#[doc(alias = "RasterFromCompressedTextureData")]
+#[must_use]
+pub fn raster_from_compressed_texture_data(
+    data: impl Into<Data>,
+    width: i32,
+    height: i32,
+    compression_type: TextureCompressionType,
+) -> Option<Image> {
+    let data = data.into();
+    let dimensions = ISize::new(width, height);
+    let expected_size = compressed_format_data_size(compression_type, dimensions, false);
+    if data.size() < expected_size {
+        return None;
+    }
+
+    let at = if texture_compression_type_is_opaque(compression_type) {
+        AlphaType::Opaque
+    } else {
+        AlphaType::Premul
+    };
+
+    let ii = ImageInfo::new_n32(dimensions, at, None);
+
+    valid_args(&ii, ii.min_row_bytes())?;
+
+    let mut bitmap = Bitmap::new();
+    if !bitmap.try_alloc_pixels_info(&ii, None) {
+        return None;
+    }
+
+    if !decompress(data.as_bytes(), dimensions, compression_type, &mut bitmap) {
+        return None;
+    }
+    bitmap.set_immutable();
+    raster_from_bitmap(&bitmap)
 }
 
 /// Creates a lazy [`Image`] whose pixels are made by `generator` when they are needed
