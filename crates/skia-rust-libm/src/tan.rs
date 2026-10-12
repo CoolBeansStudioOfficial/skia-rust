@@ -4,29 +4,23 @@
 //! The coefficients are not from a published source: they were fitted to the platform's
 //! observed float results (docs/design/libm-cleanroom.md, section "tanf"): the platform's
 //! error against the true tangent is a smooth oscillating function, a linear program over the
-//! rounding intervals of 3.9e4 near-midpoint inputs found the rational shape (numerator degree 4,
-//! denominator degree 2 in x^2) and one coefficient set that reproduces every one of the
+//! rounding intervals of near-midpoint inputs found the rational shape (numerator and
+//! denominator of degree 2 in x^2, numerator constant term 1) and a coefficient set that reproduces every one of the
 //! 29,954,012 floats in [1/16, pi/4] bit for bit.
 
 use crate::trig::{DOUBLE_N_LIMIT, non_finite, reduce};
 
 const PIO4: f64 = core::f64::consts::FRAC_PI_4;
 
-// Numerator (degree 4) and denominator (degree 2) coefficients in x^2, lowest order first.
-const A: [f64; 5] = [
-    1.000_000_000_000_008,
-    -0.111_876_419_520_719_43,
-    0.001_112_326_885_692_582_3,
-    9.815_291_023_675_328e-7,
-    3.753_715_786_624_717e-8,
-];
-const B: [f64; 3] = [1.0, -0.445_209_752_693_061_34, 0.016_182_237_244_301_605];
+// Numerator and denominator coefficients in x^2 (degree 2 each), lowest order first.
+const A: [f64; 3] = [1.0, -0.111_316_113_748_408_3, 0.001_072_028_017_678_077_6];
+const B: [f64; 3] = [1.0, -0.444_649_446_921_710_05, 0.015_955_169_808_454_586];
 
 /// `(x*P(x^2), Q(x^2))`, whose quotient is the tangent for `|x| <= pi/4`.
 fn parts(x: f64) -> (f64, f64) {
     let u = x * x;
-    let p = (((A[4] * u + A[3]) * u + A[2]) * u + A[1]) * u + A[0];
-    let q = (B[2] * u + B[1]) * u + B[0];
+    let p = A.iter().rev().fold(0.0, |s, &c| s * u + c);
+    let q = B.iter().rev().fold(0.0, |s, &c| s * u + c);
     (x * p, q)
 }
 
