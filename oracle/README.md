@@ -28,13 +28,13 @@ All builds use clang-cl, the compiler Chrome ships Skia with. Every run records 
 
 Runs use `--nativeFonts false`, i.e. Skia's portable test font manager, which is pure Skia and identical on every platform (and is what Skia's default bots run). That manager returns null for every font file, so GMs that load real fonts (`ToolUtils::CreateTypefaceFromResource`) skipped or drew with the empty typeface; no golden contains Fontations, FreeType or DirectWrite output. Text goldens are therefore trustworthy for the portable typefaces; Fontations pixels need a separate oracle configuration (`docs/design/text.md` §1, §7.3).
 
-## CI-hosted oracle (CPU)
+## CI-hosted oracle (CPU, GPU, bench)
 
 The Windows server is gone. Since 2026-10-12 the CPU oracle also runs on GitHub's hosted runners: `.github/workflows/oracle.yml` (`workflow_dispatch` only; it never runs on a PR or push) builds Skia at the pinned revision on `ubuntu-latest` with clang, renders with the same DM and the same patch, and uploads goldens-format hash files as workflow artifacts. Nothing is published from CI: the maintainer downloads the artifacts and publishes them as release assets. Design: `docs/design/gpu.md` §3.1 (Q1), `modules.md` Q6, `codecs.md` Q2 (b), `bench.md` Q1 and §5.2.
 
 ```
 gh api -X POST repos/<owner>/skia-rust/actions/workflows/oracle.yml/dispatches -f ref=<branch>
-# optional inputs: builds (JSON list), extras, lottie_configs, nanobench, libm_shim, rebuild, goldens_release
+# optional inputs: builds (JSON list), extras, lottie_configs, nanobench, libm_shim, warp, rebuild, goldens_release
 gh run download <run id> -n oracle-dm-hashes-m156      # the image and lottie hashes
 ```
 
@@ -44,13 +44,15 @@ A GitHub quirk: a workflow file must exist on the default branch before it can b
 
 | Job | What it does |
 |---|---|
-| `build` (one per build: `x64-sse2-rgba`, `x64-sse41-rgba`, `x64-scalar-rgba`) | Clones Skia at the pin, syncs its dependencies, copies `oracle/dm/*`, applies `patches/skia-oracle.patch`, `gn gen` with the args of `tiers.toml`, `ninja dm nanobench`. Caches `dm`, `nanobench`, `args.gn`, `toolchain.txt` and `resources/` (key: pin + GN args + patch + `oracle/dm` + the nanobench switch). The Skia checkout with its dependencies is cached separately (key: pin). A cold build takes about 40 minutes on the 4-vCPU runner (`dm` 17, nanobench 1 more); a cache hit takes seconds. |
-| `render` (one per tier: `cpu-x64-sse2-rgba`, `-rt-ml3`, `-rt-ml4`, `cpu-x64-sse41-rgba`, `cpu-x64-scalar-rgba`) | Restores the binaries and renders `--src gm --config 8888` with `SKIA_ORACLE_CPU_CAP`, compares every hash with the published tier of the same name (`oracle/ci/oracle_ci.py compare`: counts, and a class for every mismatch computed from the golden objects), then (`extras`) renders `--src image` (`8888 565 f16` over `resources/images`) and `--src lottie` (`resources/skottie`). Takes about 5 minutes. Uploads `oracle-results-<tier>`. |
+| `build` (one per build: the RGBA CPU builds `x64-sse2-rgba`, `x64-sse41-rgba`, `x64-scalar-rgba`, the BGRA CPU builds `x64-sse2`, `x64-sse41`, `x64-scalar`, and `gpu-dawn`) | Clones Skia at the pin, syncs its dependencies, copies `oracle/dm/*`, applies `patches/skia-oracle.patch`, `gn gen` with the args of `tiers.toml`, `ninja dm nanobench`. Caches `dm`, `nanobench`, `args.gn`, `toolchain.txt` and `resources/` (key: pin + GN args + patch + `oracle/dm` + the nanobench switch). The Skia checkout with its dependencies is cached separately (key: pin). A cold CPU build takes about 40 minutes on the 4-vCPU runner (`dm` 17, nanobench 1 more); the Dawn build about 55 minutes; a cache hit takes seconds. The patch directory is applied whole (`skia-oracle.patch`, `skia-oracle-nanobench.patch`). |
+| `render` (one per CPU tier: `cpu-x64-sse2-rgba`, `-rt-ml3`, `-rt-ml4`, `cpu-x64-sse41-rgba`, `cpu-x64-scalar-rgba`, and the BGRA `cpu-x64-sse2`, `-rt-ssse3`, `-rt-ml3`, `-rt-ml4`, `cpu-x64-sse41`, `-rt-ml3`, `-rt-ml4`, `cpu-x64-scalar`) | Restores the binaries and renders `--src gm --config 8888` with `SKIA_ORACLE_CPU_CAP`, compares every hash with the published tier of the same name (`oracle/ci/oracle_ci.py compare`: counts, and a class for every mismatch computed from the golden objects), then (`extras`) renders `--src image` (`8888 565 f16` over `resources/images`) and `--src lottie` (`resources/skottie`). The BGRA tiers render `gm` at `8888 565 f16`. On `cpu-x64-sse2-rgba` and `-rt-ml3` it also runs nanobench (below). Takes about 5 to 15 minutes. Uploads `oracle-results-<tier>`. |
+| `gpu-render` (lavapipe, two runs) | Restores the `gpu-dawn` build, installs the Ubuntu Mesa lavapipe, renders `dm --config grdawn_vk` twice with `SKIA_ORACLE_DAWN_ADAPTER=llvmpipe` and `SKIA_ORACLE_CPU_CAP=ml3`, compares with the published `gpu-dawn-vk-rtx4070s` and `gpu-dawn-d3d12-warp` tiers. `gpu-collect` compares the two runs (two runners). |
+| `warp-build`, `warp-render` (Windows, two runs) | The same Skia+Dawn build on `windows-2025` with clang-cl (the original oracle's toolchain), cloned to `C:\s` for the path length; renders `--config grdawn_d3d12` on WARP twice and compares with the published `gpu-dawn-d3d12-warp`. |
 | `collect` | Merges the image and lottie hashes of all tiers into `oracle-dm-hashes-m156`. |
 
 ### Build
 
-`oracle/ci/oracle_ci.py gn-args <build>` turns `tiers.toml` into Linux args: the shared args, `extra_cflags` with the `/clang:` prefixes removed (`-ffp-contract=off`, `-msse4.1`, `-DSK_R32_SHIFT=0`, `-DSKRP_CPU_SCALAR`) and `cc="clang"`. Two args differ from Skia's Linux defaults: `skia_use_freetype=false` and `skia_use_fontconfig=false`, because Skia enables both only on Linux and the Windows oracle has neither (the runs use the portable test font manager either way). The compiler is the runner's `clang` (18.1.3, libstdc++, glibc 2.39 at the time of writing); the Windows oracle used clang-cl 23.1.2. `toolchain.txt` in every artifact records compiler, runner image and GN args. partition_alloc stays at Skia's default (on), as on Windows. The compiler is not part of the cache key (a runner image update does not rebuild); pass `rebuild` after one.
+`oracle/ci/oracle_ci.py gn-args <build>` turns `tiers.toml` into Linux args: the shared args, `extra_cflags` with the `/clang:` prefixes removed (`-ffp-contract=off`, `-msse4.1`, `-DSK_R32_SHIFT=0`, `-DSKRP_CPU_SCALAR`) and `cc="clang"`. Two args differ from Skia's Linux defaults: `skia_use_freetype=false` and `skia_use_fontconfig=false`, because Skia enables both only on Linux and the Windows oracle has neither (the runs use the portable test font manager either way). The compiler is the runner's `clang` (18.1.3, libstdc++, glibc 2.39 at the time of writing); the Windows oracle used clang-cl 23.1.2. `toolchain.txt` in every artifact records compiler, runner image and GN args. partition_alloc stays at Skia's default (on), as on Windows. The BGRA builds (`x64-sse2`, `x64-sse41`, `x64-scalar` of `tiers.toml`) add `-DSK_R32_SHIFT=16`, so Linux gets the Windows N32; the `-rgba` builds keep `-DSK_R32_SHIFT=0` and the GPU build is BGRA like the Windows one. The Linux GPU build is `gpu-dawn` with `dawn_enable_d3d12=false` (Vulkan only); the Windows one uses the `tiers.toml` args unchanged (`oracle_ci.py gn-args gpu-dawn --windows`). The compiler is not part of the cache key (a runner image update does not rebuild); pass `rebuild` after one.
 
 ### Artifacts
 
@@ -77,7 +79,7 @@ The hosted runners are a mix of AMD EPYC (Zen 3 `7763`, Zen 4 `9V74`/`9V45`) and
 
 | Class | GMs | Evidence |
 |---|---|---|
-| Windows-only GM code | `rasterallocator` (57,956 px) | `gm/rasterhandleallocator.cpp` has separate `SK_BUILD_FOR_MAC`, `SK_BUILD_FOR_WIN` (GDI) and generic implementations; our output equals the golden with R and B swapped. Not reproducible on Linux. |
+| Windows-only GM code, RGBA tiers only | `rasterallocator` (57,956 px) | `gm/rasterhandleallocator.cpp` has separate `SK_BUILD_FOR_MAC`, `SK_BUILD_FOR_WIN` (GDI) and generic implementations. The RGBA variant golden was rendered by the Windows code with the `SK_R32_SHIFT=0` define (it draws a fixed byte order); our Linux (generic) output equals it with R and B swapped. In the BGRA tiers the GM matches the Windows golden byte for byte. So the RGBA golden of this GM is not what a real RGBA platform renders. |
 | libm (glibc vs UCRT), float functions | `parsedpaths` (47 px), `shadow_utils`, `shadow_utils_occl` (and `_gray` on scalar), `gradients_powerless_hue_LCH`, `imagefilter_transformed_image` | skia-rust fails the same GMs against the Windows goldens with the same pixel counts (`parsedpaths`: 47, `notes/gm_arcto_cpp_parsedpaths.md`). The `libm_shim` diagnostic (`oracle/ci/libm_shim.c`: float `sinf`, `cosf`, `tanf`, `atan2f`, `cbrtf`, ... computed in double and rounded, which is how the UCRT implements most of them) makes `parsedpaths`, `shadow_utils*`, `LCH` and `imagefilter_transformed_image` byte-identical to the golden. |
 | libm, other functions | `longpathdash` (double `sin`/`cos`, 15 px, 5 with the shim), `gradients_color_space_many_stops` and `gradients_powerless_hue_OKLCH` (`cbrtf`: UCRT's equals neither glibc's nor the double-rounded one; the shim moves `many_stops` from 46 to 181 differing pixels, skia-rust's own number), `blurrect_compare` (1 px), `poster_circle` (scalar tier only, 1 to 3 px) | The same set as the skia-rust libm notes (`notes/gm-gradients.cpp-OKLCH-libm.md`, `notes/gm_dashing_cpp_longpathdash.md`). |
 | Unexplained | `scaledemojiperspective_test` (482 px, delta 47) | skia-rust matches the Windows golden here, Linux Skia does not. The GM draws the Test SVG emoji typeface under perspective as drawables. To investigate (expat/SVG or a drawable-path libm call). |
@@ -91,13 +93,48 @@ Verdict: the Linux build reproduces the Windows goldens byte for byte except whe
 
 `--src image` renders 6,789 `8888`, 1,776 `565` and 4,095 `f16` results per tier (28,116 tasks); 106 tasks fail, all on `progressive_kitten_missing_eof.jpg` (a truncated file; partial-decode modes report errors) and produce no result. `--src lottie` renders all 187 files (`8888`, a 1000x1000 filmstrip each). The RGBA `8888` image results are identical on `sse2`, `ml3` and `sse41` (1 result differs on `scalar`); `565`/`f16` differ in 656 results between `sse2` and `ml3`, in none for `sse41` and `scalar`; 36 lottie files differ between `sse2` and `ml3` and 49 between `sse2` and `scalar`. For the Rust side these are per-tier goldens like the `gm` ones.
 
+
+### BGRA builds and equivalence
+
+A Linux build with `-DSK_R32_SHIFT=16` has the Windows N32, so it can be checked against the original BGRA tiers directly, `565` and `f16` included. `--src gm`, 909 results per config (2,727 per tier), AMD runners:
+
+| Tier | byte-identical | different |
+|---|---|---|
+| `cpu-x64-sse2` | 2,695 | 32 (`8888` 10, `565` 7, `f16` 15) |
+| `cpu-x64-sse2-rt-ml3`, `-rt-ml4` | 2,695 | 32 |
+| `cpu-x64-sse41`, `-rt-ml3`, `-rt-ml4` | 2,695 | 32 |
+| `cpu-x64-scalar` | 2,693 | 34 |
+
+(`cpu-x64-sse2-rt-ssse3` ran on an Intel runner in the last run and failed the vendor guard; its leg is re-run until an AMD runner takes it, and its hashes in the artifact are from an AMD run.) The `8888` mismatches are the RGBA list minus `rasterallocator`; the `565` and `f16` ones are the same GMs (the libm and `scaledemojiperspective_test` classes) plus `gradients_color_space`, `gradients_color_space_tilemode`, `pictureshader_persp` in `f16`. So the RGBA variant build and the BGRA build agree on everything but the GDI-dependent GM, which supports using the CI RGBA tiers as extra goldens.
+
+### Bench goldens (nanobench)
+
+`oracle/patches/skia-oracle-nanobench.patch` gives nanobench `--oracleRawPath <dir>` (same raw bytes and `.json` metadata as DM; ids `<config>/bench/<unique name>`) and a `Setup <name>` line so a crash in `delayedSetup` can be attributed. `render` runs `nanobench --config 8888 565 f16 --loops 1 --samples 1 --cpu true --gpu false --nativeFonts false` twice for `cpu-x64-sse2-rgba` and `-rt-ml3` and keeps the results whose two runs agree (none differed). Tiers: `bench-x64-sse2-rgba`, `bench-x64-sse2-rgba-rt-ml3` (`8888`) and `bench-x64-sse2`, `bench-x64-sse2-rt-ml3` (`565`, `f16`): 787 benches per config. One bench crashes in this build and is skipped: `Font_getBounds` (it loads `fonts/Roboto-Regular.ttf`, which the portable font manager does not provide, then calls `countGlyphs` on a null typeface). Between the baseline and ml3 tiers, 27 of 787 `8888` bench results and 557 of 1,574 `565`/`f16` results differ, as for the GMs. Artifact: `bench-hashes-m156.json` in `oracle-dm-hashes-m156` (hashes only; no equivalence check against a reference exists for them, since the Windows host never ran nanobench). The bench names list (`--dryRun --pre_log`) is `results/<tier>/bench-run-list.txt` of the `render` artifacts.
+
+### GPU: Skia + Dawn on Linux (lavapipe) and Windows (WARP)
+
+Tiers `gpu-dawn-vk-lavapipe` (new) and `gpu-dawn-d3d12-warp` (re-rendered), `dm --src gm --graphite true --cpu false --gpu false --nativeFonts false`, cap `ml3`, 910 results (WARP: 906) per run.
+
+| Run | against | byte-identical | different |
+|---|---|---|---|
+| WARP on `windows-2025` (Intel Xeon 8573C and AMD EPYC 9V74 runners; `d3d10warp.dll` 10.0.26100.33438, the oracle host had 10.0.26100.9278) | `gpu-dawn-d3d12-warp` | 906 of 906 | 0 (4 `paragraph_*` GMs the host rendered are not rendered here) |
+| lavapipe (Mesa 25.2.8, LLVM 20.1.2, Ubuntu 24.04 archive) | `gpu-dawn-d3d12-warp` | 283 of 910 | 627 (260 off by one, 161 up to 4, 50 up to 16, 60 up to 64, 96 more) |
+| lavapipe | `gpu-dawn-vk-rtx4070s` | 182 of 910 | 728 |
+
+- **WARP is reproducible on GitHub's runners**: both runs, on an Intel and on an AMD VM and with a newer WARP DLL, matched the Windows host's goldens in every one of the 906 results. This answers the open question of cross-host WARP determinism (`gpu.md` §3.1, risk R2): `gpu-dawn-d3d12-warp` can be gated on a Windows runner, and re-rendered there when the DLL changes.
+- **lavapipe is deterministic** within a runner (two passes, 0 differing results) and between two AMD runners (Zen 3 and Zen 4; 0). Between an Intel Xeon 8573C and an AMD EPYC 7763 two GMs differed (`fast_constraint_red_is_allowed` and `_manual`), so the tier is rendered on AMD runners in practice; Intel is not blocked in the workflow and the cross-runner comparison (`gpu-collect`, `runner-determinism.txt`) reports it. lavapipe's output depends on the Mesa/LLVM version, which here is whatever `apt` gives on the runner image (recorded in `vulkan.txt`): pinning it (a Mesa build in a cached container) is still to do.
+- lavapipe is not WARP and not the RTX: GPU goldens are per implementation, as the host measurements said (sharing 0 of 44 hashes then; sharing 31 % of the GMs here, mostly trivial ones). The byte order is not a cause (the build is BGRA).
+- `gpu-dawn-vk-lavapipe` has no published golden, so the lavapipe numbers are determinism numbers, not equivalence ones.
+
+Artifacts: `oracle-gpu-lavapipe-1`/`-2`, `oracle-gpu-warp-1`/`-2` (hashes, comparisons, DM logs, `vulkan.txt`/`cpu.txt`, `determinism.txt`) and `oracle-gpu-hashes-m156` (`gpu-dawn-vk-lavapipe-hashes-m156.json`: the lavapipe tier in the `hashes-m156.json` format, results stable between the two runs; plus `runner-determinism.txt` and the comparison reports).
+
 ### Diagnostics
 
 `oracle_ci.py compare` writes a class per mismatch (`n32-byte-order` when swapping R and B of ours equals the golden, `off-by-one`, `pixels`, `size`) with the differing pixel count and maximum channel delta. The `libm_shim` step re-renders only the mismatched GMs with `LD_PRELOAD=oracle/ci/libm_shim.so` and compares again (`equivalence-shim.md`); it is for finding causes, never for goldens. `libm-imports.txt` lists the libm functions the `dm` binary imports.
 
 ### Not covered yet
 
-BGRA-order `8888` for image and lottie (the Windows N32; a Linux build with `-DSK_R32_SHIFT=16` would produce it), GPU tiers (phase 2, `docs/design/gpu.md` §3.1), nanobench goldens (`bench.md` B3: the nanobench binary is built and cached, but the `--oracleRawPath` extension of the patch is still to do), the `svg` source and the `pdf`/`svg` sinks, arm64/macOS/Windows runners.
+The wgpu-restricted GPU tiers, `caps.json`/pipeline/trace dumps (`gpu.md` §3.1: separate oracle-patch commits, after the plain hashes), a pinned Mesa for lavapipe, the `svg` source and the `pdf`/`svg` sinks, nanobench's names/call-site list and estimate fingerprint (`bench.md` §5.2), arm64/macOS runners.
 
 ## Usage (on the server)
 

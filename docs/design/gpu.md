@@ -280,6 +280,8 @@ server's:
 5. **Dumps** (`caps.json`, `pipelines/`, `trace/`) only after the plain hashes match, as separate oracle-patch commits, so a failure of the dump code cannot hide a rendering difference.
 6. Restricted `…-wgpucaps` tiers last (the `AddPreferredFeatures` filter).
 
+**Phase 2 status (2026-10-12; `oracle/README.md`, "GPU: Skia + Dawn on Linux (lavapipe) and Windows (WARP)").** Steps 1 and 3 and the WARP step (4) are implemented in `oracle.yml` (`build` with `gpu-dawn`, `gpu-render`, `warp-build`, `warp-render`). Skia+Dawn built on both first try (Linux about 55 min, Windows about 40 min, then cached). Results: **WARP on GitHub's `windows-2025` matched all 906 results of the published `gpu-dawn-d3d12-warp` tier, on an Intel and an AMD runner and with a newer `d3d10warp.dll`**, so risk R2 is closed for WARP and the WARP gate can run on hosted Windows. **lavapipe** (Ubuntu's Mesa 25.2.8 / LLVM 20.1.2) is deterministic across two passes and two AMD runners, differs on 2 GMs between an Intel and an AMD runner, and matches the WARP golden on 283 of 910 results (the RTX Vulkan golden on 182); it has no golden of its own yet, so `gpu-dawn-vk-lavapipe` (listed in `tiers.toml`, report only) is a new tier whose hashes the maintainer publishes from `oracle-gpu-hashes-m156`. Not done: the pinned Mesa build (step 2; the archive Mesa is recorded in `vulkan.txt` and a Mesa update will change the tier), the Intel-vs-AMD lavapipe question (two GMs; needs more samples), dumps (step 5) and the wgpu-restricted tiers (step 6).
+
 ### 3.2 The command trace
 
 A compact binary (or JSON lines) per GM:
