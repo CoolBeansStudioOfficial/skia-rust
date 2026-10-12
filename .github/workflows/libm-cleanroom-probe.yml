@@ -64,6 +64,7 @@ jobs:
           fns=$(grep -v '^#' crates/skia-rust-libm/check-list.txt | tr '\n' ' ')
           mkdir -p mismatch
           cargo run --release -p skia-rust-libm --example probe -- check mismatch $fns | tee mismatch/summary.txt || true
+          cargo run --release -p skia-rust-libm --example probe -- near mismatch 0.00001 | tee -a mismatch/summary.txt
       - uses: actions/upload-artifact@v4
         with:
           name: libm-mismatch

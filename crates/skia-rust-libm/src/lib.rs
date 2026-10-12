@@ -23,6 +23,8 @@ mod tan;
 mod trig;
 
 pub use tan::tanf;
+#[doc(hidden)]
+pub use tan::tanf_trace;
 pub use trig::{cosf, sinf};
 #[doc(hidden)]
 pub use trig::{probe_cosf, probe_sinf};

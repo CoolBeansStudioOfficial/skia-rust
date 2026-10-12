@@ -377,6 +377,60 @@ fn ledger(name: &str, tag: &str, lo: f32, hi: f32, tau: f64, neg: bool, dir: &st
     println!("ledger {name} {tag}: {n} entries of {total} inputs (tau {tau})");
 }
 
+/// Inputs where our pre-rounding result for tanf is within `eps` (fraction of the platform's
+/// rounding interval) of a boundary of the interval of the platform's float result, or outside it.
+/// Records: x bits, platform bits (u32), reduced argument (f64 bits), odd quadrant (u64), our
+/// pre-rounding result (f64 bits): the constraint set for refitting the coefficients.
+fn near_tanf(eps: f64, dir: &str) {
+    let platform = un32("tanf");
+    let threads = std::thread::available_parallelism().map_or(4, usize::from);
+    let chunk = (1u64 << 32).div_ceil(threads as u64);
+    let results: Vec<Vec<[u8; 32]>> = std::thread::scope(|sc| {
+        let hs: Vec<_> = (0..threads as u64)
+            .map(|t| {
+                sc.spawn(move || {
+                    let (lo, hi) = (t * chunk, ((t + 1) * chunk).min(1 << 32));
+                    let mut list = Vec::new();
+                    for b in lo..hi {
+                        let x = f32::from_bits(b as u32);
+                        if !x.is_finite() || x.abs() < 1.0e-4 {
+                            continue;
+                        }
+                        let u = platform(std::hint::black_box(x));
+                        let (r, odd, pre) = skia_rust_libm::tanf_trace(x);
+                        let next = f64::from(f32::from_bits(u.to_bits() + 1));
+                        let prev = f64::from(f32::from_bits(u.to_bits() - 1));
+                        let ud = f64::from(u);
+                        let (a, bnd) = (f64::midpoint(ud, prev), f64::midpoint(ud, next));
+                        let (a, bnd) = if a < bnd { (a, bnd) } else { (bnd, a) };
+                        let z = (pre - a) / (bnd - a);
+                        if z < eps || z > 1.0 - eps {
+                            let mut rec = [0u8; 32];
+                            rec[0..4].copy_from_slice(&(b as u32).to_le_bytes());
+                            rec[4..8].copy_from_slice(&u.to_bits().to_le_bytes());
+                            rec[8..16].copy_from_slice(&r.to_bits().to_le_bytes());
+                            rec[16..24].copy_from_slice(&u64::from(odd).to_le_bytes());
+                            rec[24..32].copy_from_slice(&pre.to_bits().to_le_bytes());
+                            list.push(rec);
+                        }
+                    }
+                    list
+                })
+            })
+            .collect();
+        hs.into_iter().map(|h| h.join().unwrap()).collect()
+    });
+    let mut out = writer_at(&format!("{dir}/tanf.near"));
+    let mut n = 0usize;
+    for list in results {
+        for rec in list {
+            out.write_all(&rec).unwrap();
+            n += 1;
+        }
+    }
+    println!("near tanf: {n} entries (eps {eps})");
+}
+
 fn writer_at(path: &str) -> std::io::BufWriter<std::fs::File> {
     std::io::BufWriter::new(std::fs::File::create(path).unwrap())
 }
@@ -403,6 +457,10 @@ fn main() {
                 &args[2],
             );
         }
+        return;
+    }
+    if args.len() >= 4 && args[1] == "near" {
+        near_tanf(args[3].parse().unwrap(), &args[2]);
         return;
     }
     if args.len() >= 3 && args[1] == "nsel" {

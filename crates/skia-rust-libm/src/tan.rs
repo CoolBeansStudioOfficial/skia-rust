@@ -30,24 +30,38 @@ fn parts(x: f64) -> (f64, f64) {
     (x * p, q)
 }
 
+/// Reduced argument, parity of the quadrant and the double-precision result before the final
+/// rounding to `f32`.
+fn trace(x: f32) -> (f64, bool, f64) {
+    let xd = f64::from(x);
+    if xd.abs() <= PIO4 {
+        let (num, den) = parts(xd);
+        return (xd, false, num / den);
+    }
+    let (n, r) = reduce(xd, DOUBLE_N_LIMIT, false);
+    let (num, den) = parts(r);
+    if n & 1 == 0 {
+        (r, false, num / den)
+    } else {
+        (r, true, -1.0 / (num / den))
+    }
+}
+
 /// Tangent of `x` as the Windows UCRT computes it.
 #[must_use]
 pub fn tanf(x: f32) -> f32 {
     if !x.is_finite() {
         return non_finite(x);
     }
-    let xd = f64::from(x);
-    if xd.abs() <= PIO4 {
-        let (num, den) = parts(xd);
-        return (num / den) as f32;
-    }
-    let (n, r) = reduce(xd, DOUBLE_N_LIMIT, false);
-    let (num, den) = parts(r);
-    (if n & 1 == 0 {
-        num / den
-    } else {
-        -1.0 / (num / den)
-    }) as f32
+    trace(x).2 as f32
+}
+
+/// Internals of [`tanf`] for the black-box probe: `(reduced argument, odd quadrant, result before
+/// rounding to f32)`. Only meaningful for finite `x`.
+#[doc(hidden)]
+#[must_use]
+pub fn tanf_trace(x: f32) -> (f64, bool, f64) {
+    trace(x)
 }
 
 #[cfg(test)]
