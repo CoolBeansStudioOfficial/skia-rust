@@ -29,6 +29,22 @@ fn c_str_bytes(bytes: &[u8]) -> &[u8] {
     }
 }
 
+/// `bytes` with every CRLF pair replaced by LF (the line endings of Skia's repository).
+fn lf_line_endings(bytes: Vec<u8>) -> Vec<u8> {
+    if !bytes.contains(&b'\r') {
+        return bytes;
+    }
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut iter = bytes.iter().copied().peekable();
+    while let Some(b) = iter.next() {
+        if b == b'\r' && iter.peek() == Some(&b'\n') {
+            continue;
+        }
+        out.push(b);
+    }
+    out
+}
+
 /// The first position of `needle` in `haystack` (`strstr`/`std::string::find`).
 fn find_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     if needle.is_empty() {
@@ -164,6 +180,9 @@ fn test_expect_fail(r: &mut Reporter, test_file: &str, kind: ProgramKind) {
         errorf!(r, "{}: Unable to load file", basename(test_file));
         return;
     };
+    // Skia's tree stores these files with LF endings; a Windows checkout with `core.autocrlf`
+    // turns them into CRLF, which would leave a `\r` on every expected line. Read them as stored.
+    let shader = lf_line_endings(shader);
 
     let expected_errors = get_expected_errors(&shader);
 
