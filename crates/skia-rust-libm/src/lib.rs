@@ -19,11 +19,13 @@
 )]
 
 mod atan;
+mod atan2;
 mod reduce;
 mod tan;
 mod trig;
 
 pub use atan::atanf;
+pub use atan2::atan2f;
 pub use tan::tanf;
 #[doc(hidden)]
 pub use tan::tanf_trace;
