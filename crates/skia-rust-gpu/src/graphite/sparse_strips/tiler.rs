@@ -352,48 +352,48 @@ impl<const K_TILE_WIDTH: u16, const K_TILE_HEIGHT: u16> Tiles<K_TILE_WIDTH, K_TI
     }
 
     /// This function has two purposes:
-    ///     1) The viewport is divided into tiles, whose dimensions are given by the const
-    ///     parameters. Tiles act as a "super coarse rasterization stage," which elides carrying a
-    ///     scanline for each MSAA subsample point. (Without this technique, we would require 64
-    ///     scanlines for an 8 tall tile with 8xMSAA). So for each line produced by
-    ///     flattening---contained inside Polyline---we need to find which tiles this line
-    ///     intersects.  Tile edge touches are vertical exclusive, horizontal inclusive. This is
-    ///     because:
-    ///          A) In the vertical case, inclusivity would cause the coarse winding to be double
-    ///          counted or negated by a single-point tile produced by a grazing touch.
-    ///          B) In the horizontal case, the inclusivity is necessary because the tile produced
-    ///          by the succeeding line may not consider itself left-touching (depending on its
-    ///          direction), so the single-point tile is necessary to carry over the left-edge
-    ///          winding.
-    ///     Using the line's direction enforces mutually exclusive ownership of boundary
-    ///     intersections between consecutive segments *of the same direction*, ensuring that the
-    ///     left-edge winding is neither lost nor double-counted:
+    /// 1) The viewport is divided into tiles, whose dimensions are given by the const
+    ///    parameters. Tiles act as a "super coarse rasterization stage," which elides carrying a
+    ///    scanline for each MSAA subsample point. (Without this technique, we would require 64
+    ///    scanlines for an 8 tall tile with 8xMSAA). So for each line produced by
+    ///    flattening---contained inside Polyline---we need to find which tiles this line
+    ///    intersects.  Tile edge touches are vertical exclusive, horizontal inclusive. This is
+    ///    because:
+    ///    A) In the vertical case, inclusivity would cause the coarse winding to be double
+    ///    counted or negated by a single-point tile produced by a grazing touch.
+    ///    B) In the horizontal case, the inclusivity is necessary because the tile produced
+    ///    by the succeeding line may not consider itself left-touching (depending on its
+    ///    direction), so the single-point tile is necessary to carry over the left-edge
+    ///    winding.
+    ///    Using the line's direction enforces mutually exclusive ownership of boundary
+    ///    intersections between consecutive segments *of the same direction*, ensuring that the
+    ///    left-edge winding is neither lost nor double-counted:
     ///
-    ///     ```text
-    ///                                  Left edge behavior:
-    ///                      +----------------------+----------+------------+
-    ///                      | X Direction          | Endpoint | L Bit Set? |
-    ///                      +----------------------+----------+------------+
-    ///                      | Left-to-Right (L->R) | Start    | No         |
-    ///                      | Left-to-Right (L->R) | End      | Yes        |
-    ///                      | Right-to-Left (R->L) | Start    | Yes        |
-    ///                      | Right-to-Left (R->L) | End      | No         |
-    ///                      +----------------------+----------+------------+
-    ///     ```
+    /// ```text
+    ///                              Left edge behavior:
+    ///                  +----------------------+----------+------------+
+    ///                  | X Direction          | Endpoint | L Bit Set? |
+    ///                  +----------------------+----------+------------+
+    ///                  | Left-to-Right (L->R) | Start    | No         |
+    ///                  | Left-to-Right (L->R) | End      | Yes        |
+    ///                  | Right-to-Left (R->L) | Start    | Yes        |
+    ///                  | Right-to-Left (R->L) | End      | No         |
+    ///                  +----------------------+----------+------------+
+    /// ```
     ///
-    ///     2) To enable parallel rasterization, we need to establish a source of truth for the
-    ///     line intersection points on tiles, such that adjacent tiles agree where intersections
-    ///     occur. While calculating exact intersection coordinates here is feasible, it is
-    ///     (relatively) computationally expensive, so instead, we defer the heavy math to the
-    ///     GPU/rasterizer and produce a lightweight intersection bitmask. This mask unambiguously
-    ///     defines which edges of a tile a line segment touches:
+    /// 2) To enable parallel rasterization, we need to establish a source of truth for the
+    ///    line intersection points on tiles, such that adjacent tiles agree where intersections
+    ///    occur. While calculating exact intersection coordinates here is feasible, it is
+    ///    (relatively) computationally expensive, so instead, we defer the heavy math to the
+    ///    GPU/rasterizer and produce a lightweight intersection bitmask. This mask unambiguously
+    ///    defines which edges of a tile a line segment touches:
     ///
-    ///     Bit representation:
-    ///     Bit: 4 | 3 | 2 | 1 | 0
-    ///     Val: W | R | L | B | T
+    /// Bit representation:
+    /// Bit: 4 | 3 | 2 | 1 | 0
+    /// Val: W | R | L | B | T
     ///
-    ///     - W (Winding): Tracks whether the line touched the top edge of the tile.
-    ///     - R/L/B/T: Right, Left, Bottom, and Top edge intersections.
+    /// - W (Winding): Tracks whether the line touched the top edge of the tile.
+    /// - R/L/B/T: Right, Left, Bottom, and Top edge intersections.
     // Port of: src/gpu/graphite/sparse_strips/Tiler.h#L281-L424 (chrome/m156)
     #[doc(alias = "makeTilesMSAA")]
     pub fn make_tiles_msaa(
