@@ -12,7 +12,7 @@ use walkdir::WalkDir;
 
 use crate::cpp;
 use crate::skia::{self, Pin};
-use crate::{verify, verify_benches, verify_fuzz, verify_gms, verify_sksl};
+use crate::{verify, verify_benches, verify_dm, verify_fuzz, verify_gms, verify_sksl};
 
 const MANIFEST: &str = "inventory/manifest.toml";
 
@@ -196,6 +196,9 @@ pub enum Leg {
     Unit,
     /// GMs (`gm-verify`).
     Gm,
+    /// DM's `--src image` sources (`dm-verify`; needs the `dm-image` goldens, see
+    /// `verify_dm.rs`).
+    DmImage,
     /// `SkSL` goldens.
     SkslGolden,
     /// Benches (`bench-verify`).
@@ -230,6 +233,13 @@ pub fn verify(root: &Path, update: bool, only: Option<Leg>) -> Result<()> {
     if runs(Leg::Gm) {
         let report = verify_gms::check(&entries(Kind::Gm), &verify_gms::run_gm_verify(root)?);
         reports.push((report, "GM"));
+    }
+    if runs(Leg::DmImage) {
+        let report = verify_dm::check(
+            &entries(Kind::DmImage),
+            &verify_dm::run_dm_verify(root, "image")?,
+        );
+        reports.push((report, "dm-image file"));
     }
     if runs(Leg::SkslGolden) {
         let report = match verify_sksl::run_sksl_golden_verify(root)? {
@@ -276,6 +286,7 @@ fn apply_update(m: &mut Manifest, report: &verify::Report) {
             if e.reason.is_empty() {
                 let reason = match e.kind {
                     Kind::Gm => "ported GM does not match the goldens",
+                    Kind::DmImage => "ported DM image sources do not match the goldens",
                     Kind::SkslGolden => "compiled output does not match the golden",
                     Kind::Bench => "ported bench fails its smoke run",
                     Kind::Fuzz => "ported fuzzer panics or hangs on its corpus",

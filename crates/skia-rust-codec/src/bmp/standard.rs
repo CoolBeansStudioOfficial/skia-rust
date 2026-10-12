@@ -247,7 +247,6 @@ impl BmpStandardCodec {
         dst_row_bytes: usize,
     ) -> i32 {
         let height = info.height();
-        let width = info.width() as usize;
         let Some(swizzler) = self.swizzler.as_ref() else {
             return 0;
         };
@@ -263,7 +262,11 @@ impl BmpStandardCodec {
             let dst_row = &mut dst[row as usize * dst_row_bytes..];
             if base.xform_on_decode() {
                 swizzler.swizzle(&mut self.base.xform_buffer, &self.src_buffer);
-                base.apply_color_xform(dst_row, &self.base.xform_buffer, width);
+                base.apply_color_xform(
+                    dst_row,
+                    &self.base.xform_buffer,
+                    swizzler.swizzle_width() as usize,
+                );
             } else {
                 swizzler.swizzle(dst_row, &self.src_buffer);
             }

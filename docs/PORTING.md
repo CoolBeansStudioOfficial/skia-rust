@@ -195,6 +195,17 @@ Constructor arguments become `FooGM::new(…)`; the GM's member variables become
 
 **Done.** `cargo xtask inventory verify --update` runs every registered GM (`gm-verify`) and marks an entry `passing` only when all configs match on every oracle tier with goldens and every tier was checkable on this host; it marks mismatching entries `failing`. A GM that is not checkable on some host (CI runners without AVX-512 or with another vendor's estimates) keeps its status there; it is never a regression and never a pass. A GM that doesn't match after 2 attempts follows §10, with `def_gm!(#[ignore = "see notes/…"] …)`.
 
+### DM's file sources: `dm-image` (and `dm-lottie`)
+
+The `dm-image` manifest entries (`dm/image/<file>`, one per file of `resources/images`) are DM's `--src image`: `CodecSrc`, `AndroidCodecSrc`, `BRDSrc` and `ImageGenSrc`, ported in `tests/gm/src/dm_image.rs` with the enumeration of `dm/DM.cpp` (`push_codec_srcs`). They are `Src`s (`tests/gm/src/sink.rs`), drawn by the same `RasterSink` and checked by the same per-tier loop as GMs (`check_gm`), with the result id `<config>/image/<options>/<name>`. `tests/gm/src/dm_check.rs` groups the sources of a file into one verdict, which `cargo xtask inventory verify` (leg `dm-image`, binary `dm-verify --src image`) maps to the entry: `passing` only when every result of the file matches on every checkable tier and the goldens hold no result that no source of ours makes.
+
+The goldens are `dm-image-hashes-m156.json`, rendered by the CI-hosted Linux oracle (`oracle/README.md`, "CI-hosted oracle") in the format of `hashes-m156.json`, hashes only. `8888` results are under the RGBA tier names, `565`/`f16` under the BGRA ones, so on a BGRA host (Windows) `8888` is not checkable. Loading (`GoldenStore::load_dm`): `$SKIA_RUST_DM_IMAGE_HASHES` (a local file) if set, else the asset named in `inventory/goldens.lock` (downloaded and verified against the lock's SHA-256 like `hashes-m156.json`; `cargo xtask oracle publish` keeps its `dm-*` lines). Until the maintainer uploads the asset to the `goldens-m156` release, CI cannot fetch it, and the leg behaves like this:
+
+- no `dm-image` entry is `passing`: the leg is skipped (`SKIPPED the dm-image leg`), nothing fails and nothing is marked;
+- some entry is `passing`: every `passing` entry is a regression ("the goldens are unavailable"), so once entries are `passing` the goldens are required, as the GM goldens are.
+
+Where a result of ours differs from a CI-rendered golden, remember the oracle's libm is glibc, not the UCRT of the Windows goldens: a mismatch in a pixel that goes through `sinf`/`cosf`/`cbrtf`... is the libm class (`oracle/README.md`), not a port bug. Codec pixels are integer code. A debugging aid: `dm-verify --src image --tier ml4 --match <file>` checks one file on one tier.
+
 ## 12. Raster pipeline stages: rp-diff cases
 
 Every raster pipeline stage you port (Wave B, `docs/design/raster-pipeline.md` §5) also gets cases in `oracle/rp-diff` (design §4.2, "As implemented in A5"): single stages or short sequences run on chosen inputs through real Skia, for every x86 code path (`scalar`, `sse2`, `sse41`, `ml3`, `ml4`), and through skia-rust on every selection that stands in for that path (`Native`, `Model(Host)`, `Model(AmdZen4)`), compared byte for byte. This is where tier semantics (rounding, NaN handling, estimates, tails) get pinned down; GMs only see stages in combination.

@@ -35,6 +35,7 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::Vector;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::scalar::scalar_round_to_int;
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream};
 use skia_rust_core::stream_priv::copy_stream_to_data;
@@ -876,6 +877,25 @@ impl CodecImpl for WuffsCodec<'_> {
     // Port of: SkWuffsCodec::onGetEncodedFormat (src/codec/SkWuffsCodec.cpp#L441-L443)
     fn on_get_encoded_format(&self) -> EncodedImageFormat {
         EncodedImageFormat::GIF
+    }
+
+    // Port of: SkScalingCodec::onGetScaledDimensions (src/codec/SkScalingCodec.h#L28-L35), which
+    // SkWuffsCodec inherits: the "two pass" decode scales the frame when it draws it.
+    #[allow(clippy::cast_precision_loss)] // image dimensions are exact in an f32 (SkScalar)
+    fn on_get_scaled_dimensions(&self, base: &CodecBase<'_>, desired_scale: f32) -> ISize {
+        let dim = base.dimensions();
+        // SkCodec treats zero dimensional images as errors, so the minimum size that we will
+        // recommend is 1x1.
+        ISize::new(
+            1.max(scalar_round_to_int(desired_scale * dim.width as f32)),
+            1.max(scalar_round_to_int(desired_scale * dim.height as f32)),
+        )
+    }
+
+    // Port of: SkScalingCodec::onDimensionsSupported (src/codec/SkScalingCodec.h#L37-L43)
+    fn on_dimensions_supported(&self, base: &CodecBase<'_>, dim: ISize) -> bool {
+        let size = base.dimensions();
+        1 <= dim.width && dim.width <= size.width && 1 <= dim.height && dim.height <= size.height
     }
 
     // Port of: SkWuffsCodec::onGetPixels (src/codec/SkWuffsCodec.cpp#L445-L455)
