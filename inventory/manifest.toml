@@ -16408,7 +16408,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L67-L127"
 module = "raster"
 status = "todo"
-reason = "host-dependent libm: matches the goldens on Linux and Windows but mismatches on macOS arm64; not registered, see notes/gm_arcto_cpp_arcto.md"
+reason = "host-dependent libm: matches the goldens on Linux and Windows but mismatches on macOS arm64 (platform atan2f in arc_to_radius; the clean-room libm has no bit-exact atan2f); not registered, see notes/gm_arcto_cpp_arcto.md"
 span_hash = "d66533a0a4696b80eef84fb6553f938ced3c1d0332a8eae32b3e13a51a71d9c6"
 
 [[test]]
@@ -16436,7 +16436,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L238-L305"
 module = "raster"
 status = "failing"
-reason = "see notes/gm_arcto_cpp_parsedpaths.md (47 pixels differ; float libm trig in SVG arc conversion)"
+reason = "47 pixels differ on every tier after the clean-room sinf/cosf/tanf port (re-verified); atan2f stays on the platform libm; see notes/gm_arcto_cpp_parsedpaths.md"
 span_hash = "cdcf24cf04f8bba56ab060d99c0c86890f5a548e2bfe4bd5a7b37e34c0177104"
 
 [[test]]
@@ -19562,7 +19562,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/dashing.cpp#L476-L502"
 module = "effects"
 status = "failing"
-reason = "see notes/gm_dashing_cpp_longpathdash.md (5 pixels differ; double libm sin/cos)"
+reason = "5 pixels differ on every tier (re-verified after the clean-room libm: the double-precision sin/cos are not ported); see notes/gm_dashing_cpp_longpathdash.md"
 span_hash = "88bdc188087887d33ce0603726cdc0bb9f3cdfdd3e034b2b5a0ca2c97af263d2"
 
 [[test]]
@@ -19914,8 +19914,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/emboss.cpp#L91-L91"
 module = "raster"
-status = "failing"
-reason = "every config mismatches; the text (drawn after the emboss mask filter is still set) is black, golden is plain blue/green; see notes/gm_emboss_cpp_EmbossGM.md"
+status = "passing"
 span_hash = "b7bc2c7826b80ed3e7a88e3ca03c9daf6a827c2c5f7b799f44fc450494981622"
 
 [[test]]
@@ -19924,8 +19923,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/emboss.cpp#L202-L324"
 module = "effects"
-status = "todo"
-reason = "draws text and images under an emboss mask filter, which EmbossGM (gm/emboss.cpp::EmbossGM, failing) shows mismatches on every config (text drawn after the emboss mask is black); the helpers are not ported, notes/gm_emboss_cpp_EmbossGM.md"
+status = "passing"
 span_hash = "d65602f66fd45b7075b3c7dd8d2c738f0eebd9a20e171294f8e0b3c60e7fe4f1"
 
 [[test]]
@@ -21088,7 +21086,7 @@ macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1301-L1301"
 module = "effects"
 status = "failing"
-reason = "Mismatch from host libm cbrtf vs the oracle's UCRT (Lab/LCH stop conversions); see notes/gm-gradients.cpp-OKLCH-libm.md. Ignored."
+reason = "re-verified after the clean-room libm: still mismatches (cbrtf and atan2f are not in the port, host libm); see notes/gm-gradients.cpp-OKLCH-libm.md"
 span_hash = "6d71ae5d4d34fde93f35e1819cae887ccad9f0ae1c62cfa4504401c5730a21c9"
 
 [[test]]
@@ -21125,7 +21123,7 @@ macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1302-L1302"
 module = "effects"
 status = "failing"
-reason = "Mismatch from host libm cbrtf vs the oracle's UCRT (OKLab/OKLCH stop conversions), 8 of 136950 pixels off by one unit on 565; see notes/gm-gradients.cpp-OKLCH-libm.md. Ignored."
+reason = "re-verified after the clean-room libm: still mismatches (cbrtf and atan2f are not in the port, host libm); see notes/gm-gradients.cpp-OKLCH-libm.md"
 span_hash = "e82c6dda38865aa820cb871077b2da82ab5f373b241f70f5b0612e19e16aceba"
 
 [[test]]
@@ -21234,7 +21232,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L997-L1039"
 module = "effects"
 status = "failing"
-reason = "Mismatch from host libm cbrtf vs the oracle's UCRT (Lab, OKLab, LCH and OKLCH stop conversions): the same signature as gradients_color_space_many_stops (565 off by one unit in 31 of 250000 pixels). See notes/gm-gradients.cpp-OKLCH-libm.md. Ignored."
+reason = "re-verified after the clean-room libm: still mismatches (cbrtf and atan2f are not in the port, host libm); see notes/gm-gradients.cpp-OKLCH-libm.md"
 span_hash = "e576a604483efc078a2b535564fa1f44026afdd0d3020f91bba1083d7edce823"
 
 [[test]]
@@ -21244,7 +21242,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1123-L1150"
 module = "effects"
 status = "failing"
-reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
+reason = "re-verified after the clean-room libm: still mismatches (cbrtf and atan2f are not in the port, host libm); see notes/gm-gradients.cpp-OKLCH-libm.md"
 span_hash = "f6930ef04649efc309de9c445d98d000f157246911b6a58fe703bac549d5fcca"
 
 [[test]]
@@ -21254,7 +21252,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1100-L1121"
 module = "effects"
 status = "failing"
-reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
+reason = "re-verified after the clean-room libm: still mismatches (cbrtf and atan2f are not in the port, host libm); see notes/gm-gradients.cpp-OKLCH-libm.md"
 span_hash = "f0231eb2e6bbd23bc2a97636f56407221c7f79b1cfed6161ba51c02651324206"
 
 [[test]]
