@@ -64,6 +64,20 @@ for spec in $tiers; do
   $ci compare "$tdir/hashes-gm.json" "$goldens/hashes-m156.json" "$tier" "$tdir/raw-gm" \
       "$goldens/objects-m156.tar" "$tdir/equivalence" || status=1
   cat "$tdir/equivalence.md" >> "${GITHUB_STEP_SUMMARY:-/dev/null}" 2>/dev/null || true
+  if [[ ${SHIM:-0} == 1 && -f $here/libm_shim.so ]]; then
+    # Diagnostic: re-render only the mismatched GMs with float libm calls computed in double.
+    mapfile -t pats < <($ci patterns "$tdir/equivalence.json")
+    if (( ${#pats[@]} )); then
+      mkdir -p "$tdir/raw-shim"
+      LD_PRELOAD=$here/libm_shim.so SKIA_ORACLE_CPU_CAP=$cap ./dm "${dm_common[@]}" \
+          --oracleRawPath "$tdir/raw-shim" --config 8888 --src gm --match "${pats[@]}" \
+          > "$tdir/dm-shim.log" 2>&1
+      $ci hash "$tdir/raw-shim" "$tier" "$cpu_tier" "$bin/toolchain.txt" "$tdir/hashes-shim.json" || true
+      $ci compare "$tdir/hashes-shim.json" "$goldens/hashes-m156.json" "$tier" "$tdir/raw-shim" \
+          "$goldens/objects-m156.tar" "$tdir/equivalence-shim" || true
+      rm -rf "$tdir/raw-shim"
+    fi
+  fi
   rm -rf "$tdir/raw-gm"   # keep only hashes (each GM tier is ~1 GB raw)
 
   if [[ ${EXTRAS:-0} == 1 ]]; then

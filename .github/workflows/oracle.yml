@@ -24,6 +24,10 @@ on:
       lottie_configs:
         description: "DM configs for --src lottie"
         default: "8888"
+      libm_shim:
+        description: "Diagnostic: re-render the mismatched GMs with float libm calls computed in double (LD_PRELOAD)"
+        type: boolean
+        default: true
       nanobench:
         description: "Also build nanobench (shares the build, bench.md Q1)"
         type: boolean
@@ -169,8 +173,16 @@ jobs:
           grep -F "$(grep hashes-m156.json inventory/goldens.lock | cut -d'"' -f4)" goldens/sha256.txt \
             || echo "::warning::hashes-m156.json differs from inventory/goldens.lock"
 
+      - name: Imported libm symbols and diagnostic shim
+        run: |
+          mkdir -p results
+          nm -D --undefined-only oracle-bin/dm | grep -E ' (sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|exp|exp2|log|log2|log10|pow|cbrt|hypot|sincos|erf|fma)f?(@|$)' | tee results/libm-imports.txt
+          gcc -shared -fPIC -O2 -fno-builtin -o oracle/ci/libm_shim.so oracle/ci/libm_shim.c -lm
+          ldd --version | head -n 1 | tee results/glibc.txt
+
       - name: Render and compare
         env:
+          SHIM: ${{ inputs.libm_shim && '1' || '0' }}
           EXTRAS: ${{ inputs.extras && '1' || '0' }}
           LOTTIE_CONFIGS: ${{ inputs.lottie_configs }}
         run: |
