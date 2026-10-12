@@ -1,6 +1,8 @@
 name: libm-cleanroom-probe
 
 # Clean-room black-box probe of the platform math library (docs/design/libm-cleanroom.md).
+#  * jobs:  evaluates the platform (UCRT) functions on the inputs listed in probe-jobs.txt.
+#  * check: compares skia-rust-libm against the platform function on every f32 bit pattern.
 on:
   workflow_dispatch:
   push:
@@ -10,6 +12,7 @@ on:
 jobs:
   dump:
     runs-on: windows-latest
+    if: ${{ hashFiles('crates/skia-rust-libm/probe-jobs.txt') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -18,3 +21,19 @@ jobs:
         with:
           name: libm-dump
           path: out
+
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compare against the platform on every f32 bit pattern
+        shell: bash
+        run: |
+          fns=$(grep -v '^#' crates/skia-rust-libm/check-list.txt | tr '\n' ' ')
+          mkdir -p mismatch
+          cargo run --release -p skia-rust-libm --example probe -- check mismatch $fns | tee mismatch/summary.txt || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-mismatch
+          path: mismatch
