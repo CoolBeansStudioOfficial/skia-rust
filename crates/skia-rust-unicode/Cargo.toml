@@ -17,6 +17,7 @@ icu_properties.workspace = true
 icu_casemap.workspace = true
 icu_locale_core.workspace = true
 icu_provider.workspace = true
+unicode-bidi.workspace = true
 
 [lints]
 workspace = true
