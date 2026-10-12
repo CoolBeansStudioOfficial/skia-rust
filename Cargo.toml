@@ -18,11 +18,13 @@ members = [
     "crates/skia-rust-pathops",
     "crates/skia-rust-text",
     "crates/skia-rust-unicode",
+    "crates/skia-rust-shaper",
     "crates/skia-rust-svg",
     "crates/skia-rust-pdf",
     "crates/skia-rust-skottie",
     "crates/skia-rust-sksg",
     "crates/skia-rust-resources",
+    "crates/skia-rust-bentleyottmann",
     "crates/skia-rust-svg",
     "crates/skia-rust-pdf",
     "benches",
@@ -63,6 +65,7 @@ skia-rust-effects = { path = "crates/skia-rust-effects", version = "0.156.0" }
 skia-rust-pathops = { path = "crates/skia-rust-pathops", version = "0.156.0" }
 skia-rust-text = { path = "crates/skia-rust-text", version = "0.156.0" }
 skia-rust-unicode = { path = "crates/skia-rust-unicode", version = "0.156.0" }
+skia-rust-shaper = { path = "crates/skia-rust-shaper", version = "0.156.0" }
 skia-rust-svg = { path = "crates/skia-rust-svg", version = "0.156.0" }
 skia-rust-pdf = { path = "crates/skia-rust-pdf", version = "0.156.0" }
 skia-rust-tools = { path = "tests/tools", version = "0.156.0" }
@@ -70,7 +73,13 @@ skia-rust-gpu = { path = "crates/skia-rust-gpu", version = "0.156.0" }
 skia-rust-skottie = { path = "crates/skia-rust-skottie", version = "0.156.0" }
 skia-rust-sksg = { path = "crates/skia-rust-sksg", version = "0.156.0" }
 skia-rust-resources = { path = "crates/skia-rust-resources", version = "0.156.0" }
+skia-rust-bentleyottmann = { path = "crates/skia-rust-bentleyottmann", version = "0.156.0" }
 bitflags = "2"
+# Bidi of the text stack (docs/design/modules.md §3.2, Appendix A): `unicode-bidi` runs the UAX #9
+# algorithm over ICU4X's BidiClass data (`icu_properties` feature `unicode_bidi`). Exact versions,
+# bumped only with a Skia milestone bump.
+unicode-bidi = { version = "=0.3.18", default-features = false, features = ["std"] }
+icu_properties = { version = "=2.3.0", features = ["unicode_bidi"] }
 png = "=0.18.1"
 # Skia m156 MODULE.bazel pins for the Rust-backed JPEG codec and encoder (codecs.md C-R2): the
 # decoder is zune-jpeg, with zune-core for its byte streams and options; the encoder is
