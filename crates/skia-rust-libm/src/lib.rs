@@ -22,3 +22,5 @@ mod reduce;
 mod trig;
 
 pub use trig::{cosf, sinf};
+#[doc(hidden)]
+pub use trig::{probe_cosf, probe_sinf};

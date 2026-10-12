@@ -76,11 +76,64 @@ fn two_prod(a: f64, b: f64) -> (f64, f64) {
     (p, ((ah * bh - p) + ah * bl + al * bh) + al * bl)
 }
 
-/// Reduces `x` (finite, `|x| > pi/4`): returns `(n mod 4, r)`.
-#[allow(clippy::many_single_char_names, clippy::cast_possible_truncation)]
-pub(crate) fn reduce_pio2(x: f64) -> (u32, f64) {
+type Big = [u64; 6];
+
+/// Keeps the low `bits` bits.
+fn mask(a: &mut Big, bits: usize) {
+    for (k, word) in a.iter_mut().enumerate() {
+        let lo = k * 64;
+        if lo >= bits {
+            *word = 0;
+        } else if lo + 64 > bits {
+            *word &= (1u64 << (bits - lo)) - 1;
+        }
+    }
+}
+
+fn bit(a: &Big, k: usize) -> u64 {
+    (a[k / 64] >> (k % 64)) & 1
+}
+
+/// `n << k` as a bignum (`n < 4`).
+fn shifted(n: u64, k: usize) -> Big {
+    let mut r = [0u64; 6];
+    r[k / 64] |= n << (k % 64);
+    if k % 64 > 62 {
+        r[k / 64 + 1] |= n >> (64 - k % 64);
+    }
+    r
+}
+
+fn add(a: &Big, b: &Big) -> Big {
+    let mut r = [0u64; 6];
+    let mut c = 0u128;
+    for k in 0..6 {
+        let t = u128::from(a[k]) + u128::from(b[k]) + c;
+        r[k] = t as u64;
+        c = t >> 64;
+    }
+    r
+}
+
+/// Two's complement negation over all 384 bits.
+fn neg(a: &Big) -> Big {
+    let mut r = [0u64; 6];
+    let mut c = 1u128;
+    for k in 0..6 {
+        let t = u128::from(!a[k]) + c;
+        r[k] = t as u64;
+        c = t >> 64;
+    }
+    r
+}
+
+/// Reduces `x` (finite, `x > pi/4`) modulo pi/2. Returns `(n mod 4, r)` with `x = n*pi/2 + r`
+/// to within the rounding of `r` to `f64`. `n` is the nearest integer to `x*2/pi` unless the
+/// caller forces another choice (`n_choice`, taken mod 4); then `r` is the exact remainder for
+/// that integer, which lies in `(-pi/2, pi/2)` when the choice is the nearest or adjacent.
+pub(crate) fn reduce_pio2(x: f64, n_choice: Option<u32>) -> (u32, f64) {
+    debug_assert!(x > 0.0 && x.is_finite());
     let bits = x.to_bits();
-    let neg = bits >> 63 != 0;
     let m = (bits & ((1 << 52) - 1)) | (1 << 52);
     #[allow(clippy::cast_possible_wrap)] // the exponent field is 11 bits
     let e = ((bits >> 52) & 0x7ff) as i64 - 1075;
@@ -107,36 +160,23 @@ pub(crate) fn reduce_pio2(x: f64) -> (u32, f64) {
     let s = L + i0 - e;
     #[allow(clippy::cast_sign_loss)] // s > 0
     let su = s as usize;
-    let bit = |k: usize| (p[k / 64] >> (k % 64)) & 1;
-    let q = (bit(su) | (bit(su + 1) << 1)) as u32;
-    let round_up = bit(su - 1) == 1;
-
-    // G = P mod 2^s, or 2^s - G when rounding to the next integer.
-    let mut g = p;
-    for (k, word) in g.iter_mut().enumerate() {
-        let lo = k * 64;
-        if lo >= su {
-            *word = 0;
-        } else if lo + 64 > su {
-            *word &= (1u64 << (su - lo)) - 1;
-        }
+    let mut u = p;
+    mask(&mut u, su + 2);
+    // Nearest integer mod 4: bits s, s+1 of U + 2^(s-1).
+    let nearest = {
+        let t = add(&u, &shifted(1, su - 1));
+        (bit(&t, su) | (bit(&t, su + 1) << 1)) as u32
+    };
+    let n = n_choice.map_or(nearest, |c| c & 3);
+    // V = U - n*2^s (mod 2^(s+2)) is the signed fraction in units of 2^-s.
+    let mut v = add(&u, &neg(&shifted(u64::from(n), su)));
+    mask(&mut v, su + 2);
+    let negative = bit(&v, su + 1) == 1;
+    if negative {
+        v = neg(&v);
+        mask(&mut v, su + 2);
     }
-    if round_up {
-        // two's complement negate within s bits
-        let mut c = 1u128;
-        for (k, word) in g.iter_mut().enumerate() {
-            let lo = k * 64;
-            let t = u128::from(!*word) + c;
-            *word = t as u64;
-            c = t >> 64;
-            if lo >= su {
-                *word = 0;
-            } else if lo + 64 > su {
-                *word &= (1u64 << (su - lo)) - 1;
-            }
-        }
-    }
-    let n = (q + u32::from(round_up)) & 3;
+    let g = v;
 
     // Highest set bit of G.
     let mut h = 0usize;
@@ -181,9 +221,7 @@ pub(crate) fn reduce_pio2(x: f64) -> (u32, f64) {
     let (p0, p1) = two_prod(f_hi, PIO2_HI);
     let p1 = p1 + (f_hi * PIO2_LO + f_lo * PIO2_HI);
     let (r, _) = two_sum(p0, p1);
-    let r = if round_up { -r } else { r };
-
-    if neg { ((4 - n) & 3, -r) } else { (n, r) }
+    (n, if negative { -r } else { r })
 }
 
 #[cfg(test)]
@@ -192,10 +230,11 @@ mod tests {
 
     #[test]
     fn small_multiples() {
-        let (n, r) = reduce_pio2(1.0);
+        let (n, r) = reduce_pio2(1.0, None);
         assert_eq!(n, 1);
         assert!((r - (1.0 - core::f64::consts::FRAC_PI_2)).abs() < 1e-15);
-        let (n, r) = reduce_pio2(-4.0);
+        let (n, r) = reduce_pio2(4.0, None);
+        let (n, r) = ((4 - n) & 3, -r);
         // -4 = -3*pi/2 + 0.712...: nearest multiple of pi/2 is -3 (n mod 4 = 1)
         assert_eq!(n, 1);
         assert!((r - (-4.0 + 3.0 * core::f64::consts::FRAC_PI_2)).abs() < 1e-15);
@@ -203,9 +242,9 @@ mod tests {
 
     #[test]
     fn huge_argument_in_range() {
-        let (_, r) = reduce_pio2(1.0e300);
+        let (_, r) = reduce_pio2(1.0e300, None);
         assert!(r.abs() <= 0.785_398_163_397_448_4);
-        let (_, r) = reduce_pio2(f64::from(f32::MAX));
+        let (_, r) = reduce_pio2(f64::from(f32::MAX), None);
         assert!(r.abs() <= 0.785_398_163_397_448_4);
     }
 }

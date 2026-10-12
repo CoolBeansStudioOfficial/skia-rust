@@ -21,6 +21,22 @@ jobs:
           name: libm-dump
           path: out
 
+  nsel:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        fn: [sinf, cosf]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Which quadrant computation does the platform follow, per binade
+        shell: bash
+        run: cargo run --release -p skia-rust-libm --example probe -- nsel ${{ matrix.fn }} | tee nsel-${{ matrix.fn }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-nsel-${{ matrix.fn }}
+          path: nsel-${{ matrix.fn }}.txt
+
   check:
     runs-on: windows-latest
     steps:
