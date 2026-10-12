@@ -39,7 +39,9 @@ pub mod utypes;
 mod word_rules;
 
 pub use data::{BreakDataSource, CompiledData, LineStrictness};
-pub use ubrk::{BreakRules, UBRK_DONE, UBreakIterator, UBreakIteratorType, resolve_rules, ubrk_open};
+pub use ubrk::{
+    BreakRules, UBRK_DONE, UBreakIterator, UBreakIteratorType, resolve_rules, ubrk_open,
+};
 pub use uchar::{
     UChar32, UProperty, u_get_int_property_value, u_has_binary_property, u_is_whitespace,
     u_iscntrl, u_isspace, u_lb, uscript_get_script,

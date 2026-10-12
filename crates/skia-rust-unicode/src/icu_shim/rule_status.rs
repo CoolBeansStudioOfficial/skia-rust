@@ -103,23 +103,21 @@ pub(super) fn sentence(cps: &[(usize, u32)], bounds: &[usize], len: usize) -> Ve
         prev = b;
         // `[$Sep $LF $CR {eof}] | $CR $LF`.
         let n = range.len();
-        let ends_in_separator = if n >= 2
-            && range[n - 2] == SentenceBreak::CR
-            && range[n - 1] == SentenceBreak::LF
-        {
-            range.truncate(n - 2);
-            true
-        } else if n >= 1
-            && matches!(
-                range[n - 1],
-                SentenceBreak::Sep | SentenceBreak::LF | SentenceBreak::CR
-            )
-        {
-            range.truncate(n - 1);
-            true
-        } else {
-            false
-        };
+        let ends_in_separator =
+            if n >= 2 && range[n - 2] == SentenceBreak::CR && range[n - 1] == SentenceBreak::LF {
+                range.truncate(n - 2);
+                true
+            } else if n >= 1
+                && matches!(
+                    range[n - 1],
+                    SentenceBreak::Sep | SentenceBreak::LF | SentenceBreak::CR
+                )
+            {
+                range.truncate(n - 1);
+                true
+            } else {
+                false
+            };
         if !ends_in_separator && b != len {
             out.push(0);
             continue;

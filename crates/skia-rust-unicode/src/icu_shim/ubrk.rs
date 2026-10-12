@@ -170,10 +170,7 @@ pub fn resolve_rules(kind: UBreakIteratorType, locale: &str) -> Result<BreakRule
     }
     chain.push(String::from("root"));
     for bundle in &chain {
-        if let Some(&(_, _, file)) = BOUNDARIES
-            .iter()
-            .find(|(b, k, _)| b == bundle && *k == key)
-        {
+        if let Some(&(_, _, file)) = BOUNDARIES.iter().find(|(b, k, _)| b == bundle && *k == key) {
             return rule_file(file).ok_or(U_INVALID_FORMAT_ERROR);
         }
     }
@@ -183,24 +180,24 @@ pub fn resolve_rules(kind: UBreakIteratorType, locale: &str) -> Result<BreakRule
 /// The segmenters of an open break iterator.
 #[derive(Debug)]
 enum Engines {
-    Grapheme(GraphemeClusterSegmenter),
-    Word(WordSegmenter),
-    Sentence(SentenceSegmenter),
+    Grapheme(Box<GraphemeClusterSegmenter>),
+    Word(Box<WordSegmenter>),
+    Sentence(Box<SentenceSegmenter>),
     Line {
-        complex: LineSegmenter,
-        rules: LineSegmenter,
+        complex: Box<LineSegmenter>,
+        rules: Box<LineSegmenter>,
     },
 }
 
 impl Engines {
     fn new(rules: BreakRules, data: &dyn BreakDataSource) -> Self {
         match rules {
-            BreakRules::Grapheme => Engines::Grapheme(data.grapheme()),
-            BreakRules::Word => Engines::Word(data.word()),
-            BreakRules::Sentence { greek } => Engines::Sentence(data.sentence(greek)),
+            BreakRules::Grapheme => Engines::Grapheme(Box::new(data.grapheme())),
+            BreakRules::Word => Engines::Word(Box::new(data.word())),
+            BreakRules::Sentence { greek } => Engines::Sentence(Box::new(data.sentence(greek))),
             BreakRules::Line { strictness, cj } => Engines::Line {
-                complex: data.line(strictness, cj, true),
-                rules: data.line(strictness, cj, false),
+                complex: Box::new(data.line(strictness, cj, true)),
+                rules: Box::new(data.line(strictness, cj, false)),
             },
         }
     }
@@ -489,6 +486,7 @@ impl UBreakIterator {
     // (chromium/deps/icu d578f2e8)
     /// `ubrk_next`: the next boundary, or `UBRK_DONE` at the end (`current` stays at the end).
     #[doc(alias = "ubrk_next")]
+    #[allow(clippy::should_implement_trait)] // ICU's `ubrk_next`, not an `Iterator`
     pub fn next(&mut self) -> i32 {
         if self.index + 1 < self.boundaries.len() {
             // The fast path of `BreakCache::next` leaves `fDone` as it is.
@@ -550,10 +548,11 @@ impl UBreakIterator {
                     s -= 1;
                 }
                 let len = t[s..].utf8_chunks().next().map_or(1, |chunk| {
-                    chunk.valid().chars().next().map_or_else(
-                        || chunk.invalid().len().max(1),
-                        char::len_utf8,
-                    )
+                    chunk
+                        .valid()
+                        .chars()
+                        .next()
+                        .map_or_else(|| chunk.invalid().len().max(1), char::len_utf8)
                 });
                 if s + len > offset { s } else { offset }
             }

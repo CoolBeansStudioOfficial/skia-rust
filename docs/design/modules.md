@@ -434,6 +434,67 @@ them exactly when the category rows in the table above disappear. Moving a class
 data deletes its rows from `known-divergences.txt` (the replay test fails until it does), so the list
 is the progress meter of M2, M3 and M4.
 
+### 3.5 Results of M2 (2026-10-12)
+
+`skia_rust_unicode::icu_shim` implements the `SKICU_EMIT_FUNCS` functions other than `ubidi_*` (M3) with
+ICU's contracts, and `unicode_icu` ports `SkUnicode_icu.cpp` on top of it (with M3's `icu_bidi`). The
+Rust twin of `oracle/unicode-diff` now calls the shim for every break, property, case and locale call, so
+unicode-diff measures the shim. What the shim adds to ICU4X:
+
+- **Rule status.** Lines: `UBRK_LINE_HARD` when the rule-based range ends in `BK`/`CR`/`LF`/`NL`
+  (`line_normal.txt#L130-L137`). Sentences: `UBRK_SENTENCE_SEP` for the one tagged rule of `sent.txt`
+  (`{bof}` is the start of each match: `handleNext` starts every match with the "beginning" category).
+  Words: the tags depend on more than the final character (13a/13b, `$KanaKanji $KanaKanji`, Hangul,
+  `^` rules), so `icu_shim::word_rules` runs the rule-based pass of Chromium's `word.txt` as RBBI does:
+  `!!chain`ed rules, the match ends at the last accepting position, the status is the largest tag
+  accepting there.
+- **Dictionary ranges.** A boundary the rule-based pass does not have was added by a dictionary and takes
+  the status of the rule-based boundary that ends its range (`populateDictionary`,
+  `fOtherRuleStatusIndex`); this is §3.2's Lao quirk. For lines, the rule-based pass is ICU4X's
+  rules-only segmenter over the text with LB1 applied as ICU's rules do (each `SA` character replaced by an
+  `AL`, or a `CM` for `Mn`/`Mc`, of the same encoded length). ICU4X's own rules-only mode ends a range at
+  every edge of a complex-script run, which ICU's rules do not.
+- **Navigation.** `following` / `preceding` move an offset inside a code point to its start
+  (`utext_setNativeIndex`) and follow `BreakCache`'s `fDone` handling.
+- **Locales.** `ubrk_open`'s rule file per locale from the `boundaries` tables of Chromium's `brkitr`
+  bundles (root, ja, ko, zh, zh_Hant, el) and the `lb` / `lw` keywords; `line_cj.brk` (`ko@lb=strict`) and
+  `title.brk` are named but absent, so opening them fails with `U_INVALID_FORMAT_ERROR` as in ICU. The
+  `_phrase_cj` files (ICU's ML phrase breaking, `@lw=phrase`) run the `_cj` rules of the same strictness:
+  ICU4X has no counterpart, and no Skia caller asks for it. `u_strToUpper` picks the case rules with
+  `ucase_getCaseLocale`. `uloc_forLanguageTag` handles language, extlang, script, region, variants and
+  the extensions (key and type names for the common `-u-` keys only). `uloc_getDefault` is `en_US`.
+- **The data seam.** `icu_shim::BreakDataSource` hands out the ICU4X segmenters (per rule file); M4's
+  Chromium break data implements it, and `UBreakIterator::open_with_data` takes it.
+
+unicode-diff gains the `misc` section (`u_errorName`, `uloc_forLanguageTag`, `uloc_getDefault`, now
+compared) and 7 `breaks` cases that open other locales (`zh_Hans_CN`, `ja_JP`, `ja@lb=normal`,
+`en@lb=strict`, `en_US@lb=loose`, `ko@lb=strict`, `el_GR`).
+
+| Class (M0c rows) | Before | After |
+|---|---|---|
+| `word-status-trailing-extend` | 44 | 0 |
+| `word-status-ideographic` | 56 | 0 |
+| `word-status-none-vs-letter` | 4 | 0 |
+| `sentence-status-sep` | 1,628 | 0 |
+| `line-status-hard-break` | 186 | 0 |
+| `line-status-dictionary-hard` | 10 | 0 |
+| `nav-offset-inside-code-point` | 218 | 0 |
+
+Divergent `breaks` rows of the M0c cases: line 196 → 28, word 514 → 428, sentence 1,628 → 0, navigation
+431 → 228; all that is left there is M4's data classes (`word-dot`, `word-colon`, `word-dictionary-*`,
+`word-hangul-syllable-jamo`, `line-dictionary-sa`, `line-normal-other`), with the same strings and places
+as in §3.4. The locale cases add 70 rows, all `line-dictionary-sa` and `line-normal-other` on the same 14
+strings; `ko@lb=strict` and `el_GR` are exact. `known-divergences.txt`: 3,212 → 1,197 entries. Props, case,
+reorder and misc are exact; bidi and conformance are unchanged (M3, M4).
+
+Beyond the corpus, three random corpora of 16,000 strings over the characters the rules single out
+(letters, digits, `ExtendNumLet`, quotes, Hebrew, kana, kanji, iteration marks, Hangul and jamo, the SA
+scripts with their marks, emoji and modifiers, regional indicators, every hard break, CR LF, terminators,
+closers, format and extend characters) were run through both sides (`$SKIA_RUST_UNICODE_DIFF_CORPUS` and
+the driver's `--corpus`): at every boundary both sides have, the status is ICU's, except one string where a
+`line-normal-other` break (after U+FE13) splits ICU's range, and navigation is exact wherever the
+boundaries are.
+
 ---
 
 ## 4. Paragraph (`modules/skparagraph`, 8.5k C++ lines)
@@ -779,6 +840,15 @@ test), `cargo xtask text-deps fetch --only ucd` (the Unicode 17.0.0 conformance 
 `inventory/text-deps.lock`) and `cargo xtask oracle unicode-diff [--update|--replay]`. Results and the class
 table are in §3.4. The locale argument of `ubrk_open` is fixed at `en`: tailoring by client locale (for example `ja` or `zh` line
 breaks) is not varied and is for M2's cases to add.
+
+### Status of M2 (2026-10-12)
+
+M2 is done (§3.5): `skia_rust_unicode::icu_shim` and `skia_rust_unicode::unicode_icu` (`SkUnicodes::ICU::Make`;
+`SkUnicodes::ICU4X::Make` is the same implementation), the unicode-diff twin running through the shim with
+every M2 class gone, and the eight `SkUnicode` tests of M2's row (plus M3's five bidi tests switched from
+their stand-in to the ICU implementation). `SkUnicode_icu.cpp` uses M3's `icu_bidi` (merged from
+`port/text-m3-m5`). Not ported: `SkIcuBreakIteratorCache`'s de-duplication by actual locale and its purge of
+live iterators (memory only).
 
 ### Status of M0b and M8's font part (2026-10-12)
 

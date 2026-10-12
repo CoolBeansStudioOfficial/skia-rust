@@ -65,6 +65,9 @@ pub fn open(kind: Kind, text: Text<'_>) -> UBreakIterator {
 }
 
 /// `(position, rule status)` for `first()` and every `next()` until `UBRK_DONE`.
+///
+/// # Panics
+/// If `ubrk_current` is not the position `next` returned (`SkBreakIterator_icu::current`).
 #[must_use]
 pub fn boundaries(kind: Kind, text: Text<'_>) -> Vec<(usize, i32)> {
     let mut it = open(kind, text);
@@ -132,10 +135,22 @@ const CASES: [(&str, Kind, bool, bool, &str); 17] = [
     ("nav-word-u16", Kind::Word, true, true, "en"),
     ("line-zh-u8", Kind::Line, false, false, "zh_Hans_CN"),
     ("line-ja-u8", Kind::Line, false, false, "ja_JP"),
-    ("line-ja-normal-u8", Kind::Line, false, false, "ja@lb=normal"),
+    (
+        "line-ja-normal-u8",
+        Kind::Line,
+        false,
+        false,
+        "ja@lb=normal",
+    ),
     ("line-strict-u8", Kind::Line, false, false, "en@lb=strict"),
     ("line-loose-u8", Kind::Line, false, false, "en_US@lb=loose"),
-    ("line-ko-strict-u8", Kind::Line, false, false, "ko@lb=strict"),
+    (
+        "line-ko-strict-u8",
+        Kind::Line,
+        false,
+        false,
+        "ko@lb=strict",
+    ),
     ("sent-el-u8", Kind::Sentence, false, false, "el_GR"),
 ];
 

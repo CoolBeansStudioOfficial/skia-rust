@@ -125,6 +125,7 @@ enum Part {
 /// `uloc_forLanguageTag(langtag, localeID, capacity, &parsedLength, &status)`.
 #[doc(alias = "uloc_forLanguageTag")]
 #[must_use]
+#[allow(clippy::too_many_lines)] // one parser, in the order of ultag_parse
 pub fn uloc_for_language_tag(tag: &str) -> ForLanguageTag {
     let subtags: Vec<&str> = tag.split('-').collect();
     let mut language = String::new();
@@ -137,14 +138,19 @@ pub fn uloc_for_language_tag(tag: &str) -> ForLanguageTag {
     let mut next = Part::Language;
     let mut i = 0;
     // The end of the subtag `i` in `tag`.
-    let end_of = |i: usize| -> usize { subtags[..=i].iter().map(|s| s.len() + 1).sum::<usize>() - 1 };
+    let end_of =
+        |i: usize| -> usize { subtags[..=i].iter().map(|s| s.len() + 1).sum::<usize>() - 1 };
     while i < subtags.len() {
         let s = subtags[i];
         let lower = s.to_ascii_lowercase();
         if next == Part::Language {
             if is_language(s) {
                 language = if lower == "und" { String::new() } else { lower };
-                next = if s.len() <= 3 { Part::Extlang1 } else { Part::Script };
+                next = if s.len() <= 3 {
+                    Part::Extlang1
+                } else {
+                    Part::Script
+                };
                 parsed = end_of(i);
                 i += 1;
                 continue;
@@ -169,7 +175,11 @@ pub fn uloc_for_language_tag(tag: &str) -> ForLanguageTag {
             continue;
         }
         if next <= Part::Script && is_script(s) {
-            script = format!("{}{}", s[..1].to_ascii_uppercase(), s[1..].to_ascii_lowercase());
+            script = format!(
+                "{}{}",
+                s[..1].to_ascii_uppercase(),
+                s[1..].to_ascii_lowercase()
+            );
             next = Part::Region;
             parsed = end_of(i);
             i += 1;
@@ -307,7 +317,7 @@ impl LocaleParts {
         let rest: Vec<&str> = parts.collect();
         let mut k = 0;
         if rest.get(k).is_some_and(|s| is_script(s)) {
-            out.script = rest[k].to_owned();
+            rest[k].clone_into(&mut out.script);
             k += 1;
         }
         if rest.get(k).is_some_and(|s| is_region(s)) {

@@ -241,7 +241,10 @@ const RULES: &[Rule] = &[
     rule(&[one(HEBREW_LETTER), star(EX_FM), one(EXTEND_NUM_LET)], 200),
     rule(&[one(NUMERIC), star(EX_FM), one(EXTEND_NUM_LET)], 100),
     rule(&[one(KATAKANA), star(EX_FM), one(EXTEND_NUM_LET)], 400),
-    rule(&[one(EXTEND_NUM_LET), star(EX_FM), one(EXTEND_NUM_LET)], 200),
+    rule(
+        &[one(EXTEND_NUM_LET), star(EX_FM), one(EXTEND_NUM_LET)],
+        200,
+    ),
     // 13b.
     rule(&[one(EXTEND_NUM_LET), star(EX_FM), one(ALETTER_PLUS)], 200),
     rule(&[one(EXTEND_NUM_LET), star(EX_FM), one(HEBREW_LETTER)], 200),
@@ -250,7 +253,11 @@ const RULES: &[Rule] = &[
     // 15, 16: `^$Regional_Indicator $ExFm* $Regional_Indicator;`
     Rule {
         anchored: true,
-        items: &[one(REGIONAL_INDICATOR), star(EX_FM), one(REGIONAL_INDICATOR)],
+        items: &[
+            one(REGIONAL_INDICATOR),
+            star(EX_FM),
+            one(REGIONAL_INDICATOR),
+        ],
         tag: 0,
     },
     // `$HangulSyllable $HangulSyllable {200};`
@@ -263,9 +270,8 @@ const RULES: &[Rule] = &[
 
 /// The ends (exclusive) of every match of `items` that starts at `start`.
 fn match_items(items: &[Item], sets: &[u32], start: usize, ends: &mut Vec<usize>) {
-    let test = |item: &Item, p: usize| {
-        p < sets.len() && ((sets[p] & item.set != 0) != item.negated)
-    };
+    let test =
+        |item: &Item, p: usize| p < sets.len() && ((sets[p] & item.set != 0) != item.negated);
     let mut cur = vec![start];
     for item in items {
         let mut next = Vec::new();

@@ -123,7 +123,7 @@ fn is_that_control_space(c: UChar32) -> bool {
 // Port of: icu4c/source/common/uchar.cpp#L201-L202 (chromium/deps/icu d578f2e8)
 /// `IS_THAT_ASCII_CONTROL_SPACE(c)`.
 fn is_that_ascii_control_space(c: UChar32) -> bool {
-    c <= 0x1f && c >= 0x9 && (c <= 0xd || c >= 0x1c)
+    (0x9..=0x1f).contains(&c) && (c <= 0xd || c >= 0x1c)
 }
 
 // Port of: icu4c/source/common/uchar.cpp u_iscntrl (chromium/deps/icu d578f2e8)
