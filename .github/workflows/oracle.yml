@@ -16,7 +16,7 @@ on:
     inputs:
       builds:
         description: "JSON list of builds from oracle/tiers.toml"
-        default: '["x64-sse2-rgba","x64-sse41-rgba","x64-scalar-rgba"]'
+        default: '["x64-sse2-rgba","x64-sse41-rgba","x64-scalar-rgba","x64-sse2","x64-sse41","x64-scalar","gpu-dawn"]'
       extras:
         description: "Also render --src image and --src lottie"
         type: boolean
@@ -69,7 +69,9 @@ jobs:
       - name: Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build zstd
+          sudo apt-get install -y --no-install-recommends ninja-build zstd cmake \
+            libvulkan-dev libx11-dev libx11-xcb-dev libxcb1-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libgl1-mesa-dev
           clang --version | tee clang-version.txt
           python3 --version
 
@@ -127,8 +129,10 @@ jobs:
         run: |
           cp oracle/dm/* skia/dm/
           cd skia
-          git apply --check ../oracle/patches/skia-oracle.patch
-          git apply ../oracle/patches/skia-oracle.patch
+          for p in ../oracle/patches/*.patch; do
+            git apply --check "$p"
+            git apply "$p"
+          done
           python3 bin/fetch-gn
 
       - name: Build
@@ -139,7 +143,7 @@ jobs:
           cp ../gn-args.txt out/oracle/args.gn
           bin/gn gen out/oracle
           ninja -C out/oracle dm
-          if [ "${{ inputs.nanobench }}" = "true" ]; then
+          if [ "${{ inputs.nanobench }}" = "true" ] && [ "$BUILD" != "gpu-dawn" ]; then
             ninja -C out/oracle nanobench || echo "::warning::nanobench failed to build"
           fi
           mkdir -p ../oracle-bin
@@ -166,7 +170,7 @@ jobs:
   render:
     name: render (${{ matrix.tier }})
     needs: build
-    if: ${{ always() && needs.build.result == 'success' }}
+    if: ${{ always() && !cancelled() && needs.build.result != 'skipped' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -178,15 +182,23 @@ jobs:
           - { build: x64-sse2-rgba,   tier: cpu-x64-sse2-rgba-rt-ml4 }
           - { build: x64-sse41-rgba,  tier: cpu-x64-sse41-rgba }
           - { build: x64-scalar-rgba, tier: cpu-x64-scalar-rgba }
+          - { build: x64-sse2,        tier: cpu-x64-sse2 }
+          - { build: x64-sse2,        tier: cpu-x64-sse2-rt-ssse3 }
+          - { build: x64-sse2,        tier: cpu-x64-sse2-rt-ml3 }
+          - { build: x64-sse2,        tier: cpu-x64-sse2-rt-ml4 }
+          - { build: x64-sse41,       tier: cpu-x64-sse41 }
+          - { build: x64-sse41,       tier: cpu-x64-sse41-rt-ml3 }
+          - { build: x64-sse41,       tier: cpu-x64-sse41-rt-ml4 }
+          - { build: x64-scalar,      tier: cpu-x64-scalar }
     env:
       BUILD: ${{ matrix.build }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-        if: ${{ contains(inputs.builds, matrix.build) }}
+        if: ${{ contains(inputs.builds, format('"{0}"', matrix.build)) }}
 
       - name: Cache key
-        if: ${{ contains(inputs.builds, matrix.build) }}
+        if: ${{ contains(inputs.builds, format('"{0}"', matrix.build)) }}
         id: key
         run: |
           pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
@@ -196,7 +208,7 @@ jobs:
           echo "bin=oracle-bin-$BUILD-${pin::12}-$h" >> "$GITHUB_OUTPUT"
 
       - name: Restore binaries
-        if: ${{ contains(inputs.builds, matrix.build) }}
+        if: ${{ contains(inputs.builds, format('"{0}"', matrix.build)) }}
         uses: actions/cache/restore@v4
         with:
           path: oracle-bin
@@ -204,11 +216,11 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Tools
-        if: ${{ contains(inputs.builds, matrix.build) }}
+        if: ${{ contains(inputs.builds, format('"{0}"', matrix.build)) }}
         run: sudo apt-get install -y --no-install-recommends zstd
 
       - name: Download the published goldens
-        if: ${{ contains(inputs.builds, matrix.build) }}
+        if: ${{ contains(inputs.builds, format('"{0}"', matrix.build)) }}
         run: |
           mkdir -p goldens
           gh release download "${{ inputs.goldens_release }}" -R "$GITHUB_REPOSITORY" -D goldens \
@@ -219,7 +231,7 @@ jobs:
             || echo "::warning::hashes-m156.json differs from inventory/goldens.lock"
 
       - name: Imported libm symbols and diagnostic shim
-        if: ${{ contains(inputs.builds, matrix.build) }}
+        if: ${{ contains(inputs.builds, format('"{0}"', matrix.build)) }}
         run: |
           mkdir -p results
           nm -D --undefined-only oracle-bin/dm | grep -E ' (sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|exp|exp2|log|log2|log10|pow|cbrt|hypot|sincos|erf|fma)f?(@|$)' | tee results/libm-imports.txt
@@ -227,8 +239,9 @@ jobs:
           ldd --version | head -n 1 | tee results/glibc.txt
 
       - name: Render and compare
-        if: ${{ contains(inputs.builds, matrix.build) }}
+        if: ${{ contains(inputs.builds, format('"{0}"', matrix.build)) }}
         env:
+          NANOBENCH: ${{ inputs.nanobench && '1' || '0' }}
           SHIM: ${{ inputs.libm_shim && '1' || '0' }}
           EXTRAS: ${{ inputs.extras && '1' || '0' }}
           LOTTIE_CONFIGS: ${{ inputs.lottie_configs }}
@@ -237,7 +250,7 @@ jobs:
           oracle/ci/run_tiers.sh "$BUILD" oracle-bin goldens results "${{ matrix.tier }}"
 
       - name: Upload results
-        if: ${{ always() && contains(inputs.builds, matrix.build) }}
+        if: ${{ always() && contains(inputs.builds, format('"{0}"', matrix.build)) }}
         uses: actions/upload-artifact@v4
         with:
           name: oracle-results-${{ matrix.tier }}
@@ -250,7 +263,7 @@ jobs:
   collect:
     name: collect hashes
     needs: render
-    if: ${{ always() && inputs.extras }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -266,6 +279,8 @@ jobs:
             [ -n "$files" ] || continue
             python3 -I oracle/ci/oracle_ci.py merge "merged/dm-$src-hashes-m156.json" $files
           done
+          files=$(ls all/*/results/*/hashes-bench.json 2>/dev/null || true)
+          [ -z "$files" ] || python3 -I oracle/ci/oracle_ci.py merge merged/bench-hashes-m156.json $files
           # one equivalence summary over all tiers
           cat all/*/results/*/equivalence.md > merged/equivalence-m156.md 2>/dev/null || true
           cat merged/equivalence-m156.md >> "$GITHUB_STEP_SUMMARY" || true
@@ -273,5 +288,89 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: oracle-dm-hashes-m156
+          overwrite: true
+          path: merged
+
+  gpu-render:
+    name: gpu-render (lavapipe, run ${{ matrix.repeat }})
+    needs: build
+    if: ${{ always() && !cancelled() && needs.build.result != 'skipped' && contains(inputs.builds, '"gpu-dawn"') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        repeat: [1, 2]
+    env:
+      BUILD: gpu-dawn
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache key
+        id: key
+        run: |
+          pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
+          python3 -I oracle/ci/oracle_ci.py gn-args "$BUILD" > gn-args.txt
+          if [ "${{ inputs.nanobench }}" = "true" ]; then nb=nb; else nb=nonb; fi
+          h=$( (cat gn-args.txt oracle/patches/*.patch oracle/dm/*; echo "$nb") | sha256sum | cut -c1-16)
+          echo "bin=oracle-bin-$BUILD-${pin::12}-$h" >> "$GITHUB_OUTPUT"
+
+      - name: Restore binaries
+        uses: actions/cache/restore@v4
+        with:
+          path: oracle-bin
+          key: ${{ steps.key.outputs.bin }}
+          fail-on-cache-miss: true
+
+      - name: Lavapipe and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends zstd mesa-vulkan-drivers vulkan-tools libvulkan1
+
+      - name: Download the published goldens
+        run: |
+          mkdir -p goldens
+          gh release download "${{ inputs.goldens_release }}" -R "$GITHUB_REPOSITORY" -D goldens \
+            -p hashes-m156.json -p objects-m156.tar
+
+      - name: Render and compare
+        run: |
+          chmod +x oracle/ci/run_gpu.sh oracle-bin/dm
+          oracle/ci/run_gpu.sh oracle-bin goldens results
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-gpu-lavapipe-${{ matrix.repeat }}
+          path: |
+            results
+            oracle-bin/toolchain.txt
+            gn-args.txt
+          if-no-files-found: warn
+
+  gpu-collect:
+    name: gpu determinism across runners
+    needs: gpu-render
+    if: ${{ always() && !cancelled() && contains(inputs.builds, '"gpu-dawn"') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: oracle-gpu-lavapipe-*
+          path: all
+      - name: Compare the runs and publish the tier file
+        run: |
+          mkdir -p merged
+          grep -h "model name" all/*/results/cpu.txt || true
+          python3 -I oracle/ci/oracle_ci.py stable all/oracle-gpu-lavapipe-1/results/hashes-gm.json all/oracle-gpu-lavapipe-2/results/hashes-gm.json merged/gpu-dawn-vk-lavapipe-hashes-m156.json | tee merged/runner-determinism.txt
+          cat all/*/results/determinism.txt | tee -a merged/runner-determinism.txt
+          cp all/oracle-gpu-lavapipe-1/results/vs-*.md all/oracle-gpu-lavapipe-1/results/vulkan.txt merged/ || true
+          cat merged/runner-determinism.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oracle-gpu-hashes-m156
           overwrite: true
           path: merged

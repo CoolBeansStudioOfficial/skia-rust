@@ -41,9 +41,15 @@ def linux_flag(flag):
 
 def gn_args(build_name):
     cfg = load_config()
-    build = next(b for b in cfg["build"] if b["name"] == build_name and not b.get("gpu"))
+    build = next(b for b in cfg["build"] if b["name"] == build_name)
     args = list(cfg["gn"]["args"]) + list(build.get("args", []))
+    if build.get("gpu"):
+        # Linux: Dawn's Vulkan backend only.
+        args = [a for a in args if not a.startswith("dawn_enable_d3d12")] + ["dawn_enable_d3d12=false"]
     cflags = [linux_flag(f) for f in cfg["gn"].get("extra_cflags", []) + build.get("extra_cflags", [])]
+    if not build_name.endswith("-rgba"):
+        # The Windows oracle's N32 is BGRA; Linux's is RGBA unless told otherwise.
+        cflags.append("-DSK_R32_SHIFT=16")
     out = ['cc="clang"', 'cxx="clang++"']
     out += args
     # Differences from the Windows oracle, see oracle/README.md "CI-hosted oracle":
@@ -199,24 +205,31 @@ def cmd_compare(ours_json, goldens_json, tier, ours_dir, objects_tar, report_pre
     matched = []
     mismatched = {}
     missing = []
+    # COMPARE_CONFIG_MAP=<ours>:<golden> compares across configs (grdawn_vk against grdawn_d3d12).
+    cmap = os.environ.get("COMPARE_CONFIG_MAP", ":").split(":")
+
+    def gid(rid):
+        head, _, tail = rid.partition("/")
+        return (cmap[1] if head == cmap[0] else head) + "/" + tail
+
     for rid, h in sorted(compared.items()):
-        if rid not in gold:
+        if gid(rid) not in gold:
             missing.append(rid)
-        elif gold[rid] == h:
+        elif gold[gid(rid)] == h:
             matched.append(rid)
         else:
             mismatched[rid] = h
     configs = {k.split("/")[0] for k in compared}
-    not_rendered = sorted(k for k in gold if k not in compared and k.split("/")[0] in configs)
+    not_rendered = sorted(k for k in gold if k not in {gid(r) for r in compared} and k.split("/")[0] in {gid(c + "/x").split("/")[0] for c in configs})
     details = {}
     have_objects = bool(objects_tar) and os.path.exists(objects_tar)
     for rid, h in mismatched.items():
         with open(files[rid], "rb") as f:
             ours_bytes = f.read()
-        gold_bytes = golden_bytes(objects_tar, gold[rid]) if have_objects else None
+        gold_bytes = golden_bytes(objects_tar, gold[gid(rid)]) if have_objects else None
         details[rid] = classify(rid, ours_bytes, gold_bytes)
         details[rid]["ours"] = h
-        details[rid]["golden"] = gold[rid]
+        details[rid]["golden"] = gold[gid(rid)]
     classes = {}
     for rid, d in details.items():
         classes.setdefault(d["class"], []).append(rid)
@@ -253,6 +266,26 @@ def cmd_compare(ours_json, goldens_json, tier, ours_dir, objects_tar, report_pre
     print(f"{len(matched)}/{len(compared)} outputs match {tier}")
 
 
+def cmd_stable(first, second, out_path):
+    """Keep the results whose hashes agree between two runs; report the others."""
+    with open(first) as f:
+        a = json.load(f)
+    with open(second) as f:
+        b = json.load(f)
+    unstable = []
+    for tier, entry in a["tiers"].items():
+        other = b["tiers"].get(tier, {"results": {}})["results"]
+        for rid in sorted(entry["results"]):
+            if other.get(rid) != entry["results"][rid]:
+                unstable.append(rid)
+                del entry["results"][rid]
+    for rid in unstable:
+        print("unstable:", rid)
+    print(f"{len(unstable)} unstable results left out")
+    with open(out_path, "w") as f:
+        json.dump(a, f, sort_keys=True)
+
+
 def cmd_patterns(report_path):
     with open(report_path) as f:
         report = json.load(f)
@@ -268,6 +301,8 @@ def main(argv):
         cmd_hash(*args)
     elif cmd == "merge":
         cmd_merge(*args)
+    elif cmd == "stable":
+        cmd_stable(*args)
     elif cmd == "patterns":
         cmd_patterns(*args)
     elif cmd == "compare":
