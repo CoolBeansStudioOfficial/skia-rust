@@ -176,6 +176,7 @@ fn ours32(name: &str) -> Option<fn(f32) -> f32> {
     Some(match name {
         "sinf" => skia_rust_libm::sinf,
         "cosf" => skia_rust_libm::cosf,
+        "tanf" => skia_rust_libm::tanf,
         _ => return None,
     })
 }
