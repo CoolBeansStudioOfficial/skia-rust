@@ -171,6 +171,13 @@ pub const DM_IMAGE: DmSource = DmSource {
     env: "SKIA_RUST_DM_IMAGE_HASHES",
 };
 
+/// DM's `--src lottie` (`dm-lottie-hashes-m156.json`; rendered with `--config 8888` only).
+pub const DM_LOTTIE: DmSource = DmSource {
+    name: "lottie",
+    asset_prefix: "dm-lottie-hashes-",
+    env: "SKIA_RUST_DM_LOTTIE_HASHES",
+};
+
 /// The goldens of a [`DmSource`], or why there are none.
 #[derive(Debug)]
 pub enum DmGoldens {
@@ -615,6 +622,9 @@ mod tests {
         );
         assert_eq!(sha.len(), 64);
         assert!(sha.bytes().all(|b| b.is_ascii_hexdigit()));
+        let (name, sha) = lock.asset(DM_LOTTIE.asset_prefix).unwrap();
+        assert_eq!(name, "dm-lottie-hashes-m156.json");
+        assert_eq!(sha.len(), 64);
         // The plain hashes asset is still the GM goldens.
         assert_eq!(lock.asset("hashes-").unwrap().0, "hashes-m156.json");
     }

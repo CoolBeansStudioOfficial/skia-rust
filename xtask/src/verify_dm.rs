@@ -1,5 +1,7 @@
 //! Checks the `dm-image` manifest entries (DM's `--src image`, one entry per file of
-//! `resources/images`) against the `dm-verify` binary of `tests/gm`.
+//! `resources/images`) against the `dm-verify` binary of `tests/gm`. The `dm-lottie` entries
+//! (`--src lottie`, one per `resources/skottie/*.json`, goldens `dm-lottie-hashes-m156.json`
+//! for `--config 8888` only) go through the same code with `--src lottie`.
 //!
 //! `dm-verify --src image` renders every source DM makes for each file (`skia_rust_gm::dm_image`)
 //! for each config (`8888`, `565`, `f16`) on every CPU tier the host supports, and compares the
@@ -102,7 +104,7 @@ pub fn run_dm_verify(root: &Path, src: &str) -> Result<DmResults> {
 
 /// Compares file verdicts with manifest statuses. `entries` is (id, status) for every entry of
 /// the source in the manifest.
-pub fn check(entries: &[(String, String)], results: &DmResults) -> Report {
+pub fn check(entries: &[(String, String)], results: &DmResults, src: &str) -> Report {
     let mut report = Report::default();
     if let Some(reason) = &results.unavailable {
         let passing: Vec<&String> = entries
@@ -111,7 +113,7 @@ pub fn check(entries: &[(String, String)], results: &DmResults) -> Report {
             .map(|(id, _)| id)
             .collect();
         if passing.is_empty() {
-            println!("SKIPPED the dm-image leg: no goldens ({reason}); no entry is passing");
+            println!("SKIPPED the dm-{src} leg: no goldens ({reason}); no entry is passing");
         }
         for id in passing {
             report.regressions.push(format!(
@@ -171,7 +173,7 @@ mod tests {
                 ("dm/image/e.png".to_owned(), Verdict::NoGoldens),
             ]),
         };
-        let r = check(&entries(), &results);
+        let r = check(&entries(), &results, "image");
         assert_eq!(
             r.regressions,
             ["dm/image/b.png", "dm/image/g.png (no sources)"]
@@ -194,10 +196,10 @@ mod tests {
             .into_iter()
             .filter(|(_, s)| s != "passing")
             .collect();
-        let r = check(&none_passing, &results);
+        let r = check(&none_passing, &results, "image");
         assert!(r.regressions.is_empty() && r.newly_passing.is_empty() && r.failing.is_empty());
 
-        let r = check(&entries(), &results);
+        let r = check(&entries(), &results, "image");
         assert_eq!(r.regressions.len(), 3);
         assert!(r.regressions[0].starts_with("dm/image/a.png (passing, but the goldens"));
     }

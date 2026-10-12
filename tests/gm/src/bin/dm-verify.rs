@@ -2,16 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 //! Checks DM's file-driven sources against the CI-hosted oracle's goldens and writes a JSON
-//! report; run by `cargo xtask inventory verify` (leg `dm-image`).
+//! report; run by `cargo xtask inventory verify` (legs `dm-image` and `dm-lottie`).
 //!
 //! ```text
-//! dm-verify --src image [--images <dir>] --report <file.json> [--match <substring>]...
+//! dm-verify --src <image|lottie> [--images <dir>|--lotties <dir>] --report <file.json> [--match <substring>]...
 //!           [--tier <scalar|sse2|sse41|ml3|ml4|neon>]...
 //! ```
 //!
 //! `--src image` is DM's `--src image --images resources/images`: [`skia_rust_gm::dm_image`].
 //! Its goldens are `dm-image-hashes-m156.json` ([`skia_rust_gm::goldens::DM_IMAGE`]): the lock's
-//! release asset, or `$SKIA_RUST_DM_IMAGE_HASHES`. Without either, the report says so
+//! release asset, or `$SKIA_RUST_DM_IMAGE_HASHES`. `--src lottie` is DM's `--src lottie
+//! --lotties resources/skottie` with `--config 8888` ([`skia_rust_gm::dm_lottie`], goldens
+//! [`skia_rust_gm::goldens::DM_LOTTIE`], `$SKIA_RUST_DM_LOTTIE_HASHES`). Without either, the report says so
 //! (`goldens_available: false`) and the run succeeds having checked nothing; `xtask` decides
 //! what that means for the manifest. `--tier` (debugging) restricts the CPU tiers checked; the
 //! verdicts of such a run are not for the manifest.
@@ -25,7 +27,8 @@ use serde::Serialize;
 use skia_rust_gm::check::{self, Options, TierPlan};
 use skia_rust_gm::dm_check::{self, GroupReport, GroupVerdict, SrcReport};
 use skia_rust_gm::dm_image;
-use skia_rust_gm::goldens::{DM_IMAGE, DmGoldens, GoldenStore};
+use skia_rust_gm::dm_lottie;
+use skia_rust_gm::goldens::{DM_IMAGE, DM_LOTTIE, DmGoldens, DmSource, GoldenStore};
 use skia_rust_gm::sink::{Config, Src};
 use skia_rust_gm::tool_utils::resource_dir;
 
@@ -52,7 +55,8 @@ struct Report {
 struct Args {
     report: Option<PathBuf>,
     src: String,
-    images: Option<PathBuf>,
+    /// `--images` / `--lotties`: the directory of the input files.
+    dir: Option<PathBuf>,
     matches: Vec<String>,
     tiers: Vec<String>,
 }
@@ -61,7 +65,7 @@ fn parse_args() -> Result<Args, String> {
     let mut args = Args {
         report: None,
         src: String::from("image"),
-        images: None,
+        dir: None,
         matches: Vec::new(),
         tiers: Vec::new(),
     };
@@ -70,7 +74,7 @@ fn parse_args() -> Result<Args, String> {
         match arg.as_str() {
             "--report" => args.report = it.next().map(PathBuf::from),
             "--src" => args.src = it.next().unwrap_or_default(),
-            "--images" => args.images = it.next().map(PathBuf::from),
+            "--images" | "--lotties" => args.dir = it.next().map(PathBuf::from),
             "--match" => args.matches.extend(it.next()),
             "--tier" => args.tiers.extend(it.next()),
             // The golden objects of this source are not published (hashes only): no diffs.
@@ -78,10 +82,62 @@ fn parse_args() -> Result<Args, String> {
             other => return Err(format!("unknown argument `{other}`")),
         }
     }
-    if args.src != "image" {
-        return Err(format!("unknown --src `{}` (image)", args.src));
+    if !matches!(args.src.as_str(), "image" | "lottie") {
+        return Err(format!("unknown --src `{}` (image, lottie)", args.src));
     }
     Ok(args)
+}
+
+/// What differs between the sources: the goldens, the resources directory, the files DM
+/// gathers and the configs the oracle rendered.
+struct Kind {
+    name: &'static str,
+    goldens: &'static DmSource,
+    resource_subdir: &'static str,
+    configs: &'static [Config],
+}
+
+impl Kind {
+    fn of(src: &str) -> Self {
+        if src == "lottie" {
+            Self {
+                name: "lottie",
+                goldens: &DM_LOTTIE,
+                resource_subdir: "skottie",
+                configs: &dm_lottie::CONFIGS,
+            }
+        } else {
+            Self {
+                name: "image",
+                goldens: &DM_IMAGE,
+                resource_subdir: "images",
+                configs: &Config::ALL,
+            }
+        }
+    }
+
+    fn gather(&self, dir: &Path, matches: &[String]) -> Vec<(String, Vec<Box<dyn Src>>)> {
+        if self.name == "lottie" {
+            gather_lotties(dir, matches)
+        } else {
+            gather_files(dir, matches)
+        }
+    }
+}
+
+/// `gather_file_srcs<SkottieSrc>` for every (selected) file of the directory.
+fn gather_lotties(dir: &Path, matches: &[String]) -> Vec<(String, Vec<Box<dyn Src>>)> {
+    dm_lottie::collect_lotties(dir)
+        .into_iter()
+        .filter_map(|path| {
+            let name = path.file_name()?.to_string_lossy().into_owned();
+            if !matches.is_empty() && !matches.iter().any(|m| name.contains(m.as_str())) {
+                return None;
+            }
+            let src: Box<dyn Src> = Box::new(dm_lottie::SkottieSrc::new(path));
+            Some((name, vec![src]))
+        })
+        .collect()
 }
 
 /// `push_codec_srcs` for every (selected) file of the directory; a file DM cannot make a codec
@@ -106,11 +162,13 @@ fn gather_files(dir: &Path, matches: &[String]) -> Vec<(String, Vec<Box<dyn Src>
 fn check_files(
     files: &[(String, Vec<Box<dyn Src>>)],
     dir: &Path,
+    kind: &Kind,
     store: &GoldenStore,
     plan: &[TierPlan],
 ) -> Vec<GroupReport> {
     let opts = Options {
         diffs: None,
+        configs: kind.configs.to_vec(),
         ..Options::default()
     };
     let size = |name: &str| std::fs::metadata(dir.join(name)).map_or(0, |m| m.len());
@@ -142,7 +200,7 @@ fn check_files(
                         break;
                     };
                     let (name, srcs) = &files[f];
-                    let id = format!("dm/image/{name}");
+                    let id = format!("dm/{}/{name}", kind.name);
                     let report = dm_check::check_src(&id, srcs[s].as_ref(), store, plan, &opts);
                     reports
                         .lock()
@@ -162,7 +220,7 @@ fn check_files(
         .zip(reports)
         .map(|((name, srcs), reports)| {
             dm_check::merge_group(
-                &format!("dm/image/{name}"),
+                &format!("dm/{}/{name}", kind.name),
                 srcs.len(),
                 reports.into_iter().flatten(),
             )
@@ -175,15 +233,16 @@ fn check_files(
 fn check_unmade(
     groups: &mut [GroupReport],
     files: &[(String, Vec<Box<dyn Src>>)],
+    kind: &Kind,
     store: &GoldenStore,
 ) {
-    let made = dm_check::made_ids(files, &Config::ALL);
+    let made = dm_check::made_ids(files, kind.configs);
     let names: Vec<String> = files.iter().map(|(n, _)| n.clone()).collect();
-    for (file, ids) in dm_check::unmade_goldens(store, "image", &made, &names) {
+    for (file, ids) in dm_check::unmade_goldens(store, kind.name, &made, &names) {
         let line = |id: &String| format!("UNMADE GOLDEN {id}: no source of ours makes it");
         match groups
             .iter_mut()
-            .find(|g| g.id == format!("dm/image/{file}"))
+            .find(|g| g.id == format!("dm/{}/{file}", kind.name))
         {
             Some(group) => {
                 group.failure_count += ids.len();
@@ -199,7 +258,7 @@ fn check_unmade(
     }
 }
 
-fn print_summary(groups: &[GroupReport]) {
+fn print_summary(groups: &[GroupReport], kind: &Kind) {
     for g in groups {
         if g.verdict != GroupVerdict::Passing {
             println!(
@@ -216,8 +275,9 @@ fn print_summary(groups: &[GroupReport]) {
         .filter(|g| g.verdict == GroupVerdict::Passing)
         .count();
     println!(
-        "{passing}/{} image files pass on every checkable tier",
-        groups.len()
+        "{passing}/{} {} files pass on every checkable tier",
+        groups.len(),
+        kind.name
     );
 }
 
@@ -248,7 +308,8 @@ fn main() -> ExitCode {
         plan: Vec::new(),
         groups: Vec::new(),
     };
-    let store = match GoldenStore::shared_dm(&DM_IMAGE) {
+    let kind = Kind::of(&args.src);
+    let store = match GoldenStore::shared_dm(kind.goldens) {
         Ok(DmGoldens::Available(store)) => store,
         Ok(DmGoldens::Unavailable(reason)) => {
             println!("dm-verify: no `{}` goldens: {reason}", args.src);
@@ -264,12 +325,15 @@ fn main() -> ExitCode {
     report.goldens.clone_from(&store.source);
 
     let dir = args
-        .images
+        .dir
         .clone()
-        .or_else(|| resource_dir().map(|d| d.join("images")))
+        .or_else(|| resource_dir().map(|d| d.join(kind.resource_subdir)))
         .filter(|d| d.is_dir());
     let Some(dir) = dir else {
-        eprintln!("dm-verify: Skia's resources/images directory is missing (SKIA_RESOURCES)");
+        eprintln!(
+            "dm-verify: Skia's resources/{} directory is missing (SKIA_RESOURCES)",
+            kind.resource_subdir
+        );
         return ExitCode::FAILURE;
     };
 
@@ -290,11 +354,11 @@ fn main() -> ExitCode {
         })
         .collect();
 
-    let files = gather_files(&dir, &args.matches);
-    report.groups = check_files(&files, &dir, store, &plan);
+    let files = kind.gather(&dir, &args.matches);
+    report.groups = check_files(&files, &dir, &kind, store, &plan);
     if args.matches.is_empty() {
-        check_unmade(&mut report.groups, &files, store);
+        check_unmade(&mut report.groups, &files, &kind, store);
     }
-    print_summary(&report.groups);
+    print_summary(&report.groups, &kind);
     finish(&report, args.report.as_deref())
 }

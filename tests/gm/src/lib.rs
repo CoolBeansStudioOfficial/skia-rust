@@ -35,6 +35,7 @@
 //! - [`diff`]: PNG diff images for mismatches.
 //! - [`dm_image`]: DM's `--src image` sources (`CodecSrc`, `AndroidCodecSrc`, `BRDSrc`,
 //!   `ImageGenSrc`), checked by the `dm-verify` binary against the CI-hosted oracle's goldens.
+//! - [`dm_lottie`]: DM's `--src lottie` source (`SkottieSrc`), checked the same way.
 //! - [`gm`](mod@gm): the ported GMs.
 
 pub mod canvas;
@@ -42,6 +43,7 @@ pub mod check;
 pub mod diff;
 pub mod dm_check;
 pub mod dm_image;
+pub mod dm_lottie;
 pub mod gm;
 pub mod goldens;
 pub mod sink;

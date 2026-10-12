@@ -7,5 +7,6 @@ release = "goldens-m156"
 "objects-m156.tar" = "dd8c757c131bc509426e0d56e6b2e41f87429a9d12c87063ab5266586e4ba0c3"
 # Rendered by the CI-hosted oracle (oracle/README.md "CI-hosted oracle"), not by `oracle publish`;
 # `publish` keeps `dm-*` lines. Not yet uploaded to the release: until it is, use
-# $SKIA_RUST_DM_IMAGE_HASHES (a local file). `dm-lottie-hashes-m156.json` follows the same way.
+# $SKIA_RUST_DM_IMAGE_HASHES / $SKIA_RUST_DM_LOTTIE_HASHES (a local file).
 "dm-image-hashes-m156.json" = "e6c7e2d04a2e901c2fd566cc63778bc5fcdd8ce221080297e3c07c6876906d37"
+"dm-lottie-hashes-m156.json" = "d02a570d712f84958ed5dbc5ca5d636285159ef89cc3abd5a54dba5ad720b9de"

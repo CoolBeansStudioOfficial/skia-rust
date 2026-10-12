@@ -199,6 +199,8 @@ pub enum Leg {
     /// DM's `--src image` sources (`dm-verify`; needs the `dm-image` goldens, see
     /// `verify_dm.rs`).
     DmImage,
+    /// DM's `--src lottie` sources (`dm-verify --src lottie`; needs the `dm-lottie` goldens).
+    DmLottie,
     /// `SkSL` goldens.
     SkslGolden,
     /// Benches (`bench-verify`).
@@ -238,8 +240,17 @@ pub fn verify(root: &Path, update: bool, only: Option<Leg>) -> Result<()> {
         let report = verify_dm::check(
             &entries(Kind::DmImage),
             &verify_dm::run_dm_verify(root, "image")?,
+            "image",
         );
         reports.push((report, "dm-image file"));
+    }
+    if runs(Leg::DmLottie) {
+        let report = verify_dm::check(
+            &entries(Kind::DmLottie),
+            &verify_dm::run_dm_verify(root, "lottie")?,
+            "lottie",
+        );
+        reports.push((report, "dm-lottie file"));
     }
     if runs(Leg::SkslGolden) {
         let report = match verify_sksl::run_sksl_golden_verify(root)? {
@@ -287,10 +298,11 @@ fn apply_update(m: &mut Manifest, report: &verify::Report) {
                 let reason = match e.kind {
                     Kind::Gm => "ported GM does not match the goldens",
                     Kind::DmImage => "ported DM image sources do not match the goldens",
+                    Kind::DmLottie => "ported DM lottie source does not match the goldens",
                     Kind::SkslGolden => "compiled output does not match the golden",
                     Kind::Bench => "ported bench fails its smoke run",
                     Kind::Fuzz => "ported fuzzer panics or hangs on its corpus",
-                    _ => "ported test fails",
+                    Kind::Unit => "ported test fails",
                 };
                 reason.clone_into(&mut e.reason);
             }

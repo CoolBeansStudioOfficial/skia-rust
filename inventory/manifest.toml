@@ -13904,8 +13904,7 @@ id = "dm/lottie/skottie-3d-2planes.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-2planes.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "06956a33217bda8800061770c2f4933ab5aea6dddfceb643606169c64684d86a"
 
 [[test]]
@@ -13913,8 +13912,7 @@ id = "dm/lottie/skottie-3d-3planes.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-3planes.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "4b5409457a399079f20948cfb2608556ae98775e1b738d7a47db2469c9dd2747"
 
 [[test]]
@@ -13922,8 +13920,7 @@ id = "dm/lottie/skottie-3d-parenting-camera.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-parenting-camera.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e295314493df7f5adec790fdb49971081232220945e5f9b14f66a8117e080b4f"
 
 [[test]]
@@ -13931,8 +13928,7 @@ id = "dm/lottie/skottie-3d-parenting-nocamera.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-parenting-nocamera.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d03e2e53795b330a4a063c266e4d9e3745e13e48896bc209732b0f0912b61a96"
 
 [[test]]
@@ -13940,8 +13936,7 @@ id = "dm/lottie/skottie-3d-rotation-order.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-rotation-order.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "245fcdf5b8d9b26cd91d21dd9b4660e3b42ad5c86939c4f1553d56659f387974"
 
 [[test]]
@@ -13949,8 +13944,7 @@ id = "dm/lottie/skottie-auto-orient-2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-auto-orient-2.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "a325beb2d64fc4add9f3f685958ff846d759ea21e590d999eca8a96c0b518355"
 
 [[test]]
@@ -13958,8 +13952,7 @@ id = "dm/lottie/skottie-auto-orient.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-auto-orient.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "a179e68de193b129c99d9fd757973b07296057bacec12e6f789d75003a8afee6"
 
 [[test]]
@@ -13967,8 +13960,7 @@ id = "dm/lottie/skottie-bezier-extranormal.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-bezier-extranormal.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "da167715a41fb6e9363ba7817e8f347535e4deb569c3b2bf64480fa34eea8937"
 
 [[test]]
@@ -13976,8 +13968,7 @@ id = "dm/lottie/skottie-blackandwhite-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-blackandwhite-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "2728fcdb410dac426b161751548b33dfbf3760eca2ebff81e2f28bbf8ffbdde3"
 
 [[test]]
@@ -13985,8 +13976,7 @@ id = "dm/lottie/skottie-blendmode-hardmix.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-blendmode-hardmix.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "a5975bc38342b18cea13c8eb4ce870ae9c962f49fe4a0e821e7130c854a33869"
 
 [[test]]
@@ -13995,7 +13985,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-brightnesscontrast-legacy.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "161798288a36766f73a5fa72ffa03667b6442a069fe3c42d2e16f147c5e3bdcb"
 
 [[test]]
@@ -14004,7 +13994,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-brightnesscontrast.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "6e8fe04d4e193255732dd58baa881aa32b7ed52658a50ea3718348d331fd1c74"
 
 [[test]]
@@ -14013,7 +14003,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-bulge.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "8888 differs from the CI oracle on sse2,sse41,ml3,ml4; the bulge effect goes through asinf and pow (libm class: glibc oracle, not a confirmed port bug; recheck with the clean-room libm)"
 span_hash = "0f7e266e82bbf8e164f2acbeff508f90e307465ffd7961895d046bcb44d641b2"
 
 [[test]]
@@ -14021,8 +14011,7 @@ id = "dm/lottie/skottie-camera-one-node.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-one-node.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "b43df24d4c4764a592baac66d69652509ff6e3809f40eb34248741efef8817e0"
 
 [[test]]
@@ -14030,8 +14019,7 @@ id = "dm/lottie/skottie-camera-parent-1.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-parent-1.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "7f7b43bde5f9b40c7ebe3506c65e6f8a226dafde574bf72c9fb1cb9102aa3a37"
 
 [[test]]
@@ -14039,8 +14027,7 @@ id = "dm/lottie/skottie-camera-parent-2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-parent-2.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "fb46628939c491f59bd4ead0cdf6b825a4ee4f0402318d255622fce260fd0ea3"
 
 [[test]]
@@ -14048,8 +14035,7 @@ id = "dm/lottie/skottie-camera-parent-3.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-parent-3.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d946859711c4d2ae2c08aa23c133380218221d7bdc79825f00f045e8028ebfb2"
 
 [[test]]
@@ -14057,8 +14043,7 @@ id = "dm/lottie/skottie-camera-precomp.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-precomp.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "1fe90455ff1f5a1840dd8cca99012f279c40d553501f373a1c189eee47c9ead8"
 
 [[test]]
@@ -14066,8 +14051,7 @@ id = "dm/lottie/skottie-camera-rotation.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-rotation.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "da7e3cb3b006421e6ecb40ca1ec5ff5909779a19ad43a6e67ef599a250a647af"
 
 [[test]]
@@ -14075,8 +14059,7 @@ id = "dm/lottie/skottie-cctoner.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-cctoner.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "b5da2e567d251aa9d6e86bf33d643f8f64811411e578e75500fae86878768639"
 
 [[test]]
@@ -14084,8 +14067,7 @@ id = "dm/lottie/skottie-chained-mattes.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-chained-mattes.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "4b05f89cc8f721b7f7b5cdfdeb67047ca2c985722bd7e314fee520613c5771d3"
 
 [[test]]
@@ -14093,8 +14075,7 @@ id = "dm/lottie/skottie-coloroverlay-style.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-coloroverlay-style.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "2479597ca056f57171d77e7e95680b367c2248ae0bdb5673bedabdd747a5d2bd"
 
 [[test]]
@@ -14102,8 +14083,7 @@ id = "dm/lottie/skottie-corner-pin-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-corner-pin-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "8601abd812992ab96fbc97c320e15e65af153bdb9165458da3edf10d965ccb7e"
 
 [[test]]
@@ -14111,8 +14091,7 @@ id = "dm/lottie/skottie-directional-blur.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-directional-blur.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "b0339a7d4150d51649cec8524f19f963fcb36198a11df5762fe34a47bd4046e8"
 
 [[test]]
@@ -14120,8 +14099,7 @@ id = "dm/lottie/skottie-displacement-expand.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-expand.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "9406975d8382a3270f882a7e465b3d3358d8be1bcb59fb9ad70628357e259c84"
 
 [[test]]
@@ -14129,8 +14107,7 @@ id = "dm/lottie/skottie-displacement-hsla.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-hsla.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "14e4ba696db2ae3aaae437cb39bbe3642c7359fdd6b050944eb7128bf47b7586"
 
 [[test]]
@@ -14138,8 +14115,7 @@ id = "dm/lottie/skottie-displacement-lfho.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-lfho.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "6f518c54e920dde0fcc935ebf07e8073274d2455026a6b7d56c25ed92ac4b99a"
 
 [[test]]
@@ -14147,8 +14123,7 @@ id = "dm/lottie/skottie-displacement-rgba.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-rgba.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "2a252e1afe6f0606057e4b5eaf2f80b81994b7dc927c8ba1696072c64a88a275"
 
 [[test]]
@@ -14156,8 +14131,7 @@ id = "dm/lottie/skottie-displacement-tiling.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-tiling.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d319d58cc7d4084914bb4c2ddcc2029dd56f364b09e72cc75cd7900f3dc3fafa"
 
 [[test]]
@@ -14165,8 +14139,7 @@ id = "dm/lottie/skottie-dropshadow-ramp.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-dropshadow-ramp.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "7b0bed06b39e38421d21d41be03ecbdcbadd6f339f2eefec82aff4b1946f1a3d"
 
 [[test]]
@@ -14174,8 +14147,7 @@ id = "dm/lottie/skottie-dropshadow-style.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-dropshadow-style.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e94b5e88d26507977a8fc6c41c41d289e4ec6054b2a5d3c022f41fa46123598a"
 
 [[test]]
@@ -14183,8 +14155,7 @@ id = "dm/lottie/skottie-effects-transform.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-effects-transform.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "f0d0c9ef17f590ee51bedc2e3e983251a8774ebf120f55fab04b395bd9f6bd6a"
 
 [[test]]
@@ -14192,8 +14163,7 @@ id = "dm/lottie/skottie-fill-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fill-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "9a57a53cd0f88f1e63047104bc3b2d576274068dd2567e4173b0a0e3037ac999"
 
 [[test]]
@@ -14201,8 +14171,7 @@ id = "dm/lottie/skottie-fractalnoise-basic.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-basic.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e1605efc8ad32aa22f22b756e5d5aded9830961020b8466f2e89e2b94436ea20"
 
 [[test]]
@@ -14210,8 +14179,7 @@ id = "dm/lottie/skottie-fractalnoise-block.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-block.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "62b4d8014613222592251453eedd641355bf54b3dc19fb1e2079ff4b9665bf12"
 
 [[test]]
@@ -14219,8 +14187,7 @@ id = "dm/lottie/skottie-fractalnoise-cycle.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-cycle.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "6701512882ec862d999716b615fc797baad9c698cb6574696214ce84691e4663"
 
 [[test]]
@@ -14228,8 +14195,7 @@ id = "dm/lottie/skottie-fractalnoise-linear.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-linear.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "60277add29b9b0bd47a42bf0a7ddedd41e4d7e90a9f92999f845d84f366a7825"
 
 [[test]]
@@ -14237,8 +14203,7 @@ id = "dm/lottie/skottie-fractalnoise-scalerotate.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-scalerotate.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "540c3a6e475ec84d38376a8d9839d08516b947a99324be61c3ef97ee98fa1ef3"
 
 [[test]]
@@ -14246,8 +14211,7 @@ id = "dm/lottie/skottie-fractalnoise-softlinear.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-softlinear.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "c767522d81127ecdd73daff92314e1046a06030543a1d1e175deadc82c7b306a"
 
 [[test]]
@@ -14255,8 +14219,7 @@ id = "dm/lottie/skottie-fractalnoise-sphere.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-sphere.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "6b1bd921af03f75ae273821249bd9c88a2c1748897d601a03db9bfcebf895abf"
 
 [[test]]
@@ -14264,8 +14227,7 @@ id = "dm/lottie/skottie-fractalnoise-suboptions.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-suboptions.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "9e0c7c701550af7c73394599bd35c1314f5d5c79a996807e2bb336b0fee71edd"
 
 [[test]]
@@ -14273,8 +14235,7 @@ id = "dm/lottie/skottie-fractalnoise-turbulentbasic.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-turbulentbasic.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "c7c909bad2ca21c813b9a29ba8c82d88bfc76679d180f6a1acdfb52170b67a08"
 
 [[test]]
@@ -14282,8 +14243,7 @@ id = "dm/lottie/skottie-fractalnoise-turbulentsharp.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-turbulentsharp.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "7445b407a3d750e3424ec5d6e41546fb5282b6e54b794e1d3195fbf7c68852a2"
 
 [[test]]
@@ -14291,8 +14251,7 @@ id = "dm/lottie/skottie-fractalnoise-turbulentsmooth.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-turbulentsmooth.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "110eda870ad51a4da34bc121289a7425d3cfe49611ddc3e159f1f3b75dcb75a9"
 
 [[test]]
@@ -14301,7 +14260,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-gaussian-blur.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "e92b52760c9d2b8f8acec19e06b1c0490a3431bc371133c701dc8c7244262d8a"
 
 [[test]]
@@ -14309,8 +14268,7 @@ id = "dm/lottie/skottie-glow-spread.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-glow-spread.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "9363069a369d54c552c5fe43c8f227aed0d34f684eebfb9ac5f93e1117b479db"
 
 [[test]]
@@ -14318,8 +14276,7 @@ id = "dm/lottie/skottie-gradient-opacity.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-gradient-opacity.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e60a7f31fa4dcc59b24cf61bc19f8c14b6112dc195ed565609a4a8b7e869afb4"
 
 [[test]]
@@ -14328,7 +14285,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-gradient-radial-highlight.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "8888 differs from the CI oracle on sse2,sse41 only (scalar, ml3 and ml4 match): a tier-specific raster pipeline difference in the radial gradient with a focal point, not text and not libm; unresolved"
 span_hash = "bf9b277c5d4b8fcf899bcc8c40fb237a05ae8693cb6b43f6a505f5e06d514896"
 
 [[test]]
@@ -14336,8 +14293,7 @@ id = "dm/lottie/skottie-gradient-ramp.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-gradient-ramp.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "149bc2c21c7edca9899f07396bd7e6dbd5f407eaf253d672ab645560d0f07a22"
 
 [[test]]
@@ -14345,8 +14301,7 @@ id = "dm/lottie/skottie-hidden-shapes-layers.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-hidden-shapes-layers.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "0a8be8aabd77ec1cedddae1886ec6c59782ba2611bb3d30593ab4049dff62d69"
 
 [[test]]
@@ -14354,8 +14309,7 @@ id = "dm/lottie/skottie-huesaturation-animated.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-huesaturation-animated.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "515fb973ec6490feae7a01952ce11f401f59a5184d5006e3c742e9569eebf8d6"
 
 [[test]]
@@ -14363,8 +14317,7 @@ id = "dm/lottie/skottie-huesaturation-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-huesaturation-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "5b9b1113a4e89c5ea4a1898a0a96184a7e0c6641c09b4b32d264bf68931e9ec3"
 
 [[test]]
@@ -14373,7 +14326,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-inline-fonts.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "0655ae9ab0a9f9c99ff7002dde531fc6155741f129cdad09d092a91ffe444eab"
 
 [[test]]
@@ -14381,8 +14334,7 @@ id = "dm/lottie/skottie-innerglow-style.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-innerglow-style.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "6798d4f88d8d8371ae2f9bd45fdd78788f3f496e607ae0ebd111d651bfd73d1d"
 
 [[test]]
@@ -14390,8 +14342,7 @@ id = "dm/lottie/skottie-innershadow-style.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-innershadow-style.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "4e80173afab91dc72c61d10baace1fb26a845c82d5bf09829e1c9bd770a581da"
 
 [[test]]
@@ -14399,8 +14350,7 @@ id = "dm/lottie/skottie-invert-effect-yiq.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-invert-effect-yiq.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e280b75f29af29eea4b466f6a7a861a55a45a6e60958fd1c1810be7158b93572"
 
 [[test]]
@@ -14408,8 +14358,7 @@ id = "dm/lottie/skottie-invert-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-invert-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "231407598838e4ccf12fb97edaf89483af7aed8e3742a313d3840d00ad2651f9"
 
 [[test]]
@@ -14417,8 +14366,7 @@ id = "dm/lottie/skottie-levels-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-levels-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "339094c831692b1a83fbf297424ff7a124e11c9991cf0a2e43efeb0fc46c862e"
 
 [[test]]
@@ -14427,7 +14375,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-line-height.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "a6607d37d8eb34e71e5932b44402d220a5142aa3e76ebcdcc29b9480dc328bbe"
 
 [[test]]
@@ -14435,8 +14383,7 @@ id = "dm/lottie/skottie-linear-wipe-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-linear-wipe-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "228b4ed1d35df11e81d4a2544c116f09cd49e87634ddaeebc7a6b40cc2607bbf"
 
 [[test]]
@@ -14444,8 +14391,7 @@ id = "dm/lottie/skottie-luma-matte.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-luma-matte.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "28bce647ea51959f26dde73a060630082f30da5cadcd76fafdea0d09bf000dd5"
 
 [[test]]
@@ -14453,8 +14399,7 @@ id = "dm/lottie/skottie-mask-feather.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-mask-feather.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "34a717dab9beaa120421c34d318a9839bcb912f38f2c7f9d5ff6ed9af7f7029b"
 
 [[test]]
@@ -14462,8 +14407,7 @@ id = "dm/lottie/skottie-masking-opaque.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-masking-opaque.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "488834a8f9526a05694a625b30884f67000ece981f537db7282ada3572ab1dde"
 
 [[test]]
@@ -14471,8 +14415,7 @@ id = "dm/lottie/skottie-masking-translucent.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-masking-translucent.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e160cd56df5f98898d9b02827c3f0a17e8d30557f609cc465cc18df61e67015d"
 
 [[test]]
@@ -14480,8 +14423,7 @@ id = "dm/lottie/skottie-matte-blendmode.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-matte-blendmode.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "c87386c116cbe7592818fd0bd76eb7038cf72c4b1fe074ac2b604c5106384065"
 
 [[test]]
@@ -14489,8 +14431,7 @@ id = "dm/lottie/skottie-matte-nonsequential.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-matte-nonsequential.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "3ef643776cf8f2645d421101c23d14b0989fe31ddfada50bc5f0fa68567cdb86"
 
 [[test]]
@@ -14498,8 +14439,7 @@ id = "dm/lottie/skottie-matte-visible.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-matte-visible.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "3b5638acf41b7712365333e5cbe6e6dcd22fd8a45b842d89548b1cb1bcf1ade1"
 
 [[test]]
@@ -14507,8 +14447,7 @@ id = "dm/lottie/skottie-mergepaths-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-mergepaths-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "11003a9338fd8aa7d75e4272480e5b95ff373b0be389381a1f06d15871b43977"
 
 [[test]]
@@ -14516,8 +14455,7 @@ id = "dm/lottie/skottie-motion-blur-mask.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-mask.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "9333940c64928499e1d546ff721699626a31f9c114200f0d55e65a3378f51042"
 
 [[test]]
@@ -14525,8 +14463,7 @@ id = "dm/lottie/skottie-motion-blur-ph-360.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-ph-360.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "c5b45ffda7879566b62ff970c0009812184daeda99bddb030e8dbc16949a8dd1"
 
 [[test]]
@@ -14534,8 +14471,7 @@ id = "dm/lottie/skottie-motion-blur-ph0.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-ph0.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "3f844c553470a894b3ef7a0c4d7c9531bcf531492906d06fcccf03c4175778ae"
 
 [[test]]
@@ -14543,8 +14479,7 @@ id = "dm/lottie/skottie-motion-blur-ph360.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-ph360.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "65daff3d286215fef5cc20c14903e781cc7f2f61b4e8292bd354e9b71f63eadb"
 
 [[test]]
@@ -14552,8 +14487,7 @@ id = "dm/lottie/skottie-motiontile-effect-phase.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-motiontile-effect-phase.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "a82e397ff1b3f1ca0bf9bfc9608b365a706987449b9bca722144437294031334"
 
 [[test]]
@@ -14561,8 +14495,7 @@ id = "dm/lottie/skottie-motiontile-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-motiontile-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "1051d462cf9c81de65a6fa5b5b7fffaa5b38130f8b85f97fa09e44b3c3c671dc"
 
 [[test]]
@@ -14571,7 +14504,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-multi-range-selectors.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "a4d5b85f9ee58d13e29e8dca4ae8aae51b7e62ae7ed97b4b26016de80a7fca3a"
 
 [[test]]
@@ -14579,8 +14512,7 @@ id = "dm/lottie/skottie-nested-animation.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-nested-animation.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "4f15510262d838b31a212e58bf925e524dbbf066813571e9df3ec0c6a7882349"
 
 [[test]]
@@ -14588,8 +14520,7 @@ id = "dm/lottie/skottie-offsetpaths-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-offsetpaths-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "07d0eabb145a1e8fda8fa81f08563a3dd242a3a9f7bf96c14de1a3367293e72c"
 
 [[test]]
@@ -14597,8 +14528,7 @@ id = "dm/lottie/skottie-outerglow-style.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-outerglow-style.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "a7bf51fc6134317d5fddd5f749bf5d05a3092666a6b166c6ac3e7321f8635abf"
 
 [[test]]
@@ -14606,8 +14536,7 @@ id = "dm/lottie/skottie-phonehub-connecting.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-connecting.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "22d62b6c5034d4369705eeb00bfc56ce35f6fa0b93ef81a4a398c50f567876fa"
 
 [[test]]
@@ -14615,8 +14544,7 @@ id = "dm/lottie/skottie-phonehub-connecting_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-connecting_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "5bd08431cf3ada1b75cd18e60a7e1bbc702b89a85a8bf9e71be98ec89feb83c5"
 
 [[test]]
@@ -14624,8 +14552,7 @@ id = "dm/lottie/skottie-phonehub-generic-error.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-generic-error.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "defd76fce020460fd1f5be651c061f7ae39ee8dcf6d778d48752061d13e4be03"
 
 [[test]]
@@ -14633,8 +14560,7 @@ id = "dm/lottie/skottie-phonehub-generic-error_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-generic-error_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "083d0f2d11d896a3049e4578035330752c180915ed41675fb74a8594549b1061"
 
 [[test]]
@@ -14642,8 +14568,7 @@ id = "dm/lottie/skottie-phonehub-onboard.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-onboard.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "051fd93502a0312f49c9cec7d5d5565f6e379fdcdc461af7b1f6d383c5316ae7"
 
 [[test]]
@@ -14651,8 +14576,7 @@ id = "dm/lottie/skottie-phonehub-onboard_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-onboard_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "0a30522b758389eac537ac5957834769cf66d16e79701aa627b11ff5ad7bbc1c"
 
 [[test]]
@@ -14660,8 +14584,7 @@ id = "dm/lottie/skottie-phonehub-svgo-connecting.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-connecting.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "1b66c0631f740a290756e8e78523336b53eec5d5a37eb12da3c658fd3eea9c4d"
 
 [[test]]
@@ -14669,8 +14592,7 @@ id = "dm/lottie/skottie-phonehub-svgo-connecting_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-connecting_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "1f40ff716e5b0002b62a97368d4eda2a6ebddba8e4910504cd03d658486ce2ed"
 
 [[test]]
@@ -14678,8 +14600,7 @@ id = "dm/lottie/skottie-phonehub-svgo-generic-error.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-generic-error.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "f934273edbdf771b2baf983ce2ffc64648dfdf83c9794c0da0765b0d6f00a389"
 
 [[test]]
@@ -14687,8 +14608,7 @@ id = "dm/lottie/skottie-phonehub-svgo-generic-error_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-generic-error_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "9937f9a6b320d8ccf4051e19567d5c8ed95834fd75c7d0ec36d0041a250e2c26"
 
 [[test]]
@@ -14696,8 +14616,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-frills-connecting.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-connecting.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "6af3665fc4dd4418a28b6f6ec7eaef41877fca24fb19318c904c9bb3f6c4d700"
 
 [[test]]
@@ -14705,8 +14624,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-frills-connecting_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-connecting_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "31e8c0dbddf3649b1c73320f1417a535271094e22dd38d493ee423027948afde"
 
 [[test]]
@@ -14714,8 +14632,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-frills-generic-error.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-generic-error.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "28b965364ec4115c3d4a3de89ce2932970f2db91cc3855bb41095040e8051439"
 
 [[test]]
@@ -14723,8 +14640,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-frills-generic-error_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-generic-error_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "20bdf7271dc84e1ffc4d0a3a55a801ee5bef75015600571fa81ea97f8e32b778"
 
 [[test]]
@@ -14732,8 +14648,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-frills-onboard.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-onboard.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "dbe2a6b081a44c6f5bfe98dfda27a6639428d542652d09dcd1da50bd03ea8871"
 
 [[test]]
@@ -14741,8 +14656,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-frills-onboard_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-onboard_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "b195c9c2ada891c6220500f4bbf77f5149c39528eb78da8c1b235237d3e76841"
 
 [[test]]
@@ -14750,8 +14664,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-masks-connecting.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-connecting.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "c6b2372c7554a41e24049660c2834436d9f8424e7168ee1fea810fb356a49a30"
 
 [[test]]
@@ -14759,8 +14672,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-masks-connecting_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-connecting_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d40d4707498ac7a93dfc5498b16e5827ea17f63b54c26a81e8238c052c377610"
 
 [[test]]
@@ -14768,8 +14680,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-masks-onboard.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-onboard.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d74e79e31af9608c8c0a23acf1ed62c6fb86b554a8c4d4c394a6551c3fe843aa"
 
 [[test]]
@@ -14777,8 +14688,7 @@ id = "dm/lottie/skottie-phonehub-svgo-no-masks-onboard_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-onboard_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "de60914decc4b0f85d815d8bebe8489da10c83d4edb8ef135ce06d095f9a2396"
 
 [[test]]
@@ -14786,8 +14696,7 @@ id = "dm/lottie/skottie-phonehub-svgo-onboard.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-onboard.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "62d84a62495fe7b25c5c8f0c69886e0802918f51074c88cd1eded7de1787b725"
 
 [[test]]
@@ -14795,8 +14704,7 @@ id = "dm/lottie/skottie-phonehub-svgo-onboard_min.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-onboard_min.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e692d6d1d35a5e3aa8f280ff18da3ab0da2bbcff773898bd37aeede2f2c5aad7"
 
 [[test]]
@@ -14804,8 +14712,7 @@ id = "dm/lottie/skottie-prolevels-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-prolevels-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "92d59bb1c06ee9299ea76c21739d52f699e46bccd9d07ad9758763108d1a9a71"
 
 [[test]]
@@ -14813,8 +14720,7 @@ id = "dm/lottie/skottie-puckerbloat-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-puckerbloat-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d2619d41752552eb172cb2ae2ee6692f167e8d4d791c4cbbcbbb3a3985039281"
 
 [[test]]
@@ -14822,8 +14728,7 @@ id = "dm/lottie/skottie-radial-wipe-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-radial-wipe-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d09ff708156578127803143fd77f6e651a03528286a5ed61bfef3fc0430ed7e7"
 
 [[test]]
@@ -14831,8 +14736,7 @@ id = "dm/lottie/skottie-repeater.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-repeater.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "fb2e8bd708ed7fed18f2ce6050480ef85288f02603b8f1cbb4849101773fbd68"
 
 [[test]]
@@ -14840,8 +14744,7 @@ id = "dm/lottie/skottie-sharpen.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sharpen.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "3e3943abf04a5243b50cf2e07eb4d987c863a1e084e6909e68a0701108ac3620"
 
 [[test]]
@@ -14849,8 +14752,7 @@ id = "dm/lottie/skottie-shift-channels-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-shift-channels-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "9faf3f8146a7c525a56f1554c746193f12112539514c2d916f7f194f17f2b964"
 
 [[test]]
@@ -14859,7 +14761,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-shift-channels-fullon-alpha.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "5ec0d8c430a184a79fddba185dbf772fd2f24c4ad0ba38afc0967a110574e0d2"
 
 [[test]]
@@ -14867,8 +14769,7 @@ id = "dm/lottie/skottie-sksl-color-filter.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sksl-color-filter.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "f7586f770efc5212cfa3af04bf2395a4bc0340bd448c1888c57e04f91970918b"
 
 [[test]]
@@ -14876,8 +14777,7 @@ id = "dm/lottie/skottie-sksl-effect-2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sksl-effect-2.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "7d80c4fdc183cf20bac901e572169a466dbcb66c379866a2040a8be24d7b4a74"
 
 [[test]]
@@ -14885,8 +14785,7 @@ id = "dm/lottie/skottie-sksl-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sksl-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "ca00065ff6d9f6b9948e1c0c1fa5170d385c8d2ce643252bfb008aaef946a2ec"
 
 [[test]]
@@ -14895,7 +14794,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-slots.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "2407e489013bd68efca0dbbb4ce720b0d22988536cbce95cef1d6292fe02d6e2"
 
 [[test]]
@@ -14903,8 +14802,7 @@ id = "dm/lottie/skottie-spatial-supernormal.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-spatial-supernormal.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "2866dfb1dbd02d839f5d7c58d5970c6b3e2681313e9bdf76c22381b3f4783fad"
 
 [[test]]
@@ -14912,8 +14810,7 @@ id = "dm/lottie/skottie-sphere-controls.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-controls.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "f9fa825e2b2300b52da3881feedb8c767b9744dbeb26448324f614bf7df6a6e4"
 
 [[test]]
@@ -14921,8 +14818,7 @@ id = "dm/lottie/skottie-sphere-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "dab704ed71b413f2c46c4724480a81fdd20949d5fcf1755f06da8b0596e6513a"
 
 [[test]]
@@ -14930,8 +14826,7 @@ id = "dm/lottie/skottie-sphere-lighting-types.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-lighting-types.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "52d09690b3a84022aff5e5a501281bd942d414099b28b0ea177f9bfd0912a1b0"
 
 [[test]]
@@ -14939,8 +14834,7 @@ id = "dm/lottie/skottie-sphere-lighting.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-lighting.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "c6e6c964c50b3c6d7373a21c7365617549719d9752d47fcef2a89c9cee09cdeb"
 
 [[test]]
@@ -14949,7 +14843,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-transparecy.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "e0f0193b4dfa05054a4708f69dc2ddc4ee71e9a9750a5a0eb8b427ad8e0dc301"
 
 [[test]]
@@ -14958,7 +14852,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-allcaps.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "e4dd8609d3fb688f979cac157391965242153c512f63539d74bd9715cbd71576"
 
 [[test]]
@@ -14967,7 +14861,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-01.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "2052888f189222d64e005a16fd76c06aac5c67cf4a1dbaa64f9127d2f046dd83"
 
 [[test]]
@@ -14976,7 +14870,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-02.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "ce30b4fa882e2547f0c106d450fb9d9518bf0faf08cfa5d5de53cedbadc15642"
 
 [[test]]
@@ -14985,7 +14879,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-03.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "cd6540d94817cbeb4bb565bacd86e0d4be6495382925369ad2704a4396bbdd4e"
 
 [[test]]
@@ -14994,7 +14888,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-04.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "618633cb8629f9aac993902636862c2ab0d7a8bd009e6262007c4d79b96722f6"
 
 [[test]]
@@ -15003,7 +14897,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-1.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "15f7481c1f9093852c8d7535c2645b5be6a8c382360601ff72d6d3551ef01e26"
 
 [[test]]
@@ -15012,7 +14906,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-2.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "a01eb814c3a97a9acbbe274c75c18ace042b7bfb097971e2744edb012f7f3d06"
 
 [[test]]
@@ -15021,7 +14915,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-3.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "ed3d721cc6ef9dcef00c4176f035144eb78b91b30cdc47fe729a73993ce6da13"
 
 [[test]]
@@ -15030,7 +14924,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-4.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "91e1d59ac580855d582ba690c834774174a4b726b6afb0ce9c5e04407df2244a"
 
 [[test]]
@@ -15039,7 +14933,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-5.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "5dc66372e0653ce2bc6832e3f4f129deecf7ea418d10a1d8e0d82fdc727d0f77"
 
 [[test]]
@@ -15048,7 +14942,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-6.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "306cc9478b2385010c5e06bd1a9b4a7ba98e60c8cc9c4309ab27a55c91c6a78c"
 
 [[test]]
@@ -15057,7 +14951,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-7.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "4da3c375861eca9f15402b4517ddaf4d89a62fb9b1ead5c141109f09fa208dee"
 
 [[test]]
@@ -15066,7 +14960,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-8.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "fb7e0b68ae2cb3e66ff16f6bf7a43e5665d42ea529c6dfa11cc0b65b634b375e"
 
 [[test]]
@@ -15075,7 +14969,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-fillstrokeopacity.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "70a20622fd397607fb9aa63e1957b107156f0b9103072b3e5306ad5a914facbe"
 
 [[test]]
@@ -15084,7 +14978,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-linespacing.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "b37864ce5c800d4d882fd2fa6c2af8c2f006115c2cc5c4605f36ca45e39721f5"
 
 [[test]]
@@ -15093,7 +14987,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-opacity.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "63d3d83d89e1843c8c658c449b75286c97ae51f6212892816c158896bcb341f2"
 
 [[test]]
@@ -15102,7 +14996,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-randomize-1.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "d3c7a6a499865fe13cf1af87e31aed20084f7836a46cb6a2b09bd95d1f407f6a"
 
 [[test]]
@@ -15111,7 +15005,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-randomize-2.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "71b08657303646319748734015d967f8d11c407f1dbe0ee34ae1342bd48d796f"
 
 [[test]]
@@ -15120,7 +15014,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-strokewidth.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "2664952feaa75a0fb6ff47af983554e0ce9ad3a791706505dab2a0aa2a8eff4c"
 
 [[test]]
@@ -15129,7 +15023,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-baseline-shift.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "f3dfae7eaaac3abc3f36fa1e140c2b03540489eb54b2348baaa43a3c5265f116"
 
 [[test]]
@@ -15138,7 +15032,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-blur.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "6c5f419cf0f56bb451a081969bd541498c6542c65612835050f1e00d32267fbd"
 
 [[test]]
@@ -15147,7 +15041,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-emptylines.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "980bc57ccb818416990857100372c68d0b50ae43886fa99b6948d56d789f2d86"
 
 [[test]]
@@ -15156,7 +15050,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-fill-over-stroke.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "d5e3732854a3044334425a1879048117d4d569af38de11bd39fa62136ee90add"
 
 [[test]]
@@ -15165,7 +15059,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-grouping-alignment-2.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "1a438bd4cb8d68c2107432f407f598e6e5aab7ee471527ba6dfd1ec3ab865cad"
 
 [[test]]
@@ -15174,7 +15068,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-grouping-alignment.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "366d2012e10800920407b596957967c30dd65a03ee30e9871fb721dd1ef09bca"
 
 [[test]]
@@ -15183,7 +15077,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-perchar-3d.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "e205cf79803ee5d87a6579bf75abd83e3ea152d2cf908a019ff5274a5f7393aa"
 
 [[test]]
@@ -15192,7 +15086,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-pointmode-downscaletofit.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "55027de052d10486a660d595ce3985a5b47fc341dd5d147e0b2e3ac56a08137c"
 
 [[test]]
@@ -15201,7 +15095,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-pointmode-scaletofit.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "57c30517cb506ecd8a326b7ba0566e4875ceeac8c3036baaf0a2e4ad2803fc1e"
 
 [[test]]
@@ -15210,7 +15104,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-resize-to-fit.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "e58f6358691a6d39f1388504ee4273dd6ac6f9c8d35b9fd26f5a02751151d822"
 
 [[test]]
@@ -15219,7 +15113,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-rtl.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "4dcabb6e61e4db8381354580f0a19ec29c9152538b0d56258d9daa79ac2c5062"
 
 [[test]]
@@ -15228,7 +15122,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit-maxlines.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "abf51a43af965372f72b83be7cceb64f7b8ff843fba63ea2d369ddd28f2b0cdc"
 
 [[test]]
@@ -15237,7 +15131,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit-minmax.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "f2f5d1cc0109568a726569af3698fc649e0d12b6254c49bc66e8973e4c508edf"
 
 [[test]]
@@ -15246,7 +15140,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "db02b67c21e9797bd4f7303bbabf692834a3ecfc4976e9a7e498ada0df2319c0"
 
 [[test]]
@@ -15255,7 +15149,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-strokejoin.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "28d59b8bd69d9a548dc2d1ac4d21a7def41cb8c86de6b3081f73d43cfafe7cd4"
 
 [[test]]
@@ -15264,7 +15158,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-strokescale.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "19d00eadc8407f35ec80e2e4072fa74e24cb267f176c519d6256c7eab43847cc"
 
 [[test]]
@@ -15273,7 +15167,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-tracking.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "8ca8690deb805422b1ccbd2ef3bf0e992943c69c19893800faf28ef0e063be3b"
 
 [[test]]
@@ -15282,7 +15176,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-2.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "8f41d4978e57430441e5e659dd10c5103b3839c161f4236bf5d6bcbce3356f4f"
 
 [[test]]
@@ -15291,7 +15185,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-bottom.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "7fd6536fdaf91a08f69b022f17710fd7bb19c42c9ae6d4609cf28c1e03c9bf45"
 
 [[test]]
@@ -15300,7 +15194,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-scaletofit.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "1635414e999882d1b04b98b17f94976ca500cde87e88efcd4fda1a06a8ec9fee"
 
 [[test]]
@@ -15309,7 +15203,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-visual-2.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "f0e522d1000efa71f9d174c1e17540f31480de78dc6a4937eef78318a06e771c"
 
 [[test]]
@@ -15318,7 +15212,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-visual-scaletofit.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "c7863915ebfca07f24e018645aa3656835f840fa7a7d0f434b156aed13415ce8"
 
 [[test]]
@@ -15327,7 +15221,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "3fbbe4222ced18c80c543a618f89036fd97e8a2a2e811f72272b80e426cb8345"
 
 [[test]]
@@ -15336,7 +15230,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-variations.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "76bfcdd62ad15572dca871099e028e80ccc6e085517dc18a1557fbea5305f432"
 
 [[test]]
@@ -15345,7 +15239,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-vertical-clip.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "edfe24823850d67004addfa6ab9f8c5b81e19cd69fad54c939019a839253420a"
 
 [[test]]
@@ -15354,7 +15248,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-whitespace-align.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "e7d18544a99b59444099ba606b285632eff81720e9e56745de32f940f1a8f72f"
 
 [[test]]
@@ -15363,7 +15257,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-words-linebreak.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "e25e55fee86b20ebaeb3175dbbed56ae7a36444d936263272e2acf2e76a2d22e"
 
 [[test]]
@@ -15372,7 +15266,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-01.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "cf9ae7caa436232c8e0ae648b3a3d18a498820145700cef95125082c99cbdd03"
 
 [[test]]
@@ -15381,7 +15275,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-02.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "7c0003acbdac15474776b66da9284cdf32f5fa706c0bd73e8a0367cbf865bec4"
 
 [[test]]
@@ -15390,7 +15284,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-03.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "cef31b7dce69146ab048ef1d7851f6ad6fcaa89eae3afb6e3bf587e8a9730de5"
 
 [[test]]
@@ -15399,7 +15293,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-04.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "5efe7c7d8a1503bee69b633a05daa851b26f54dba2506dfd09ab125fb5b1e065"
 
 [[test]]
@@ -15408,7 +15302,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-05.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "3a62f6e220d2650596fcc979ea801a6ab8429446bb6e1248bf99eb7d0d58d310"
 
 [[test]]
@@ -15417,7 +15311,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-01.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "16c0840a09ff15b54b1f49cec6905a6f87a778a1ea9896bd832f46c96cab1534"
 
 [[test]]
@@ -15426,7 +15320,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-02.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "c2187abfe4271392c42af1ff37e642dd42887b060fe08b1edc3278ee44b67555"
 
 [[test]]
@@ -15435,7 +15329,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-03.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "aa91eb33dde00df259657a1ca9fc4e987a9634616113744e10405d4619dea520"
 
 [[test]]
@@ -15444,7 +15338,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-tracking.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "08fcc3ab9be1a97d0db64b4d85ba68250e14ebdb948db84b009e77a751b938b1"
 
 [[test]]
@@ -15452,8 +15346,7 @@ id = "dm/lottie/skottie-threshold-compositing.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-threshold-compositing.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "d0dbaa1543412ce26d08e16edb84871e46c787fd9f554bc626ff9ad6a5bb5890"
 
 [[test]]
@@ -15461,8 +15354,7 @@ id = "dm/lottie/skottie-threshold-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-threshold-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "6942daee62f50e8135c5ebea173feddfaf2f79d3e39b01aeec24d36dab5f2c69"
 
 [[test]]
@@ -15470,8 +15362,7 @@ id = "dm/lottie/skottie-time-reverse.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-time-reverse.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "a26fbec98b32448ac66475374c7ccc8dd2b99dcff94718a3e779fc2355a6d426"
 
 [[test]]
@@ -15479,8 +15370,7 @@ id = "dm/lottie/skottie-transform-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-transform-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "e6f63c2ed11848309142595325fad241f2d5a9db4eb38efb9d5a8cd3cb75480e"
 
 [[test]]
@@ -15488,8 +15378,7 @@ id = "dm/lottie/skottie-transform-skew.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-transform-skew.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "deddc705acae29cc5b72aeffefd1f5e73f744bb92d6817cf6622214432246209"
 
 [[test]]
@@ -15497,8 +15386,7 @@ id = "dm/lottie/skottie-trimpath-fill.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-trimpath-fill.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "61cec8ca78f2674a218d9529b09c150fad0c752f060db214e439f026fbeda5b3"
 
 [[test]]
@@ -15506,8 +15394,7 @@ id = "dm/lottie/skottie-trimpath-modes.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-trimpath-modes.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "1e83725f44fa022c66f4da04fc19548cd5f9e522aee0e58c1e0378fe833f1246"
 
 [[test]]
@@ -15515,8 +15402,7 @@ id = "dm/lottie/skottie-tritone-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-tritone-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "0db1e46e4186e34387f9f562ddb3e8f60155fd96006857d3ec6ab51ddc9aa977"
 
 [[test]]
@@ -15524,8 +15410,7 @@ id = "dm/lottie/skottie-venetianblinds-effect.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-venetianblinds-effect.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "2b942401f484276447cecc6e606cf66ebdf513d40268e7014579f91746c71dca"
 
 [[test]]
@@ -15533,8 +15418,7 @@ id = "dm/lottie/skottie_fill_rule.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie_fill_rule.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "afa8e6341f88f89acdad45955dcef6e3df6426569a4be0007016dc9d76f03348"
 
 [[test]]
@@ -15542,8 +15426,7 @@ id = "dm/lottie/skottie_sample_1.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_1.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "4be626cdd6c9570ee4b37bff7821c03d19ea9639daf76a3973b9b878510df6eb"
 
 [[test]]
@@ -15551,8 +15434,7 @@ id = "dm/lottie/skottie_sample_2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_2.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "ec544c771f040ea6b2760fdd05732e581efb66945f8996983ae75c7825e52e91"
 
 [[test]]
@@ -15560,8 +15442,7 @@ id = "dm/lottie/skottie_sample_multiframe.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_multiframe.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "c98e867305a75528d8f163ce472fd11af0cda12a4464ee85b13ec25afac9ce7f"
 
 [[test]]
@@ -15569,8 +15450,7 @@ id = "dm/lottie/skottie_sample_search.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_search.json"
 module = "skottie"
-status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+status = "passing"
 span_hash = "383126fef6cf995ffa3f99484680470f6f51b3d2c74cf3540b0bf8707905585f"
 
 [[test]]
@@ -15579,7 +15459,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_webfont.json"
 module = "skottie"
 status = "todo"
-reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
+reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
 span_hash = "6a91ac6ca704e7ecbc58b4042a7e2b3071f398bb03a9dec22718f19e4ff9627e"
 
 [[test]]
