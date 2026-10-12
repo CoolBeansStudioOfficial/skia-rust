@@ -29,8 +29,19 @@ case $build in
   x64-sse2-rgba)   tiers="cpu-x64-sse2-rgba:baseline cpu-x64-sse2-rgba-rt-ml3:ml3 cpu-x64-sse2-rgba-rt-ml4:ml4" ;;
   x64-sse41-rgba)  tiers="cpu-x64-sse41-rgba:ssse3" ;;
   x64-scalar-rgba) tiers="cpu-x64-scalar-rgba:baseline" ;;
+  # BGRA-order builds (-DSK_R32_SHIFT=16 on Linux): the Windows N32, so they also reproduce the
+  # 565 and f16 goldens and every tier of the BGRA goldens.
+  x64-sse2)   tiers="cpu-x64-sse2:baseline cpu-x64-sse2-rt-ssse3:ssse3 cpu-x64-sse2-rt-ml3:ml3 cpu-x64-sse2-rt-ml4:ml4" ;;
+  x64-sse41)  tiers="cpu-x64-sse41:ssse3 cpu-x64-sse41-rt-ml3:ml3 cpu-x64-sse41-rt-ml4:ml4" ;;
+  x64-scalar) tiers="cpu-x64-scalar:baseline" ;;
   *) echo "unknown build $build"; exit 1 ;;
 esac
+
+if [[ $build == *-rgba ]]; then
+  gm_configs=(8888); image_configs=(8888 565 f16)
+else
+  gm_configs=(8888 565 f16); image_configs=(8888)
+fi
 
 # What the runner CPU can run. ml3 needs AVX2 (+BMI/FMA/F16C), ml4 AVX-512 F/DQ/CD/BW/VL.
 flags=$(grep -m1 '^flags' /proc/cpuinfo)
@@ -69,7 +80,7 @@ for spec in $tiers; do
   echo "::group::$tier (cap $cap): --src gm"
   rm -rf "$tdir/raw-gm"; mkdir -p "$tdir/raw-gm"   # DM only creates the levels below it
   SKIA_ORACLE_CPU_CAP=$cap ./dm "${dm_common[@]}" --oracleRawPath "$tdir/raw-gm" \
-      --config 8888 --src gm > "$tdir/dm-gm.log" 2>&1
+      --config "${gm_configs[@]}" --src gm > "$tdir/dm-gm.log" 2>&1
   echo "dm exit: $?" | tee -a "$tdir/dm-gm.log"
   tail -n 20 "$tdir/dm-gm.log"
   echo "::endgroup::"
@@ -83,7 +94,7 @@ for spec in $tiers; do
     if (( ${#pats[@]} )); then
       mkdir -p "$tdir/raw-shim"
       LD_PRELOAD=$here/libm_shim.so SKIA_ORACLE_CPU_CAP=$cap ./dm "${dm_common[@]}" \
-          --oracleRawPath "$tdir/raw-shim" --config 8888 --src gm --match "${pats[@]}" \
+          --oracleRawPath "$tdir/raw-shim" --config "${gm_configs[@]}" --src gm --match "${pats[@]}" \
           > "$tdir/dm-shim.log" 2>&1
       $ci hash "$tdir/raw-shim" "$tier" "$cpu_tier" "$bin/toolchain.txt" "$tdir/hashes-shim.json" || true
       $ci compare "$tdir/hashes-shim.json" "$goldens/hashes-m156.json" "$tier" "$tdir/raw-shim" \
@@ -93,15 +104,36 @@ for spec in $tiers; do
   fi
   rm -rf "$tdir/raw-gm"   # keep only hashes (each GM tier is ~1 GB raw)
 
+  if [[ ${NANOBENCH:-0} == 1 && -x ./nanobench && ( $tier == cpu-x64-sse2-rgba || $tier == cpu-x64-sse2-rgba-rt-ml3 ) ]]; then
+    # Bench goldens (bench.md B3): every bench once (--loops 1 --samples 1), twice; benches whose
+    # two runs differ are reported and left out. Tiers: bench-x64-sse2-rgba[-rt-ml3].
+    btier=bench-${tier#cpu-}
+    echo "::group::$btier: nanobench"
+    ./nanobench --dryRun --pre_log --config 8888 565 f16 --nativeFonts false --resourcePath resources \
+        > "$tdir/bench-run-list.txt" 2>&1
+    for pass in 1 2; do
+      rm -rf "$tdir/raw-bench$pass"; mkdir -p "$tdir/raw-bench$pass"
+      SKIA_ORACLE_CPU_CAP=$cap timeout 2400 ./nanobench --config 8888 565 f16 --loops 1 --samples 1 \
+          --cpu true --gpu false --nativeFonts false --resourcePath resources -q \
+          --oracleRawPath "$tdir/raw-bench$pass" > "$tdir/nanobench-$pass.log" 2>&1
+      echo "nanobench exit: $?" | tee -a "$tdir/nanobench-$pass.log"
+      $ci hash "$tdir/raw-bench$pass" "$btier" "$cpu_tier" "$bin/toolchain.txt" "$tdir/hashes-bench$pass.json" "${btier/-rgba/}" || status=1
+    done
+    $ci stable "$tdir/hashes-bench1.json" "$tdir/hashes-bench2.json" "$tdir/hashes-bench.json" | tee "$tdir/bench-stability.txt"
+    rm -rf "$tdir"/raw-bench1 "$tdir"/raw-bench2
+    echo "::endgroup::"
+  fi
+
   if [[ ${EXTRAS:-0} == 1 ]]; then
     # 565 and f16 do not depend on the N32 byte order, so their hashes are filed under the BGRA
     # tier name (same file layout as goldens-m156); 8888 stays under the RGBA tier.
-    free_tier=${tier/-rgba/}
+    free_tier=""
+    [[ $build == *-rgba ]] && free_tier=${tier/-rgba/}
     for src in image lottie; do
       echo "::group::$tier (cap $cap): --src $src"
       rm -rf "$tdir/raw-$src"; mkdir -p "$tdir/raw-$src"
       if [[ $src == image ]]; then
-        configs=(8888 565 f16); extra=(--images resources/images)
+        configs=("${image_configs[@]}"); extra=(--images resources/images)
       else
         configs=(${LOTTIE_CONFIGS:-8888}); extra=(--lotties resources/skottie)
       fi
