@@ -5,6 +5,8 @@ pub mod aa_clip_test;
 #[cfg(test)]
 pub mod android_codec_test;
 #[cfg(test)]
+pub mod animated_image_test;
+#[cfg(test)]
 pub mod annotation_test;
 #[cfg(test)]
 pub mod as_a_dash_test;

@@ -17,6 +17,7 @@
 
 pub mod android_codec;
 mod android_codec_adapter;
+pub mod animated_image;
 pub mod bmp;
 pub mod codec;
 pub mod codec_animation;

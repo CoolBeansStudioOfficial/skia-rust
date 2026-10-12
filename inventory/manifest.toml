@@ -16306,8 +16306,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_image_orientation.cpp#L161-L164"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimatedImage (android utils, not ported)"
+status = "failing"
+reason = "exact 2:1 linear downscale: golden samples the (2x, 2y) texel, ours averages 2x2; see notes/gm_animated_image_orientation_cpp_AnimatedImageGM_flight.md"
 span_hash = "de7847e2f877dc172dfa91b418cc1289d432ec38b766e3701f86295a6f9f68a3"
 
 [[test]]
@@ -16316,8 +16316,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_image_orientation.cpp#L157-L160"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimatedImage (android utils, not ported)"
+status = "passing"
 span_hash = "89132fee98078108c12bee3818cf145ea34c210a8def912e80e6d2fa4990100c"
 
 [[test]]
@@ -28816,8 +28815,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L289-L486"
 module = "core"
-status = "todo"
-reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
+status = "passing"
 span_hash = "ef5e1b6c798ca13173981d77d71aedba406a9136fc630c0ccc2e341a18fcecb4"
 
 [[test]]
@@ -28826,8 +28824,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L218-L287"
 module = "core"
-status = "todo"
-reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
+status = "passing"
 span_hash = "b0540d4618ff389249f1755a6ea966a4297e8fe2b274b30c017071a9093b86d5"
 
 [[test]]
@@ -28836,8 +28833,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L89-L147"
 module = "core"
-status = "todo"
-reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
+status = "passing"
 span_hash = "e54d8349b869a86f0a2bb8ab363a5efee50a1f1ed63541a47f6a504d7baffc93"
 
 [[test]]
@@ -28846,8 +28842,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L54-L87"
 module = "core"
-status = "todo"
-reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
+status = "passing"
 span_hash = "a66042424860af780cccedba1728ffc5770a61041a800b33ba5fed71ee480fbd"
 
 [[test]]
@@ -28856,8 +28851,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L149-L191"
 module = "core"
-status = "todo"
-reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
+status = "passing"
 span_hash = "754d7846678af1b451f36ad85c636ca00d95e669b85f96948477f8a2833eb644"
 
 [[test]]
@@ -28866,8 +28860,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L35-L52"
 module = "core"
-status = "todo"
-reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
+status = "passing"
 span_hash = "8c34d810c5db1088a52d8b6994b57bbe0568d1231ba643e2b83ca5949e039e1a"
 
 [[test]]

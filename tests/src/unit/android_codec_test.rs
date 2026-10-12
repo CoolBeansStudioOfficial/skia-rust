@@ -163,7 +163,7 @@ def_test!(
                 continue;
             };
             // SkAndroidCodec::MakeFromCodec(SkCodec::MakeFromData(...))
-            let Some(codec) = AndroidCodec::make_from_codec(codec) else {
+            let Some(mut codec) = AndroidCodec::make_from_codec(codec) else {
                 errorf!(r, "Could not create codec for {}", file);
                 continue;
             };

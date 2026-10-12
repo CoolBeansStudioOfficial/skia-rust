@@ -255,7 +255,7 @@ impl<'a> AndroidCodec<'a> {
     // Port of: src/codec/SkAndroidCodec.cpp#L254-L330 (chrome/m156)
     #[must_use]
     #[doc(alias = "computeSampleSize")]
-    pub fn compute_sample_size(&self, desired_size: &mut ISize) -> i32 {
+    pub fn compute_sample_size(&mut self, desired_size: &mut ISize) -> i32 {
         let orig_dims = self.codec.dimensions();
         if *desired_size == orig_dims {
             return 1;
@@ -268,10 +268,11 @@ impl<'a> AndroidCodec<'a> {
         if desired_size.width < 1 || desired_size.height < 1 {
             *desired_size = ISize::new(desired_size.width.max(1), desired_size.height.max(1));
         }
-        // Skia returns 1 for a WebP here, and keeps the original size when the WebP is animated
-        // (`getFrameCount() > 1`). WebP is not ported, so no codec reaches this branch yet, and the
-        // frame-count check lands with it.
+        // Cannot downscale animated webp: the size is kept, and the sample size is 1.
         if self.codec.encoded_format() == EncodedImageFormat::WEBP {
+            if self.codec.get_frame_count() > 1 {
+                *desired_size = orig_dims;
+            }
             return 1;
         }
 
@@ -356,9 +357,11 @@ impl<'a> AndroidCodec<'a> {
             }
         }
 
-        let frame_result = self
-            .codec
-            .handle_frame_index(request_info, &mut [], 0, &options.base);
+        // The destination is passed on: a previous frame's disposal (kRestoreBGColor) clears its
+        // rectangle in these pixels.
+        let frame_result =
+            self.codec
+                .handle_frame_index(request_info, pixels, row_bytes, &options.base);
         if frame_result != Result::Success {
             return frame_result;
         }

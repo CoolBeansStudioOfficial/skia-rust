@@ -172,7 +172,7 @@ fn compute_sample_size_invariants_hold_for_ported_formats() {
         };
         let codec = codecs::make_codec_from_stream(MemoryStream::make_copy(&data))
             .expect("the codec must be made");
-        let android = AndroidCodec::make_from_codec(codec).expect("an Android codec");
+        let mut android = AndroidCodec::make_from_codec(codec).expect("an Android codec");
         let dims = android.info().dimensions();
 
         let downscales = [

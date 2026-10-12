@@ -17,6 +17,7 @@ pub mod alphagradients;
 pub mod analytic_gradients;
 pub mod androidblendmodes;
 pub mod animated_gif;
+pub mod animated_image_orientation;
 pub mod animatedimageblurs;
 pub mod anisotropic;
 pub mod annotated_text;
