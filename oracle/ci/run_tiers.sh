@@ -54,7 +54,7 @@ for spec in $tiers; do
   # The CPU tier the DM metadata reports for this cap.
   case $cap in baseline|ssse3|ml3|ml4) cpu_tier=$cap ;; esac
   echo "::group::$tier (cap $cap): --src gm"
-  rm -rf "$tdir/raw-gm"
+  rm -rf "$tdir/raw-gm"; mkdir -p "$tdir/raw-gm"   # DM only creates the levels below it
   SKIA_ORACLE_CPU_CAP=$cap ./dm "${dm_common[@]}" --oracleRawPath "$tdir/raw-gm" \
       --config 8888 --src gm > "$tdir/dm-gm.log" 2>&1
   echo "dm exit: $?" | tee -a "$tdir/dm-gm.log"
@@ -72,7 +72,7 @@ for spec in $tiers; do
     free_tier=${tier/-rgba/}
     for src in image lottie; do
       echo "::group::$tier (cap $cap): --src $src"
-      rm -rf "$tdir/raw-$src"
+      rm -rf "$tdir/raw-$src"; mkdir -p "$tdir/raw-$src"
       if [[ $src == image ]]; then
         configs=(8888 565 f16); extra=(--images resources/images)
       else
@@ -83,7 +83,7 @@ for spec in $tiers; do
       echo "dm exit: $?" | tee -a "$tdir/dm-$src.log"
       tail -n 20 "$tdir/dm-$src.log"
       echo "::endgroup::"
-      if [[ -d $tdir/raw-$src ]]; then
+      if [[ -n $(ls -A "$tdir/raw-$src") ]]; then
         $ci hash "$tdir/raw-$src" "$tier" "$cpu_tier" "$bin/toolchain.txt" "$tdir/hashes-$src.json" "$free_tier" || status=1
       fi
       rm -rf "$tdir/raw-$src"
