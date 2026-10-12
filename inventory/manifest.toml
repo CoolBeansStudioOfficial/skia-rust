@@ -16407,7 +16407,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L67-L127"
 module = "raster"
-status = "passing"
+status = "todo"
+reason = "host-dependent libm: matches the goldens on Linux and Windows but mismatches on macOS arm64 (platform atan2f in arc_to_radius; the clean-room libm has no bit-exact atan2f); not registered, see notes/gm_arcto_cpp_arcto.md"
 span_hash = "d66533a0a4696b80eef84fb6553f938ced3c1d0332a8eae32b3e13a51a71d9c6"
 
 [[test]]
