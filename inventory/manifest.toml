@@ -16097,8 +16097,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaclip.cpp#L135-L156"
 module = "raster"
-status = "todo"
-reason = "Mac-only: the GM is compiled only under SK_BUILD_FOR_MAC and needs CoreGraphics (SkCreateCGImageRefWithColorspace, SkMakeImageFromCGImage); not built on Linux"
+status = "excluded"
+reason = "compiled only under SK_BUILD_FOR_MAC (aaclip.cpp#L101-L158, CoreGraphics); the oracle build is Windows, so the registration is not built and there is no golden"
 span_hash = "8b64f11f2af01a35226bdc31952790d5bc7f5f7a739bd9655d0fe00b9915b5cd"
 
 [[test]]
@@ -21606,8 +21606,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hello_bazel_world.cpp#L60-L60"
 module = "raster"
-status = "todo"
-reason = "GM::isBazelOnly() is true: only the Bazel build runs it, so there is no golden"
+status = "excluded"
+reason = "not in the GN build's GM list (gn/gm.gni) that makes the oracle, and isBazelOnly() is true: only the Bazel build runs it, so there is no golden"
 span_hash = "da2f9e3c07fd030d054dd811c08f9de4b4dc4d508993afab9cfb0660ba5f3952"
 
 [[test]]
