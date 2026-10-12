@@ -9,7 +9,7 @@
 # name; with EXTRAS=1 it also renders `--src image` (8888 565 f16) and `--src lottie`.
 # Results land in <out-dir>/<tier>/: hashes-gm.json, equivalence.{json,md}, hashes-image.json,
 # hashes-lottie.json and the DM logs. With <tier>, only that tier runs. REQUIRE_AMD=1 (default)
-# makes the script fail on a non-AMD CPU: the goldens come from a Zen 4 host, and Intel's
+# makes the script fail on a non-AMD CPU (except for ml4): the goldens come from a Zen 4 host, and Intel's
 # `rcpps`/`rsqrtps` estimates differ from AMD's, which changes the baseline and ml3 code paths
 # (design raster-pipeline.md §4.6). Re-run the failed job to get another runner.
 set -uo pipefail
@@ -43,11 +43,6 @@ has() { for f in "$@"; do [[ " $flags " == *" $f "* ]] || return 1; done; }
   echo "flags: $flags"
 } | tee "$out/cpu.txt"
 
-if [[ ${REQUIRE_AMD:-1} == 1 ]] && ! grep -q AuthenticAMD /proc/cpuinfo; then
-  echo "::error::this runner is not an AMD CPU (see $out/cpu.txt); re-run the job to get another runner"
-  exit 3
-fi
-
 cd "$bin"
 dm_common=(--resourcePath resources --nativeFonts false --cpu true --gpu false --graphite false)
 
@@ -62,6 +57,13 @@ for spec in $tiers; do
     ml3) has avx2 bmi1 bmi2 fma f16c || { echo "::error::this runner lacks AVX2/FMA, cannot run $tier"; exit 3; } ;;
     ml4) has avx512f avx512dq avx512cd avx512bw avx512vl || { echo "::error::this runner lacks AVX-512, cannot run $tier; re-run the job"; exit 3; } ;;
   esac
+  # ml4 uses the AVX-512 `rcp14`/`rsqrt14` estimates, which are specified exactly: an Intel Xeon
+  # 8573C and an AMD EPYC 9V45 gave identical hashes for all 7,885 gm, image and lottie results.
+  # The other tiers use `rcpps`/`rsqrtps`, which differ between vendors.
+  if [[ $cap != ml4 && ${REQUIRE_AMD:-1} == 1 ]] && ! grep -q AuthenticAMD /proc/cpuinfo; then
+    echo "::error::this runner is not an AMD CPU (see $out/cpu.txt); re-run the job to get another runner"
+    exit 3
+  fi
   # The CPU tier the DM metadata reports for this cap.
   case $cap in baseline|ssse3|ml3|ml4) cpu_tier=$cap ;; esac
   echo "::group::$tier (cap $cap): --src gm"
