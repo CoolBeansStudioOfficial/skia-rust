@@ -32,6 +32,8 @@ members = [
     "tests/tools",
     "fuzz",
     "oracle/rp-diff",
+    "oracle/text-deps",
+    "oracle/shaper-diff",
     "xtask",
 ]
 # The cargo-fuzz package needs nightly and libfuzzer-sys, so it is its own workspace and stable
@@ -90,6 +92,9 @@ naga = { version = "=30.0.1", default-features = false }
 skrifa = "=0.43.2"
 read-fonts = "=0.40.1"
 font-types = "=0.12.0"
+# Shaping (docs/design/modules.md decision 3, Q1 approved 2026-10-12): the newest HarfRust that
+# shares Skia's read-fonts =0.40.1. Bumped only with a Skia milestone bump.
+harfrust = "=0.9.0"
 
 [workspace.lints.rust]
 unsafe_code = "deny"

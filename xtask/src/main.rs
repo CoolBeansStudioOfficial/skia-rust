@@ -7,9 +7,11 @@ mod inventory;
 mod oracle;
 mod publish;
 mod rp_diff;
+mod shaper_diff;
 mod skia;
 mod sksl;
 mod sksl_lexer;
+mod text_deps;
 mod verify;
 mod verify_benches;
 mod verify_fuzz;
@@ -53,6 +55,12 @@ enum Command {
     /// Generate the portable test font data (`tests/tools/src/fonts/test_font_data`) from
     /// Skia's `tools/fonts/test_font_*.inc` (needs `cargo xtask skia fetch`).
     GenTestFonts,
+    /// Fetch the third-party inputs of the text modules' tests and differential tools into a cache
+    /// outside the repository (`docs/design/modules.md` M0b).
+    TextDeps {
+        #[command(subcommand)]
+        command: TextDepsCommand,
+    },
     /// Print this host's CPU tiers and `rcp`/`rsqrt` estimate fingerprints
     /// (`docs/design/raster-pipeline.md` §1.4, §4.6).
     CpuProbe {
@@ -156,12 +164,34 @@ enum OracleCommand {
         #[arg(long, default_value_t = 10)]
         details: usize,
     },
+    /// Shape the corpus with `HarfBuzz` at Skia's pin (C++, needs g++) and compare with the stored
+    /// results, or with `--replay` run `HarfRust` against the stored results
+    /// (`oracle/shaper-diff`, design `docs/design/modules.md` §2.4).
+    ShaperDiff {
+        /// Replace `oracle/shaper-diff/expected/*.txt` with the C++ driver's output.
+        #[arg(long)]
+        update: bool,
+        /// Only run `HarfRust` against the stored results (no C++; any host).
+        #[arg(long)]
+        replay: bool,
+    },
     /// Compare a directory of skia-rust outputs (golden layout) against a tier's hashes.
     Compare {
         /// Tier name.
         tier: String,
         /// Directory holding `<config>/<src>/[<options>/]<name>.raw` files.
         dir: PathBuf,
+    },
+}
+
+#[derive(Subcommand)]
+enum TextDepsCommand {
+    /// Download and verify `HarfBuzz` and Chromium ICU at Skia's pins and the paragraph test fonts
+    /// (`inventory/text-deps.lock`, `inventory/test-fonts.lock`).
+    Fetch {
+        /// Fetch only these inputs (default: all).
+        #[arg(long, value_enum)]
+        only: Vec<text_deps::Dep>,
     },
 }
 
@@ -282,9 +312,15 @@ fn main() -> Result<()> {
                     details,
                 },
             ),
+            OracleCommand::ShaperDiff { update, replay } => {
+                shaper_diff::run_command(&root, &shaper_diff::Options { update, replay })
+            }
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
             OracleCommand::Publish { dry_run } => publish::publish(&root, dry_run),
         },
+        Command::TextDeps {
+            command: TextDepsCommand::Fetch { only },
+        } => text_deps::fetch(&only),
         Command::GenTestFonts => gen_test_fonts::run(&root),
         Command::CpuProbe { dump_tables } => cpu_probe::probe(dump_tables.as_deref()),
     }

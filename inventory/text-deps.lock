@@ -1,0 +1,22 @@
+# The C libraries the text modules' differential tools build (docs/design/modules.md §2.4, App. A),
+# at Skia's DEPS pins (third_party/skia/DEPS#L55, #L57). `cargo xtask text-deps fetch` downloads
+# them into the cache directory (oracle/text-deps) and checks the digests below.
+#
+# `tree_sha256` is the SHA-256 of the extracted tree's listing: one line `<sha256 of file>  <path>`
+# per regular file, paths relative to the extraction root with `/` separators, sorted bytewise, each
+# line ending in `\n`. (`find . -type f | sort` + `sha256sum`, then `sha256sum` of that listing.)
+
+[harfbuzz]
+# DEPS: HarfBuzz 13.1.0 plus one build-only commit.
+rev = "9cb1fee51069b206effb4736e443b038d230789d"
+url = "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz/+archive/9cb1fee51069b206effb4736e443b038d230789d/src.tar.gz"
+tree_sha256 = "79bd51439106fdb021fe66dfc3a373ef32123dc75e31e46c0a928bd5bf767e7c"
+
+[icu]
+# DEPS: chromium/deps/icu (ICU 78.2 with Chromium's patches).
+rev = "d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738"
+url = "https://chromium.googlesource.com/chromium/deps/icu/+archive/d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/source/common.tar.gz"
+tree_sha256 = "551cff1acba142cb581faece64accde5ce41926211d8c54b8032e3b493d64ac2"
+# `common/icudtl.dat` (Skia's third_party/icu/BUILD.gn#L21-L40), served base64-encoded.
+data_url = "https://chromium.googlesource.com/chromium/deps/icu/+/d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/common/icudtl.dat?format=TEXT"
+data_sha256 = "9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe"

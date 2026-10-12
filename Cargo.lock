@@ -474,6 +474,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "harfrust"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2428703078f884a910b19e632719e4f2b3778aa0fd071e3bb18eb9786474a051"
+dependencies = [
+ "bitflags",
+ "bytemuck",
+ "read-fonts",
+ "smallvec",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1305,6 +1317,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-shaper-diff"
+version = "0.156.0"
+dependencies = [
+ "harfrust",
+ "read-fonts",
+ "sha2",
+ "skia-rust-core",
+ "skia-rust-text-deps",
+ "skrifa",
+]
+
+[[package]]
 name = "skia-rust-simd"
 version = "0.156.0"
 dependencies = [
@@ -1398,6 +1422,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-text-deps"
+version = "0.156.0"
+dependencies = [
+ "sha2",
+]
+
+[[package]]
 name = "skia-rust-tools"
 version = "0.156.0"
 dependencies = [
@@ -1406,6 +1437,7 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-svg",
  "skia-rust-text",
+ "skia-rust-text-deps",
 ]
 
 [[package]]
@@ -2018,6 +2050,7 @@ dependencies = [
  "sha2",
  "skia-rust-rp-diff",
  "skia-rust-simd",
+ "skia-rust-text-deps",
  "toml",
  "walkdir",
  "zstd",

@@ -1,0 +1,63 @@
+Brightness (legacy)
+-100
+0
+100
+Contrast (legacy)
+Brightness + Contrast (legacy)
+Brightness
+Contrast
+Brightness + Contrast
+Blurry
+The  quick  brown  fox  jumps  over  the  lazy  dog.
+Left-aligned 123 abcde fghi
+Center-aligned 123 abcde fghi
+Right-aligned 123 abcde fghi
+The quick brown fox jumps over the lazy dog.
+Foo Bar Baz
+text slots
+Daily Planet
+Hello there, κεφαλαίο κείμενο!
+hello world
+hello world hello world hello world
+.....................................................................................................................................................................................
+SPONGEBOB
+SQUAREPANTS
+Stroke Opacity
+Fill Opacity
+text appears in random order
+Foo Bar BAZ
+Baz
+Bar
+Foo
+YaY
+A long time ago in a galaxy far, far away...
+ThÈ quick brown fox... can’t jump!
+Foo Bar
+שלום עולם ?
+The
+The quick
+The quick brown
+The quick brown fox
+The quick brown fox jumps
+The quick brown fox jumps over
+The quick brown fox jumps over the
+The quick brown fox jumps over the lazy
+The quick brown fox can’t jump.
+Tracking
+First linÉ.
+Second.
+Third.
+First linÉ
+Second
+Third :p
+   Foo   Bar   Baz   
+FOO
+BAR
+BAZ
+The quick brown 🦊 jumps over the lazy 🐕.
+The quick brown fox 
+jumps over the 
+lazy dog.
+text align center
+text align left
+text align right

@@ -15,6 +15,7 @@ skia-rust-raster.workspace = true
 skia-rust-text.workspace = true
 skia-rust-svg.workspace = true
 skia-rust-pathops.workspace = true
+skia-rust-text-deps = { path = "../../oracle/text-deps" }
 
 [lints]
 workspace = true

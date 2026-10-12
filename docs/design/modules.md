@@ -228,6 +228,55 @@ M0b's modes (b) and (c), and its corpus adds `extra_fonts`.
 The expected output is committed as `oracle/shaper-diff/expected/*.txt` with a hash of each case,
 the way rp-diff does it (PORTING §12).
 
+### 2.5 Results of M0b (2026-10-12)
+
+`oracle/shaper-diff` implements §2.4: `cpp/shaper_diff.cc` (HarfBuzz `9cb1fee5`, built by `build.sh`
+in about 80 s), the Rust twin (HarfRust `=0.9.0`), `configs.txt`, `fonts.txt` (the 36 sfnt fonts of
+the paragraph test fonts), a corpus of 36 sources (the 34 `resources/text` scripts, 199 string
+literals of the shaper, paragraph, Skottie and Unicode tests and the paragraph GM, and 63 text layers
+of `resources/skottie`), and `expected/*.txt` (9,144 rows: config, font, source, line count, glyph
+count, SHA-256 of the serialized result). `cargo test -p skia-rust-shaper-diff` replays them in about
+15 s on any host; `cargo xtask oracle shaper-diff [--update|--replay]` rebuilds the C++ side. Every row
+is exact or listed in `known-divergences.txt` with a class, and a listed row that starts matching
+fails the test.
+
+| Mode | Rows | Exact | Divergent |
+|---|---|---|---|
+| (a) built-in funcs, 3 scales | 3,888 | 3,760 (96.7 %) | 128 |
+| (b) Skia's callbacks, 2 sizes × subpixel on/off | 5,184 | 5,030 (97.0 %) | 154 |
+| (c) empty face, synthetic callbacks | 72 | 68 | 4 |
+
+Five classes cover every divergent row; none is in a Latin, Greek, Cyrillic, Indic, Thai, CJK, Hebrew
+or emoji source under Skia's callbacks (mode b):
+
+1. **`fallback-mark-gap`** (mode b: 144 rows, Arabic and Syriac text in fonts without those marks).
+   Root cause, which also explains the `.notdef` mark offsets of §2.3: HarfBuzz computes the gap for
+   fallback mark positioning as `font->y_scale / 16` (`hb-ot-shape-fallback.cc#L220`); HarfRust 0.9.0
+   as `scale_y(units_per_em / 16)` (`ot_shape_fallback.rs#L147`). The two differ by truncation of
+   `units_per_em / 16` (394 of 786,432 at 12 pt in a 1000-upem font). Skia's callbacks do **not**
+   absorb it. A one-line fix: a vendored patch (decision 5, option b).
+2. **`builtin-extents`** (mode a only, 98 rows). The same fallback marks, but HarfRust's built-in glyph
+   extents are missing where HarfBuzz has them (CFF fonts), so the offset is 0. Skia's `glyph_extents`
+   callback replaces them, so this class is absorbed (decision 5, option a).
+3. **`builtin-advance-rounding`** (mode a only, 26 rows). ±1 in a 16.16 advance of the built-in functions
+   at 12 and 30 pt (CJK fonts, Cyrillic, Greek, Tamil, emoji, English). Absorbed by Skia's `advance`
+   callbacks.
+4. **`anchor-rounding`** (modes a and b, 14 rows: Katibeh and Noto Naskh Arabic, the fonts that really do
+   have mark anchors). ±1 in the offset of an anchored mark. HarfBuzz 13.1 rounds the difference of the
+   float-scaled anchors (`OT/Layout/GPOS/MarkArray.hh#L57`); HarfRust scales the font-unit difference
+   (`ot/gpos/mark.rs#L33`). Not absorbed; a vendored patch (option b).
+5. **`arabic-fallback-shaping`** (mode c, 4 rows: `text-arabic` and the test strings with Arabic).
+   `arabic_fallback_shape` is a stub in HarfRust 0.9.0 (`ot_shaper_arabic.rs#L420`), so a face without
+   Arabic GSUB gets no presentation forms. HarfBuzz builds fallback lookups
+   (`hb-ot-shaper-arabic-fallback.hh`) when the font maps the presentation forms. This matters for the
+   portable `TestTypeface`, which has no tables. Option c: port that file into the patch crate. With real
+   fonts that lack the forms (mode b) it does not show, since no glyph exists to substitute.
+
+The inputs of mode b are Fontations' unhinted advances and bounds (skrifa), as a stand-in for `Font`
+(text T9); both sides read the same table, so the comparison does not depend on that choice. Mode c
+uses synthetic callbacks (`src/synthetic.rs`), not `TestTypeface`'s numbers. Two things M6 still has to
+add to the comparison once `Font` exists: the real callbacks' numbers, and variable-font coordinates.
+
 ---
 
 ## 3. Unicode: ICU4X vs Chromium ICU 78.2
@@ -612,6 +661,39 @@ critical path to the first module GM (`paragraph_`): M1 → M2 → M5/M6 (with M
 | R6 | libm calls (`std::pow` in `SkJSONReader`; trigonometry in Skottie transforms and effects) | `// skia-rust: libm` per PORTING §5.7. Mismatches traced to UCRT vs the host's libm are recorded and parked like the other libm cases (no `port/libm` dependency) |
 | R7 | **Performance**: HarfRust is slower than HarfBuzz (its README says < 25 %; its own benchmark tables show up to about 3×) | `ShaperBench` entries stay `ported` (no bench goldens; bench.md C3). Perf parity needs upstream HarfRust work; track it, don't block on it |
 | R8 | Scale: about 55k C++ lines across six modules | Split as above. M0 tools first, so Haiku tasks fail with a diff, not a mystery |
+
+### Decided (2026-10-12)
+
+The maintainer decided the open questions as follows. They bind the tasks of §9.
+
+- **Q1: approved.** HarfRust `=0.9.0`, with the divergence policy of decision 5. M0b's findings (§2.5)
+  say which divergences need a vendored patch (`third_party/harfrust`): `fallback-mark-gap` and
+  `anchor-rounding` (small), and `arabic-fallback-shaping` (a port of `hb-ot-shaper-arabic-fallback.hh`).
+- **Q2: published once as a release asset.** `test-fonts-m156` (SHA-256 in
+  `inventory/test-fonts.lock`), fetched and cached like the goldens (`oracle/text-deps`,
+  `cargo xtask text-deps fetch`); the licences are in `NOTICE`; `tools/test-fonts/build.sh` rebuilds the
+  archive from the sources of Skia's `create.py`. One deviation from the bots' asset, for the
+  maintainer to confirm: `GoogleSans-Regular.ttf` is **not** included, because the font's own licence
+  string says it is not an open-source font. Only `SkParagraph_Intrinsic` uses the family. It is listed
+  under `[excluded]` in the lock with its SHA-256.
+- **Q3: reproduce Chromium's patched ICU segmentation (M4).**
+- **Q5: committed expected files, replayed by `cargo test`.** C/C++ is rebuilt only in a cached job
+  (`cargo xtask oracle shaper-diff`; HarfBuzz about 80 s here).
+- **Q8: ICU4X `=2.3.x`.**
+- **Q9: Skottie expressions: port the interface only.** No JavaScript engine.
+
+### Status of M0b and M8's font part (2026-10-12)
+
+M0b is done except that the release asset is not yet published (the session that built it could not
+create releases): `cargo xtask text-deps fetch`, `oracle/shaper-diff` with the three modes, the
+expected files and the replay tests. M8's font part is in place: `skia_rust_tools::paragraph_fonts`
+(`SKIA_RUST_PARAGRAPH_FONTS` = `--paragraph_fonts`, `release` selects the asset;
+`SKIA_RUST_RUN_PARAGRAPH_TESTS_NEEDING_SYSTEM_FONTS=0` = `--norun_paragraph_tests_needing_system_fonts`;
+`resource_font_paths` = the sorted listing of `ResourceFontCollection::getTypefaces`). Left for M8:
+`ResourceFontCollection` and `TestFontCollection` themselves (they need text T19b's typeface and the
+`TypefaceFontProvider` of M9), the registration of the fonts with a font manager, and the
+`SKIP_IF_FONTS_NOT_FOUND` / `UNIX_ONLY_TEST` macros of the test harness, which belong with the first
+paragraph test port (M11).
 
 ---
 

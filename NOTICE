@@ -26,3 +26,40 @@ for `skia-rust-libjpeg` is built from that commit by `oracle/codec-diff/libjpeg/
 A row whose crate is not yet in the workspace is a planned port (docs/design/codecs.md
 §3); its licence file is added with the crate. The Rust-backed codecs Skia can use
 (png, zune-jpeg, jpeg-encoder) are dependencies, not ports, and are listed in Cargo.lock.
+
+Paragraph test fonts (not part of any crate; test inputs only)
+--------------------------------------------------------------
+
+The fonts of the paragraph tests (docs/design/modules.md Q2, M8) are not committed. They are the
+release asset `test-fonts-m156`, a rebuild of Skia's `skparagraph` bot asset v4, built by
+tools/test-fonts/build.sh and fetched and cached by `cargo xtask text-deps fetch`; their SHA-256
+sums are in inventory/test-fonts.lock. The licence of every font (from the font's own name table
+unless noted):
+
+| Font | Licence |
+|------|---------|
+| Roboto-Regular.ttf, Roboto-Medium.ttf, Roboto-Italic.ttf, Roboto2-Regular.pfa, Roboto2-Regular.pfb, Roboto2-Regular_NoEmbed.ttf (Google) | Apache-2.0 |
+| DroidSerif.ttf (Ascender Corporation, for Google) | Apache-2.0 |
+| HomemadeApple.ttf (Font Diner, Inc.) | Apache-2.0 |
+| NotoColorEmoji.ttf (Google) | OFL-1.1 |
+| NotoNaskhArabic-Regular.ttf (The Noto Project Authors) | OFL-1.1 |
+| NotoSansCJK-Regular.ttc (Adobe) | OFL-1.1 |
+| SourceHanSerifCN-Regular.otf (Adobe) | OFL-1.1 |
+| NotoSansCJK-VF-subset.otf.ttc (Adobe, subset of Source Han Sans; the font has no licence string) | OFL-1.1 (upstream's licence) |
+| Katibeh-Regular.ttf (KB-Studio, Lasse Fister) | OFL-1.1 |
+| Funkster.ttf (Google) | OFL-1.1 |
+| Distortable.ttf, Em.ttf, HangingS.ttf, ReallyBigA.ttf, SpiderSymbol.ttf, VaryAlongQuads.ttf, hintgasp.ttf, SampleSVG.ttf, Variable.ttf (Google / Ben Wagner, Skia test fonts) | OFL-1.1 |
+| ahem.ttf (Todd Fahrner, W3C) | public domain (the font's own statement; http://dev.w3.org/CSS/fonts/ahem/COPYING) |
+| 7630.otf, Stroking.otf, Stroking.ttf, cbdt.ttf, colr.ttf, planetcbdt.ttf, planetcolr.ttf, planetsbix.ttf, sbix.ttf, sbix_uncompressed_flags.ttf, test.ttc, test_glyphs-glyf_colr_1.ttf, test_glyphs-glyf_colr_1_variable.ttf (Skia test fonts) | BSD-3-Clause, as part of Skia's `resources/fonts`; the files carry no licence data of their own |
+
+GoogleSans-Regular.ttf is part of the bots' asset but is not redistributed: its name table says
+"Google Sans is not [an open-source font]". It is listed under `[excluded]` in
+inventory/test-fonts.lock.
+
+The OFL-1.1 text is at https://openfontlicense.org (Copyright and Reserved Font Names as in each
+font's name table, which is also where the licence of the fonts is stated); Apache-2.0 at
+https://www.apache.org/licenses/LICENSE-2.0.
+
+HarfBuzz (MIT) and Chromium ICU (ICU licence / Unicode-3.0), which oracle/shaper-diff builds from
+the pins in inventory/text-deps.lock, are used only to produce the committed expected files and
+are not redistributed in any crate.

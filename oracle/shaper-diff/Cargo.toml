@@ -1,0 +1,25 @@
+[package]
+name = "skia-rust-shaper-diff"
+description = "Differential shaping harness: HarfBuzz at Skia's pin (C++ driver, committed expected results) against HarfRust (docs/design/modules.md §2.4)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+harfrust.workspace = true
+read-fonts.workspace = true
+skrifa.workspace = true
+skia-rust-core.workspace = true
+skia-rust-text-deps = { path = "../text-deps" }
+sha2 = "0.11.0"
+
+[[bin]]
+name = "shaper-diff"
+path = "src/main.rs"
+
+[lints]
+workspace = true

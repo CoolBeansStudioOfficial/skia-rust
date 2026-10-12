@@ -1,0 +1,199 @@
+Could not create unicode.
+Could not create shaper.
+foo bar
+foo, bar baz
+abra cadabra
+Some tests are finicky and need certain system fonts. Set this to false to skip those.
+--paragraph_fonts set but no fonts found.Did you set --nativeFonts?
+--paragraph_fonts set but Roboto-Italic.ttf not found
+SkParagraphTests Fonts not found!
+Hello World Text Dialog
+給能上目秘使
+Source Han Serif CN
+I am RED
+Red Roboto
+big Greeen Default
+Defcolor Homemade Apple
+Small Blue Roboto
+Small Blue 
+Continue Last Style With lots of words to check if it overlaps properly or not
+RobotoContinue Last Style With lots of words to check if it overlaps properly or not
+Homemade Apple
+No TextStyle! Uh Oh!
+This is Red max bold text!
+01234満毎冠行来昼本可
+満毎冠行来昼本可
+Cookies need love
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat.
+אאא בּבּבּבּ אאאא בּבּ אאא בּבּבּ אאאאא בּבּבּבּ אאאא בּבּבּבּבּ אאאאא בּבּבּבּבּ אאאבּבּבּבּבּבּאאאאא בּבּבּבּבּבּאאאאאבּבּבּבּבּבּ אאאאא בּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאאבּבּבּבּבּבּאאאאאבּבּבּבּבּבּאאאאאבּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ
+אאא בּבּבּבּ אאאא
+בּבּ אאא בּבּבּ אאאאא בּבּבּבּ אאאא בּבּבּבּבּ אאאאא בּבּבּבּבּ אאאבּבּבּבּבּבּאאאאא בּבּבּבּבּבּאאאאאבּבּבּבּבּבּ אאאאא בּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ אאאאא בּבּבּבּבּבּ
+ leading space
+This text should be
+ decorated even when
+ wrapped around to
+ the next line.
+ Otherwise, bad things happen.
+No italic 
+Yes Italic 
+No Italic again.
+     左線読設重説切後碁給能上目秘使約。満毎冠行来昼本可必図将発確年。今属場育図情闘陰野高備込制詩西校客。審対江置講今固残必託地集済決維駆年策。立得庭際輝求佐抗蒼提夜合逃表。注統天言件自謙雅載報紙喪。作画稿愛器灯女書利変探訃第金線朝開化建。子戦年帝励害表月幕株漠新期刊人秘。図的海力生禁挙保天戦聞条年所在口。
+من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة بمباركة التقليدية قام عن. تصفح
+بمباركة التقليدية قام عن. تصفح يد    
+Noto Naskh Arabic
+Helloبمباركة التقليدية قام عن. تصفح يد 
+(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)(　´･‿･｀)
+Noto Sans CJK JP
+ดีสวัสดีชาวโลกที่น่ารัก
+01234  　 
+0123　        
+Chinese 字典
+A veryverylongwordtoseewherethiswillwraporifitwillatallandifitdoesthenthatwouldbeagoodthingbecausethebreakingisworking.
+AVAVAWAH A0 V0 VA To The Lo
+ Dialog Text List lots of words to see if kerning works on a bigger set of characters AVAVAW
+Droid Serif
+line2 test1 test2 test3 test4 test5 test6 test7
+line4 test1 test2 test3 test4
+Noto Color Emoji
+👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧i🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸👩‍👩‍👦👩‍👩‍👧‍👧🇺🇸❄🍕🍔🍟🥝🍱🕶🎩🏈⚽🚴‍♀️🎻🎼🎹🚨🚎🚐⚓🛳🚀🚁🏪🏢🖱⏰📱💾💉📉🛏🔑🔓📁🗓📊❤💯🚫🔻♠♣🕓❗🏳🏁🏳️‍🌈🇮🇹🇱🇷🇺🇸🇬🇧🇨🇳🇧🇴
+Sentence to layout at diff widths to get diff line counts. short words short words short words short words short words short words short words short words short words short words short words short words short words end
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. 
+fluttser 
+fluttser mdje
+Text Chunk 
+左線読設Byg後碁給能上目秘使約。満毎冠行来昼本可必図将発確年。今属場育図情闘陰野高備込制詩西校客。審対江置講今固残必託地集済決維駆年策。立得
+Roboto 字典 
+Homemade Apple 字典
+Not a real font
+Also a fake font
+So fake it is obvious
+Next one should be a real font...
+another fake one in between
+01234満毎冠p来É本可
+満毎É行p昼本可
+01234満毎p行来昼本可
+English English 字典 字典 😀😃😄 😀😃😄
+👨‍👩‍👧‍👦
+p〠q
+A1!aÀàĀāƁƀḂⱠꜲꬰəͲἀἏЀЖԠꙐꙮՁخ‎ࡔࠇܦআਉઐଘஇఘಧൺඣᭆᯔᮯ᳇ꠈᜅᩌꪈ༇ꥄꡙꫤ᧰៘꧁꧂ᜰᨏᯤᢆᣭᗗꗃⵞ𐒎߷ጩꬤ𖠺‡₩℻Ⅷ↹⋇⏳ⓖ╋▒◛⚧⑆שׁ🅕㊼龜ポ䷤🂡
+‭abc
+‮DEF
+‭ghi
+‮JKL
+‭mno
+‭abc‮DEF‭ghi‮JKL‭mno
+‭abc‮D
+EF‭gh
+i‮JKL‭mno
+abc/abc.ttf not found
+abc/abc+grave.ttf not found
+abc/abc+agrave.ttf not found
+Default text
+Bold and Italic
+back to normal
+Eat0 apple0 pies0 | Eat1 apple1 pies1 | Eat2 apple2 pies2
+is a wrapping test. It should wrap at manual newlines, and if softWrap is true, also at spaces.
+Text 
+Some text
+Another line
+justify LTR
+justify RTL
+One line of text
+Limited by budget
+Some text that takes more than 200 px
+ אאא בּבּבּבּ אאאא בּבּ אאא בּבּבּ אאאאא בּבּבּבּ אאאא בּבּבּבּבּ 
+abc Ƣ Ƣ def
+Google Sans
+من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة من أسر وإعلان الخاصّة وهولندا،, عل قائمة الضغوط بالمطالبة تلك. الصفحة عل بمباركة التقليدية قام عن. تصفح
+Long arabic text
++2 character at the end
+-2 characters from the end
++2 character at the start
+-2 characters from the start
+different strings
+Line 2
+Line 3
+قففغغغغقففغغغغقففغغغ
+👩‍👩‍👧‍👧👩👩👧👧
+Loooooooooooooooooooooooooooooooooooong text
+אאאא
+בבבב
+hello               
+               hello
+one two
+three four
+with spaces     
+Hello 
+hello   
+áéíóú
+אאאABC
+Atwater Peel Sherbrooke Bonaventure
+Atwater Peel 
+Sherbrooke Bonaventure 
+hi wassup!
+h́͐̒͗̌ͩ̅ͬ̄̐̿ͦ͐ 
+̷̵̴̷̨̢̛̛̛̞̟̪̱̯̲̮̳͓̠̜̟̼̥͕̬̥̺̓ͤͩ̑̉̎ͥ̀̀̀̀̕͟͢͞͠͠͠ͅͅą̢̇̒͋̈̒͆̓͆̄̇̈́̅͂ͨ͆ͪ͛̏ͥ̇̀͡҉͏̴̵̨͟͢҉̷̷̮̦̭͙̘̼̯̳͚͍̙̜͓̼͙̱̻̱̼́͘͠͞͠͝ͅ
+ٱلْرَّحْمَـانُ
+There is a tab>	<right here
+hello world
+>S̵̡͛ͭ̋͆̈̔̇͗̍͑̎ͪͮͧͣ̽ͫͣ́ͬ̀͌͑͂͗͒̍̔̄ͧ̏̉̌̊̊̿̀̌̃̄͐̓̓ͣ̚̚͜͟͝͠͏̸̵̷̡̧̡͇̜̘̻̺̘̟̝͙̬̘̩͇̭̼̥̖̤̦͎ͣ͜k͉̩̘͚̜̹̗̗͍̤̥̱͉̳͕͖̤̲̣͚̮̞̬̲͍͔̯̻̮̞̭͈̗̫͓̂ͨ̉ͪ̒͋͛̀̍͊ͧ̿̅͆̓̔̔ͬ̇̑̿ͩ͗ͮ̎͌̿̄ͅP̴̵̡̡̛̪͙̼̣̟̩̭̫̱͙̬͔͉͍̘̠͉̦̝̘̥̟̗͖̫̤͕̙̬̦͍̱̖̮̱͑͐̎̃̒͐͋̚͘͞a̶̶̵̵̵̶̶̡̧̢̢̺͔̣͖̭̺͍̤͚̱̜̰̥͕̬̥̲̞̥̘͇͚̺̰͚̪̺͔̤͍̓̿͆̎͋̓ͦ̈́ͦ̌́̄͗̌̓͌̕͜͜͟͢͝͡ŕ͎̝͕͉̻͎̤̭͚̗̳̖̙̘͚̫͖͓͚͉͔͈̟̰̟̬̗͓̟͚̱̕͡ͅͅͅa̸̶̷̵̶̢̢̡̛̛̜̮̦̜̥̜̯̙͓͔̼̗̻̽ͮͩ̅͒ͫ͗͂̎ͦ̈́̓ͣ̚͘͜͢͜͜͡ͅḡ̢̛͕̗͖̖̤̦̘͔ͨͨ̊͒ͩͭͤ̍̅̃ͪ̋̏̓̍̋͗̋ͨ̏̽̈́̔̀̋̉ͫ̅̂ͭͫ̏͒͋ͥ̚͜r̶̢̧̧̥̤̼̀̂̒ͪ͌̿͌̅͛ͨͪ͒̍ͥ̉ͤ̌̿̆́ͭ͆̃̒ͤ͛̊ͧ̽͘͝͠a̧̢̧̢͑͑̓͑ͮ̃͂̄͛́̈́͋̂͌̽̄͒̔́̇ͨͧͭ͐ͦ̋ͨ̍ͦ̍̋͆̔ͧ͑͋͌̈̓͛͛̚͢͜͜͏̴̢̧̛̳͍̹͚̰̹̻͔p̨̡̱͉͆ͦͣ͊̽̔͂̉ͣ̔ͣ̌̌̉̃̋̂͒ͫ̄̎̐͗̉̌̃̽̽́̀ͣ̚͘͜͟h̭̮̘̗͔̜̯͔͈̯̺͔̗̣̭͚̱̰̙̼̹͚̣̻̥̲̮͍̤͜͝<
+تظاهرات و تجمعات اعتراضی در سراسر کشور ۲۳ مهر
+This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. This is a very long sentence to test if the text will properly wrap around and go to the next line. Sometimes, short sentence. Longer sentences are okay too because they are nessecary. Very short. 
+一丁丂七
+لٔأ
+Single dummy placeholder
+A text ending with line separator. 
+♻️🏴󠁧󠁢󠁳󠁣󠁴󠁿
+0️⃣
+0️⃣12
+#️⃣
+#️⃣#
+#️⃣#️⃣
+*️⃣
+*️⃣abc
+*️⃣😊
+😊abc
+😊*️⃣
+👨‍👩‍👦‍👦
+🏴󠁧󠁢󠁥󠁮󠁧󠁿
+سلام
+س لا م
+inter­national
+su­per­cali­frag
+كلمة­طويلة
+Too many clusters
+المادة
+ادة
+المادة 1 يولد جميع الناس أحرارًا متساوين في الكرامة والحقوق. وقد وهبوا عقلاً وضميرًا وعليهم أن يعامل بعضهم بعضًا بروح الإخاء.
+Five score years ago, a great American, in whose symbolic shadow we stand today, signed the Emancipation Proclamation. This momentous decree came as a great beacon light of hope to millions of Negro slaves who had been seared in the flames of withering injustice. It came as a joyous daybreak to end the long night of their captivity.
+Font manager had no fonts or could not build paragraph.
+Foo bar Baz.
+Foo, bar.Baz.
+Foo bar baz
+onGetFamilyName called with bad index
+onCreateStyleSet called with bad index
+foo󟿿bar
+Foo 推动全球交通可
+  foo  
+  foo bar  
+  foobar  
+f oobar
+  f oobar  
+fooba r
+  fooba r  
+f oobarba z
+  f oobarba z  
+Regular Italic
+Medium Italic
+Bold Italic
+Light Oblique
+Extra Oblique
+Extrabold Oblique
+Foo Bar Baz
+Text layout failed
+Hello world! Hello world? Hello world... Not a sentence end: 3.1415926
+الهيمنة على العالم عبارة قبيحة ، أفضل أن أسميها تحسين العالم.
+World ЛТР Domination هي عبارة قبيحة ، أفضل أن أسميها World ЛТР Optimization.
+😄😁😆😅😂🤣
+満毎行昼本可
