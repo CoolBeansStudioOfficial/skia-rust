@@ -334,6 +334,7 @@ impl GM for SimpleGM {
 /// The GM registry (`skiagm::GMRegistry`).
 pub mod registry {
     use super::GM;
+    use crate::sink::GmSrc;
 
     /// One registered GM: what a `DEF_GM*` macro registers.
     #[derive(Debug)]
@@ -350,17 +351,53 @@ pub mod registry {
 
     inventory::collect!(GmRegistration);
 
+    /// The key of a registration in `module_path` named `name`: `gm::<file>::<name>`, where
+    /// `<file>` is the module path of the GM file (`skia_rust_gm::gm::dashing::<test>` →
+    /// `gm::dashing`).
+    fn key_of(module_path: &str, name: &str) -> String {
+        let path = module_path
+            .strip_prefix("skia_rust_gm::")
+            .unwrap_or(module_path);
+        let file = path.rsplit_once("::").map_or(path, |(file, _)| file);
+        format!("{file}::{name}")
+    }
+
     impl GmRegistration {
         /// The key `cargo xtask inventory verify` maps manifest ids to:
         /// `gm/dashing.cpp::Dashing5GM(true)` ↔ `gm::dashing::Dashing5GM(true)`.
         #[must_use]
         pub fn key(&self) -> String {
-            let path = self
-                .module_path
-                .strip_prefix("skia_rust_gm::")
-                .unwrap_or(self.module_path);
-            let file = path.rsplit_once("::").map_or(path, |(file, _)| file);
-            format!("{file}::{}", self.name)
+            key_of(self.module_path, self.name)
+        }
+    }
+
+    /// One `DEF_VARIANTS` registration (`def_variants_gm!`): several GMs under one manifest name.
+    /// Each variant is a GM factory; the manifest id passes only when all of them do (see
+    /// [`crate::check::check_gm_set`]).
+    // Port of: gm/encode_color_types.cpp#L183-L186 (DEF_VARIANTS, chrome/m156)
+    #[derive(Debug)]
+    pub struct VariantsRegistration {
+        /// As [`GmRegistration::module_path`].
+        pub module_path: &'static str,
+        /// As [`GmRegistration::name`]: the manifest name shared by the variants.
+        pub name: &'static str,
+        /// One factory per variant, in registration order.
+        pub variants: &'static [fn() -> Box<dyn GM>],
+    }
+
+    inventory::collect!(VariantsRegistration);
+
+    impl VariantsRegistration {
+        /// The key of the set, as [`GmRegistration::key`].
+        #[must_use]
+        pub fn key(&self) -> String {
+            key_of(self.module_path, self.name)
+        }
+
+        /// The variants' sources, in registration order.
+        #[must_use]
+        pub fn sources(&self) -> Vec<GmSrc> {
+            self.variants.iter().map(|&f| GmSrc::new(f)).collect()
         }
     }
 
@@ -370,6 +407,23 @@ pub mod registry {
         let mut all: Vec<_> = inventory::iter::<GmRegistration>.into_iter().collect();
         all.sort_by_key(|r| r.key());
         all
+    }
+
+    /// Every registered manifest id, sorted by key, with the GMs it checks: one source for a
+    /// `def_gm!`, one per variant for a `def_variants_gm!`. This is what `gm-verify` checks.
+    #[must_use]
+    pub fn sets() -> Vec<(String, Vec<GmSrc>)> {
+        let mut sets: Vec<(String, Vec<GmSrc>)> = all()
+            .into_iter()
+            .map(|r| (r.key(), vec![GmSrc::from_registration(r)]))
+            .collect();
+        sets.extend(
+            inventory::iter::<VariantsRegistration>
+                .into_iter()
+                .map(|v| (v.key(), v.sources())),
+        );
+        sets.sort_by(|a, b| a.0.cmp(&b.0));
+        sets
     }
 }
 
@@ -412,9 +466,56 @@ macro_rules! def_gm {
     };
 }
 
+/// Port of `DEF_VARIANTS(...)`: one manifest name for several GMs (`DEF_ENCODE_GM` ×3).
+///
+/// `def_variants_gm!(Name = "manifest name", [ make_a, make_b, … ])` registers every expression
+/// as a variant (each is a GM value, built per query as [`def_gm!`] does) under the manifest name,
+/// and defines one test `Name` that checks all of them: the test passes only when every variant
+/// matches its goldens ([`check::run_gm_set_test`]). The variants keep their own `name()`s, which
+/// are the golden names.
+#[macro_export]
+macro_rules! def_variants_gm {
+    ($(#[$attr:meta])* $test:ident = $name:expr, [$($make:expr),+ $(,)?] $(,)?) => {
+        #[allow(non_snake_case)]
+        #[doc(hidden)]
+        mod $test {
+            #[allow(unused_imports)]
+            use super::*;
+            pub(super) const REGISTRATION: $crate::registry::VariantsRegistration =
+                $crate::registry::VariantsRegistration {
+                    module_path: module_path!(),
+                    name: $name,
+                    variants: &[
+                        $(|| -> ::std::boxed::Box<dyn $crate::GM> {
+                            ::std::boxed::Box::new($make)
+                        }),+
+                    ],
+                };
+        }
+        $crate::__submit_variants!($test::REGISTRATION);
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $test() {
+            $crate::check::run_gm_set_test(
+                &$test::REGISTRATION.key(),
+                &$test::REGISTRATION.sources(),
+            );
+        }
+    };
+}
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __submit_gm {
+    ($reg:expr) => {
+        $crate::__inventory::submit!($reg);
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __submit_variants {
     ($reg:expr) => {
         $crate::__inventory::submit!($reg);
     };

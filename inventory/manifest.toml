@@ -16097,8 +16097,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaclip.cpp#L135-L156"
 module = "raster"
-status = "todo"
-reason = "Mac-only: the GM is compiled only under SK_BUILD_FOR_MAC and needs CoreGraphics (SkCreateCGImageRefWithColorspace, SkMakeImageFromCGImage); not built on Linux"
+status = "excluded"
+reason = "compiled only under SK_BUILD_FOR_MAC (aaclip.cpp#L101-L158, CoreGraphics); the oracle build is Windows, so the registration is not built and there is no golden"
 span_hash = "8b64f11f2af01a35226bdc31952790d5bc7f5f7a739bd9655d0fe00b9915b5cd"
 
 [[test]]
@@ -18710,8 +18710,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1061-L1061"
 module = "effects"
-status = "todo"
-reason = "needs TextureSetRenderer with color, image and mask filter paints (effects); not ported"
+status = "passing"
 span_hash = "a4a296604e5ae628158a09de482008e91ff1c1cad67625110dd9f06b6b402e12"
 
 [[test]]
@@ -18720,8 +18719,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1060-L1060"
 module = "raster"
-status = "todo"
-reason = "needs the YUV texture-set renderer (JPEG decoded to YUV planes) and TextureSetRenderer batching; not ported"
+status = "passing"
 span_hash = "e3c6f4ceb0fc30242793ca02a4d9ec886a7aa21225a11c2a558445463bfb8bd6"
 
 [[test]]
@@ -18730,8 +18728,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1059-L1059"
 module = "effects"
-status = "todo"
-reason = "needs TextureSetRenderer with shader paints (effects); not ported"
+status = "passing"
 span_hash = "9dca3a98ae0a2421a79916683e05a3bdf84662cf6859cfd9520dfea7a2751787"
 
 [[test]]
@@ -20001,8 +19998,8 @@ kind = "gm"
 macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L188-L188"
 module = "codec"
-status = "todo"
-reason = "not ported: DEF_VARIANTS registers three GMs per manifest id, which the one-GM-per-name registration cannot express yet"
+status = "failing"
+reason = "see notes/gm_encode_color_types_cpp_SkEncodedImageFormat_kWEBP.md (DEF_VARIANTS: the f16 normal variants differ on the decoded premul pair, 1 F16 ulp / 1 8-bit level; 8888 and 565 match)"
 span_hash = "5c06e81aa5205c6cbfaeb468b02ed765240cff984513105fc850029631d2dcc6"
 
 [[test]]
@@ -20011,8 +20008,8 @@ kind = "gm"
 macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L189-L189"
 module = "codec"
-status = "todo"
-reason = "not ported: DEF_VARIANTS, as the entry above (the one-GM-per-name registration cannot express the three variants yet)"
+status = "failing"
+reason = "see notes/gm_encode_color_types_cpp_SkEncodedImageFormat_kWEBP_2.md (the lossy set, as the entry above: the f16 normal variants differ on the decoded premul pair)"
 span_hash = "44de642452e3eb339e86b9e7e4e8c57eb9c127f1d1b14af0d11fca99c4048646"
 
 [[test]]
@@ -21592,8 +21589,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hdr_pip_blur.cpp#L199-L199"
 module = "effects"
-status = "todo"
-reason = "needs SkCanvas::makeSurface (an offscreen surface with a Rec2020 colour space made from a canvas) and SkSurface::makeTemporaryImage, which are not ported; SkImage::makeColorSpace and SkImages::MakeWithFilter are on main"
+status = "failing"
+reason = "see notes/gm_hdr_pip_blur_cpp_HDRPiPBlurGM.md (ported with makeSurface and makeTemporaryImage; every config differs by 1 level or less on about half the pixels: colour-space transfer or blur rounding, not localised)"
 span_hash = "32e3564d88a9e68bf785432ec2bda3fc35e99bd25ac14df9217f0d51fe3cef6b"
 
 [[test]]
@@ -21602,8 +21599,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hello_bazel_world.cpp#L60-L60"
 module = "raster"
-status = "todo"
-reason = "GM::isBazelOnly() is true: only the Bazel build runs it, so there is no golden"
+status = "excluded"
+reason = "not in the GN build's GM list (gn/gm.gni) that makes the oracle, and isBazelOnly() is true: only the Bazel build runs it, so there is no golden"
 span_hash = "da2f9e3c07fd030d054dd811c08f9de4b4dc4d508993afab9cfb0660ba5f3952"
 
 [[test]]
@@ -45446,8 +45443,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1478-L1530"
 module = "sksl"
-status = "todo"
-reason = "needs GrSkSLFP (Ganesh only)"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope (#if defined(SK_GANESH), GrSkSLFP)"
 span_hash = "c4ff78dc59ba0c7ffa6daf62af4e26b736d8dc2c86c77c3191153c77b23d529f"
 
 [[test]]
@@ -45739,7 +45736,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L183-L187"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8c86b2afd1337753caca7cec08469795419ac57db135e5a695d9cbffedc1b08c"
 
 [[test]]
@@ -45748,7 +45745,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L177-L181"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "978ae019c27e6251a66bc73bbd6b03f57d67e48a08c25ca2f39e9ec55f8f5903"
 
 [[test]]
@@ -45757,7 +45754,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L195-L199"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fa1c910e32a0ccb38869200809e6859a4bfe25ecdf2b367386bb8c88aaa73870"
 
 [[test]]
@@ -45766,7 +45763,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L189-L193"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6a1099108a73b1c70e90b416a0615374693e47aa9dfd71278e45e89c75570ea4"
 
 [[test]]
@@ -45775,7 +45772,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L210-L217"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9ecf3e9230a134f5d63634a21890270bbf737b5047402081cdddecdd87baa2cd"
 
 [[test]]
@@ -45784,7 +45781,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L225-L229"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3179dc075a4f7c6fbfd8395c14cec58a550b6aa52d2c41d52dcb3e543b17645a"
 
 [[test]]
@@ -45793,7 +45790,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L219-L223"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cc9c4db228d0171fdcbb9474381d6809dd2af22baf3bc8bf1fb51968bc3d80b4"
 
 [[test]]
@@ -45802,7 +45799,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L201-L208"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1ca9b78dc3008ab662a4ceec3fda9383818abb9eff33a8a249c881c08f4f2a87"
 
 [[test]]
@@ -53411,8 +53408,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L465-L514"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "0c6bc99f3dd425203f0902b4329fba7b05370d706a7ed5ab5a1f5bb4e76e72f2"
 
 [[test]]
@@ -53421,8 +53418,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L558-L577"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "d6168d2be1ff4f5dd5518b2aa884f773e66690908fb826a61368e866fbc41d7a"
 
 [[test]]
@@ -53431,8 +53428,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L428-L461"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "3fb42a8d02f9e5d30039c3a56380fb3852ffcd076ee11b859f31f2db414cf026"
 
 [[test]]
