@@ -17,6 +17,7 @@ skia-rust-pathops.workspace = true
 skia-rust-codec.workspace = true
 skia-rust-pdf.workspace = true
 skia-rust-tools.workspace = true
+skia-rust-svg.workspace = true
 
 [lints]
 workspace = true

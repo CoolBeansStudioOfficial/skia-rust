@@ -4,10 +4,12 @@
 // Port of: fuzz/FuzzEncoders.cpp (chrome/m156)
 //
 // skia-rust encodes PNG with libpng (`SK_CODEC_ENCODES_PNG_WITH_LIBPNG`), so `PNGEncoder` is
-// ported and `PNGRustEncoder` (`SK_CODEC_ENCODES_PNG_WITH_RUST`, codec wave C-R) is not.
+// ported with libpng, and `PNGRustEncoder` (`SK_CODEC_ENCODES_PNG_WITH_RUST`) with the Rust
+// encoder of `skia_rust_codec::encode::png_rust_encoder`.
 // `_MakeEncoderCorpus` is not a fuzzer but a corpus writer; `crate::seeds` builds the encoder
 // seeds in its format.
 
+use skia_rust_codec::encode::png_rust_encoder::{self, CompressionLevel};
 use skia_rust_codec::encode::{jpeg_encoder, png_encoder, webp_encoder};
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::image_info::ImageInfo;
@@ -54,6 +56,22 @@ def_fuzz!(PNGEncoder, fuzz_PNGEncoder, |fuzz| {
     opts.z_lib_level = fuzz.next_range(0, 9);
 
     let _ = png_encoder::encode_pixmap(&bm.pixmap(), &opts);
+});
+
+// Port of: fuzz/FuzzEncoders.cpp#L57-L76 (chrome/m156)
+def_fuzz!(PNGRustEncoder, fuzz_PNGRustEncoder, |fuzz| {
+    let bm = make_fuzzed_bitmap(fuzz);
+    let mut opts = png_rust_encoder::Options::default();
+    // `int compression`.
+    let compression: i32 = fuzz.next_range(0, 3);
+    // Compression level 3 keeps the default (`kMedium`), as the C++ switch has no case for it.
+    match compression {
+        0 => opts.compression_level = CompressionLevel::Low,
+        1 => opts.compression_level = CompressionLevel::Medium,
+        2 => opts.compression_level = CompressionLevel::High,
+        _ => {}
+    }
+    let _ = png_rust_encoder::encode_pixmap(&bm.pixmap(), &opts);
 });
 
 // Port of: fuzz/FuzzEncoders.cpp#L79-L86 (chrome/m156)

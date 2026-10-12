@@ -2,8 +2,6 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/image_shader.cpp (chrome/m156)
-//
-// Not ported: `textureimage_and_shader` (`SkCanvas::getSurface`).
 
 use crate::prelude::*;
 use crate::tool_utils;
@@ -102,6 +100,49 @@ crate::def_simple_gm!(imageshader_tinyscale, canvas, 1000, 1000, {
         &m,
     ));
     canvas.draw_paint(&p);
+});
+
+// Port of: gm/image_shader.cpp#L221-L252 (chrome/m156)
+crate::def_simple_gm!(textureimage_and_shader, canvas, 100, 50, {
+    canvas.clear(Color::GREEN);
+
+    // The canvas of a surface gives a snapshot of that surface, so the image is the green
+    // canvas; a canvas no surface made makes its own green image.
+    let image = if let Some(mut surface) = canvas.get_surface() {
+        let snapshot = surface.image_snapshot();
+        canvas.clear(Color::RED);
+        snapshot
+    } else {
+        let mut green = surfaces::raster_n32_premul((50, 50)).expect("a surface");
+        green.canvas().clear(Color::GREEN);
+        green.image_snapshot()
+    };
+    let image = image.expect("an image");
+
+    // At this point, 'image' contains a green image. If our original canvas is GPU-backed, then
+    // the snapped image will be a (GPU) texture. We will try to draw that image to a non-GPU
+    // surface, to ensure that we get automatic read-back. If all goes well, we will get a pure
+    // green result. If either draw fails, we'll get red (most likely).
+
+    let mut surface = surfaces::raster_n32_premul((50, 50)).expect("a surface");
+
+    // First, use drawImage:
+    surface.canvas().clear(Color::RED);
+    surface.canvas().draw_image(&image, (0.0, 0.0), None);
+    let snapshot = surface.image_snapshot().expect("an image");
+    canvas.draw_image(&snapshot, (0.0, 0.0), None);
+
+    // Now, use an image shader:
+    let mut paint = Paint::default();
+    paint.set_shader(image.to_shader(
+        (TileMode::Clamp, TileMode::Clamp),
+        SamplingOptions::default(),
+        None::<&Matrix>,
+    ));
+    surface.canvas().clear(Color::RED);
+    surface.canvas().draw_paint(&paint);
+    let snapshot = surface.image_snapshot().expect("an image");
+    canvas.draw_image(&snapshot, (50.0, 0.0), None);
 });
 
 // Draws a red stroked rect and a blue oval, as the GM's picture content.

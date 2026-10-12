@@ -3,27 +3,31 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/savelayer.cpp (chrome/m156)
 //
-// Ported here: `savelayer_f16`, `savelayer_initfromprev` and `skbug_14554`. `save_behind` needs
-// SkCanvasPriv::SaveBehind/DrawBehind, which is not on main yet.
+// Ported here: `savelayer_f16`, `savelayer_initfromprev`, `save_behind` and `skbug_14554`.
 
 // The int-to-scalar cast of the layer count mirrors the C++ arithmetic (exact in f32).
 #![allow(clippy::cast_precision_loss)]
 
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{
-    Canvas, ImageSetEntry, PointMode, QuadAAFlags, SaveLayerFlags, SaveLayerRec, SrcRectConstraint,
+    AutoCanvasRestore, Canvas, ImageSetEntry, PointMode, QuadAAFlags, SaveLayerFlags, SaveLayerRec,
+    SrcRectConstraint,
 };
-use skia_rust_core::color::{Color, colors};
+use skia_rust_core::color::{Color, Color4f, colors};
+use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::image::Image;
-use skia_rust_core::paint::{Cap, Paint};
+use skia_rust_core::paint::{Cap, Paint, Style};
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::point::Point;
+use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rsxform::RSXform;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
+use skia_rust_core::text_blob::TextBlob;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_core::vertices::{VertexMode, Vertices};
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
+use skia_rust_tools::font_tool_utils::default_portable_font;
 
 // Port of: gm/savelayer.cpp#L179-L199 (chrome/m156), DEF_SIMPLE_GM(savelayer_f16)
 crate::def_simple_gm!(savelayer_f16, canvas, 900, 300, {
@@ -78,6 +82,104 @@ crate::def_simple_gm!(savelayer_initfromprev, canvas, 256, 256, {
     paint.set_blend_mode(BlendMode::Clear);
     canvas.draw_circle((128.0, 128.0), 96.0, &paint);
     canvas.restore();
+});
+
+const SAVE_BEHIND_MARGIN: f32 = 80.0;
+
+// Port of: gm/savelayer.cpp#L67-L112 (chrome/m156), draw_cell
+// The single-letter names mirror the C++ (`r`, `p`, `c`, `w`, `h`).
+#[allow(clippy::many_single_char_names)]
+fn draw_cell(canvas: &Canvas, blob: &TextBlob, c: Color, w: f32, h: f32, use_draw_behind: bool) {
+    let mut r = Rect::new(0.0, 0.0, w, h);
+    let mut p = Paint::default();
+    p.set_color(c);
+    p.set_blend_mode(BlendMode::Src);
+    canvas.draw_rect(r, &p);
+    p.set_blend_mode(BlendMode::SrcOver);
+
+    r = Rect::new(w - SAVE_BEHIND_MARGIN, r.top(), r.right(), r.bottom());
+
+    // save the behind image
+    let sc0 = canvas.save_count();
+    let sc1 = canvas.save_behind(Some(&r));
+    let sc2 = canvas.save_count();
+    debug_assert_eq!(sc0, sc1);
+    debug_assert_eq!(sc0 + 1, sc2);
+
+    // draw the foreground (including over the 'behind' section)
+    p.set_color(Color::BLACK);
+    canvas.draw_text_blob(blob, (10.0, 30.0), &p);
+
+    // draw the treatment
+    let pts = [Point::new(r.left(), 0.0), Point::new(r.right(), 0.0)];
+    let colors = [
+        Color4f::new(0.0, 0.0, 0.0, f32::from(0x88_u8) / 255.0),
+        Color4f::new(0.0, 0.0, 0.0, 0.0),
+    ];
+    p.set_shader(shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &Gradient::new(
+            Colors::new(&colors, None, TileMode::Clamp, None),
+            Interpolation::default(),
+        ),
+        None,
+    ));
+    p.set_blend_mode(BlendMode::DstIn);
+
+    if use_draw_behind {
+        canvas.draw_clipped_to_save_behind(&p);
+    } else {
+        canvas.draw_rect(r, &p);
+    }
+
+    // this should restore the behind image
+    canvas.restore();
+    debug_assert_eq!(canvas.save_count(), sc0);
+
+    // just outline where we expect the treatment to appear
+    p.reset();
+    p.set_style(Style::Stroke);
+    p.set_alpha_f(0.25);
+}
+
+// Port of: gm/savelayer.cpp#L114-L126 (chrome/m156), draw_list
+fn draw_list(canvas: &Canvas, blob: &TextBlob, use_draw_behind: bool) {
+    let guard = AutoCanvasRestore::guard(canvas, true);
+    let canvas: &Canvas = &guard;
+
+    let mut rand = Random::default();
+    let w: f32 = 400.0;
+    let h: f32 = 40.0;
+    for _ in 0..8 {
+        // ensure we're opaque
+        let c = (rand.next_u() & 0xFF_FF_FF) | 0x80_00_00_00;
+        draw_cell(canvas, blob, Color::from(c), w, h, use_draw_behind);
+        canvas.translate((0.0, h));
+    }
+}
+
+// Port of: gm/savelayer.cpp#L128-L147 (chrome/m156), DEF_SIMPLE_GM(save_behind)
+crate::def_simple_gm!(save_behind, canvas, 830, 670, {
+    let mut font = default_portable_font();
+    font.set_size(30.0);
+
+    let text = b"This is a very long line of text";
+    let blob = TextBlob::from_text(text, TextEncoding::UTF8, &font).expect("a text blob");
+
+    for use_draw_behind in [false, true] {
+        canvas.save();
+
+        draw_list(canvas, &blob, use_draw_behind);
+        canvas.translate((0.0, 350.0));
+        let bounds = Rect::new(0.0, 0.0, 400.0, 320.0);
+        let rec = SaveLayerRec::default().bounds(&bounds);
+        canvas.save_layer(&rec);
+        draw_list(canvas, &blob, use_draw_behind);
+        canvas.restore();
+
+        canvas.restore();
+        canvas.translate((430.0, 0.0));
+    }
 });
 
 // Port of: gm/savelayer.cpp#L157-L169 (chrome/m156), draw_atlas

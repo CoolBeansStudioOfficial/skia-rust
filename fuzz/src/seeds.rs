@@ -139,9 +139,13 @@ pub fn generate(name: &str) -> Option<Vec<Seed>> {
         "LegacyChromiumPathop" => legacy_chromium_pathop(),
         "Gradients" => gradients(),
         "DrawFunctions" => draw_functions(),
-        "PNGEncoder" | "JPEGEncoder" | "WEBPEncoder" => encoder(name),
-        "NullCanvas" | "RasterN32Canvas" | "PDFCanvas" => canvas_commands(),
-        "ImageFilter" => image_filter_types(),
+        "PNGEncoder" | "PNGRustEncoder" | "JPEGEncoder" | "WEBPEncoder" => encoder(name),
+        "NullCanvas"
+        | "RasterN32Canvas"
+        | "RasterN32CanvasViaSerialization"
+        | "PDFCanvas"
+        | "SVGCanvas" => canvas_commands(),
+        "ImageFilter" | "SerializedImageFilter" => image_filter_types(),
         _ => return None,
     };
     seeds.sort_by(|a, b| a.0.cmp(&b.0));
@@ -692,6 +696,14 @@ fn encoder_options(name: &str) -> Vec<(&'static str, Vec<u8>)> {
                 opts.push((suffix, w.finish()));
             }
         }
+        "PNGRustEncoder" => {
+            // `int compression`: the three levels, and one past them (the default).
+            for (suffix, level) in [("low", 0), ("medium", 1), ("high", 2), ("default", 3)] {
+                let mut w = SeedWriter::new();
+                w.i32(level);
+                opts.push((suffix, w.finish()));
+            }
+        }
         "JPEGEncoder" => {
             for (suffix, q) in [("q0", 0), ("q50", 50), ("q100", 100)] {
                 let mut w = SeedWriter::new();
@@ -766,7 +778,10 @@ pub fn decode_resource_image(path: &str) -> Option<(u32, u32, Vec<u8>)> {
 /// The names of the seeds of `name` that need Skia's resources.
 #[must_use]
 pub fn resource_seed_names(name: &str) -> Vec<String> {
-    if !matches!(name, "PNGEncoder" | "JPEGEncoder" | "WEBPEncoder") {
+    if !matches!(
+        name,
+        "PNGEncoder" | "PNGRustEncoder" | "JPEGEncoder" | "WEBPEncoder"
+    ) {
         return Vec::new();
     }
     let mut names = Vec::new();

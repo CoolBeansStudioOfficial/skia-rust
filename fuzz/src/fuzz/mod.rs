@@ -57,6 +57,10 @@ pub const FUZZERS: &[Fuzzable] = &[
         f: fuzz_encoders::fuzz_PNGEncoder,
     },
     Fuzzable {
+        name: "PNGRustEncoder",
+        f: fuzz_encoders::fuzz_PNGRustEncoder,
+    },
+    Fuzzable {
         name: "ParsePath",
         f: fuzz_parse_path::fuzz_ParsePath,
     },
@@ -81,8 +85,20 @@ pub const FUZZERS: &[Fuzzable] = &[
         f: fuzz_canvas::fuzz_RasterN32Canvas,
     },
     Fuzzable {
+        name: "RasterN32CanvasViaSerialization",
+        f: fuzz_canvas::fuzz_RasterN32CanvasViaSerialization,
+    },
+    Fuzzable {
         name: "RegionOp",
         f: fuzz_region_op::fuzz_RegionOp,
+    },
+    Fuzzable {
+        name: "SerializedImageFilter",
+        f: fuzz_canvas::fuzz_SerializedImageFilter,
+    },
+    Fuzzable {
+        name: "SVGCanvas",
+        f: fuzz_canvas::fuzz_SVGCanvas,
     },
     Fuzzable {
         name: "WEBPEncoder",

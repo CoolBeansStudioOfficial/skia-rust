@@ -15799,8 +15799,8 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
-status = "todo"
-reason = "needs SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L228), the buffer reader of a serialized picture, which is not ported (Picture::from_data reads the stream form, another function); Skia may signalBug on every input here, since serialize writes a tag where MakeFromBuffer reads its marker; needs an oracle check"
+status = "failing"
+reason = "Skia itself signals a bug on every input: SkPicture::serialize writes the stream form (the SkPictInfo, the sentinel byte 1, then the SkPictureData), but SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L226-L252) reads a 32-bit sentinel of 1 straight after the info, which the stream's byte 1 followed by the reader tag is not, so it returns null and fuzz->signalBug() raises SIGSEGV. The port follows Skia, so the replay is #[ignore]d until the upstream mismatch is fixed (docs/design/fuzz.md section 5, step 2); the reproducer is fuzz/regressions/RasterN32CanvasViaSerialization/one-zero-byte"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
@@ -15809,8 +15809,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
-status = "todo"
-reason = "the fuzz crate (docs/design/fuzz.md) is not on main; SvgDevice and svg::canvas::make are ready for it"
+status = "passing"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -15819,8 +15818,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L107-L167"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilter::serialize and SkImageFilter::Deserialize, which are not ported; the bit flips read once per serialized byte, so the reads depend on the output"
+status = "passing"
 span_hash = "856b16a4f26126f72b3e99aff969d63f6cce7cd0b33b56825981db99d64ce6d2"
 
 [[test]]
@@ -15895,8 +15893,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzEncoders.cpp#L57-L76"
 module = "codec"
-status = "todo"
-reason = "deferred: the fuzz crate (skia-rust-fuzz, docs/PORTING.md 14) is on origin/port/fuzz, not on this base; port after port/fuzz lands. The encoder itself is ported (SkPngRustEncoder, C-R1)"
+status = "passing"
 span_hash = "543b7e8452e854872c285d411fdb70b0a56eafb38de0e430abb3e04a00cf9a52"
 
 [[test]]
@@ -16586,8 +16583,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/backdrop.cpp#L89-L104"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvasPriv::ScaledBackdropLayer (scaled backdrop layers), which is not ported"
+status = "passing"
 span_hash = "ebc5e7743a8a99c31525a3a299cb158d06f2b9160313d565d89cf34f1cdf81d8"
 
 [[test]]
@@ -16596,8 +16592,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/backdrop.cpp#L114-L128"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvasPriv::ScaledBackdropLayer (scaled backdrop layers), which is not ported"
+status = "passing"
 span_hash = "ff2f0521355f396b363e3e74fa075390f649f56697417178667e30ce0b419632"
 
 [[test]]
@@ -18749,7 +18744,7 @@ macro = "DEF_GM"
 source = "gm/compressed_textures.cpp#L399-L399"
 module = "text"
 status = "todo"
-reason = "GPU-only: onGpuSetup builds the compressed GPU images and needs a GPU context; no raster outcome to match yet"
+reason = "CPU raster golden exists (8888/565/f16), but the raster path needs the ETC1 encoder (third_party/etc1), TwoColorBC1Compress (tools/gpu/CompressedTexture.cpp) and SkImages::RasterFromCompressedTextureData (BC1/ETC2 decoders): large, not ported"
 span_hash = "bbb72d95f72929758e32f0911781dc9e353a09bd1438a357a8d4b1e76e638c2c"
 
 [[test]]
@@ -18759,7 +18754,7 @@ macro = "DEF_GM"
 source = "gm/compressed_textures.cpp#L398-L398"
 module = "text"
 status = "todo"
-reason = "GPU-only: onGpuSetup builds the compressed GPU images and needs a GPU context; no raster outcome to match yet"
+reason = "CPU raster golden exists (8888/565/f16), but the raster path needs the ETC1 encoder (third_party/etc1), TwoColorBC1Compress (tools/gpu/CompressedTexture.cpp) and SkImages::RasterFromCompressedTextureData (BC1/ETC2 decoders): large, not ported"
 span_hash = "81c4eaa0b54ada746e43522a55015a4dbf0d560393f827019c9be3d016f1a284"
 
 [[test]]
@@ -18769,7 +18764,7 @@ macro = "DEF_GM"
 source = "gm/compressed_textures.cpp#L397-L397"
 module = "text"
 status = "todo"
-reason = "GPU-only: onGpuSetup builds the compressed GPU images and needs a GPU context; no raster outcome to match yet"
+reason = "CPU raster golden exists (8888/565/f16), but the raster path needs the ETC1 encoder (third_party/etc1), TwoColorBC1Compress (tools/gpu/CompressedTexture.cpp) and SkImages::RasterFromCompressedTextureData (BC1/ETC2 decoders): large, not ported"
 span_hash = "362f81acea649d7105a087872b35eecfe9002b3845bfccbb4d4591ce5af60096"
 
 [[test]]
@@ -19630,8 +19625,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/dftext.cpp#L271-L271"
 module = "text"
-status = "todo"
-reason = "not ported yet (distance-field text on a raster surface, default EmojiSample for the emoji line)"
+status = "passing"
 span_hash = "e5c13723507bc213e6d0d840ef4c0a0c84c2ecd5577c8dc45343083e562336fc"
 
 [[test]]
@@ -19640,8 +19634,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/dftext_blob_persp.cpp#L160-L160"
 module = "text"
-status = "todo"
-reason = "not ported yet (perspective text blobs drawn with setMatrix on a raster canvas)"
+status = "passing"
 span_hash = "f60f77fbb2ac044acc031e6221f600420f32553455dbf8c98a08fdefc0f5b9cc"
 
 [[test]]
@@ -20171,8 +20164,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations.cpp#L190-L194"
 module = "text"
-status = "todo"
-reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
+status = "excluded"
+reason = "not compiled in the oracle build: skia_use_fontations=false, so gm/fontations*.cpp is not in the sources (BUILD.gn#L2887-L2889; docs/design/text.md §1.1)"
 span_hash = "67c726b51cd47e91a27bb785121eeb26ebee401cd75c34a9076d62e2a452c938"
 
 [[test]]
@@ -20181,8 +20174,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations.cpp#L186-L189"
 module = "text"
-status = "todo"
-reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
+status = "excluded"
+reason = "not compiled in the oracle build: skia_use_fontations=false, so gm/fontations*.cpp is not in the sources (BUILD.gn#L2887-L2889; docs/design/text.md §1.1)"
 span_hash = "e628f73739bd0d44bb173a4f6125b77e773122cf0cf79d94c2863ef92498c11d"
 
 [[test]]
@@ -20191,8 +20184,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations.cpp#L185-L185"
 module = "text"
-status = "todo"
-reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
+status = "excluded"
+reason = "not compiled in the oracle build: skia_use_fontations=false, so gm/fontations*.cpp is not in the sources (BUILD.gn#L2887-L2889; docs/design/text.md §1.1)"
 span_hash = "d4446a135b1300dc8202d72d62f1637ad9a8fb741cef2668b4bc1d84f9634b36"
 
 [[test]]
@@ -20201,8 +20194,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_cbdt.cpp#L84-L84"
 module = "text"
-status = "todo"
-reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
+status = "excluded"
+reason = "not compiled in the oracle build: skia_use_fontations=false, so gm/fontations*.cpp is not in the sources (BUILD.gn#L2887-L2889; docs/design/text.md §1.1)"
 span_hash = "54e18e2f460d837245b4ba8dd1438f2b8952f9d437092f3a95f10f06934a9b91"
 
 [[test]]
@@ -20211,8 +20204,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ebdt.cpp#L83-L83"
 module = "text"
-status = "todo"
-reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
+status = "excluded"
+reason = "not compiled in the oracle build: skia_use_fontations=false, so gm/fontations*.cpp is not in the sources (BUILD.gn#L2887-L2889; docs/design/text.md §1.1)"
 span_hash = "2dd804f03c316a97760d0f5e550bfbd80a3546dedc17e67938d3437284167a36"
 
 [[test]]
@@ -20221,8 +20214,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ebdt.cpp#L146-L146"
 module = "text"
-status = "todo"
-reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
+status = "excluded"
+reason = "not compiled in the oracle build: skia_use_fontations=false, so gm/fontations*.cpp is not in the sources (BUILD.gn#L2887-L2889; docs/design/text.md §1.1)"
 span_hash = "a02baa84de047f3085b50a890274f461162505ca5844e44e91b4b5bc1240d13b"
 
 [[test]]
@@ -21726,8 +21719,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/image.cpp#L596-L613"
 module = "raster"
-status = "todo"
-reason = "needs SkImage serialization (serial_deserial), not checked against the image port"
+status = "passing"
 span_hash = "7d90f328e5486d76530aa64bb558c8ade550fee472a4a957f854e06da4ca5d28"
 
 [[test]]
@@ -21772,8 +21764,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image_pict.cpp#L443-L443"
 module = "text"
-status = "todo"
-reason = "GPU-only: the texture generator needs a GPU context, the raster sink skips it (no golden); not ported"
+status = "passing"
 span_hash = "7ff77ac6edaedd0fbf79d13b88e8d11ce5c459bcbd078f6dc490d0dbd40c9fc6"
 
 [[test]]
@@ -21818,8 +21809,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image_shader.cpp#L221-L252"
 module = "text"
-status = "todo"
-reason = "needs SkCanvas::getSurface (canvas to surface link): not ported"
+status = "passing"
 span_hash = "03ad64e8492ba90105fad40541a6408d6c0d1f7fa8ac3fc84e4e8e1f3edc8e1b"
 
 [[test]]
@@ -21936,8 +21926,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L290-L332"
 module = "effects"
-status = "todo"
-reason = "Not ported: it saves a layer with a FilterSpan of two image filters (SkCanvas::FilterSpan / SaveLayerRec filters, applied in order by SkCanvas::internalSaveLayer), and it uses SkCanvasPriv::ScaledBackdropLayer. SaveLayerRec has no filters field, so a layer takes one image filter."
+status = "passing"
 span_hash = "e80d8f4eb0f2cc31a21237713adbd056c1b6e2cb39306b77324528582d518e17"
 
 [[test]]
@@ -22561,8 +22550,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mac_aa_explorer.cpp#L137-L137"
 module = "text"
-status = "todo"
-reason = "compiled only under SK_BUILD_FOR_MAC, which the oracle build is not: no golden"
+status = "excluded"
+reason = "compiled only under SK_BUILD_FOR_MAC (CoreGraphics), which the oracle build (Windows) is not; no golden"
 span_hash = "875e75581673631c490a07a010c47071c2cf4eda9cccbc8c87e4725e220a7b38"
 
 [[test]]
@@ -24266,8 +24255,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L128-L147"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvasPriv::SaveBehind/DrawBehind (save-behind layer), not ported"
+status = "passing"
 span_hash = "992202a95cfbe6949be743488fff10a336ba5fd51d9e2515d4d147f4e5e404a4"
 
 [[test]]
@@ -24386,7 +24374,7 @@ macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L245-L245"
 module = "text"
 status = "failing"
-reason = "565/f16 differ in a few pixels of the smallest perspective glyphs; see notes/gm-scaledemojiperspective-test.md"
+reason = "see notes/gm-scaledemojiperspective-test.md (565 and f16 differ in a few pixels; re-checked on main 3f14c4d: same hashes, 565 848b8bc8 vs d0fe24b7, f16 dfdc4561 vs 28f84587)"
 span_hash = "fc541cd23891d42640c055361d022cb76a47841081af87ed4e963a1cf5962158"
 
 [[test]]
@@ -25462,7 +25450,7 @@ macro = "DEF_GM"
 source = "gm/textblobrandomfont.cpp#L184-L184"
 module = "text"
 status = "todo"
-reason = "needs SkRandomTypeface (tools/fonts/RandomScalerContext, not ported) to build its blob"
+reason = "needs SkRandomTypeface (tools/fonts/RandomScalerContext.cpp, T23): onOnceBeforeDraw builds the blob with it; onDraw skips on the CPU sink (GPU-only), so there is no golden"
 span_hash = "776042e03056c012e05ba439cb77657eeb20a3954def20d0fe79fc28ac511bbf"
 
 [[test]]
@@ -29699,7 +29687,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CPUContextRecorderTest.cpp#L25-L40"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia (#if 0): the CPU Context/Recorder API is a TODO upstream"
 span_hash = "65dbcf94b1db8251932e7552c1c449ae3daa89e78bf8790369783bbbfb116871"
 
 [[test]]
@@ -29708,7 +29697,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CPUContextRecorderTest.cpp#L42-L55"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia (#if 0): the CPU Context/Recorder API is a TODO upstream"
 span_hash = "3f84fbd233ce4b7ec4bd4945b66170dfb3c481b0d1699d5e6a2fdbd89e9603c2"
 
 [[test]]
@@ -29717,7 +29707,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CPUContextRecorderTest.cpp#L57-L70"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia (#if 0): the CPU Context/Recorder API is a TODO upstream"
 span_hash = "0060a84261ddd172618bec7af8020c588e6a9f6c618975250fb459641e8b1a77"
 
 [[test]]
@@ -29726,7 +29717,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CPUContextRecorderTest.cpp#L72-L93"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia (#if 0): the CPU Context/Recorder API is a TODO upstream"
 span_hash = "18ec0e0aa748201c26200b6b6da8a2beddb03f80c22d9c0eba9af395bc507368"
 
 [[test]]
@@ -31594,8 +31586,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L140-L221"
 module = "text"
-status = "todo"
-reason = "needs SkWriteBuffer/SkReadBuffer (not ported yet; docs/design/text.md T9 owns the buffer port)"
+status = "passing"
 span_hash = "24e694e3f994cff56e6ff0cf437b462fb6e0f7fabb192692b677fcaf02b56291"
 
 [[test]]
@@ -34050,6 +34041,7 @@ macro = "DEF_TEST"
 source = "tests/GrGlyphVectorTest.cpp#L85-L136"
 module = "text"
 status = "todo"
+reason = "needs src/text/gpu GlyphVector (serialized glyph vectors over StrikeForGPU) and SubRunAllocator, not ported (Ganesh text sub-run infrastructure)"
 span_hash = "a044ec2329c2bbd7ac4fc0f14aa3c2cd36e3b6416978cc66bf104062c2e8cf85"
 
 [[test]]
@@ -34059,6 +34051,7 @@ macro = "DEF_TEST"
 source = "tests/GrGlyphVectorTest.cpp#L49-L83"
 module = "text"
 status = "todo"
+reason = "needs src/text/gpu GlyphVector (serialized glyph vectors over StrikeForGPU) and SubRunAllocator, not ported (Ganesh text sub-run infrastructure)"
 span_hash = "1ce158a34c553825a7845f4abbe7fa7a53f9c2d6d068f5c06ec24e26a7519e68"
 
 [[test]]
@@ -34438,6 +34431,7 @@ macro = "DEF_TEST"
 source = "tests/GrTextBlobTest.cpp#L190-L244"
 module = "text"
 status = "todo"
+reason = "needs the src/text/gpu SubRunAllocator and GrTextBlob key/BagOfBytes machinery, not ported (Ganesh text sub-run infrastructure)"
 span_hash = "d2a23fd88d513a49c002d41525078e93352f7fad02e24d2132beaeb6392820c2"
 
 [[test]]
@@ -34467,6 +34461,7 @@ macro = "DEF_TEST"
 source = "tests/GrTextBlobTest.cpp#L356-L386"
 module = "text"
 status = "todo"
+reason = "needs the src/text/gpu SubRunAllocator and GrTextBlob key/BagOfBytes machinery, not ported (Ganesh text sub-run infrastructure)"
 span_hash = "d1ccd5ee8540605de7f901547811e835f82540e3f8a112cfc01adbc0a53cf106"
 
 [[test]]
@@ -34476,6 +34471,7 @@ macro = "DEF_TEST"
 source = "tests/GrTextBlobTest.cpp#L246-L352"
 module = "text"
 status = "todo"
+reason = "needs the src/text/gpu SubRunAllocator and GrTextBlob key/BagOfBytes machinery, not ported (Ganesh text sub-run infrastructure)"
 span_hash = "6c52a3746b99979f1bd32c9fd2771920db485ec8afc691eee6eefc95d01481d9"
 
 [[test]]
@@ -42568,7 +42564,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerialProcsTest.cpp#L244-L265"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f14d901d0aee3b121428556da88ac98092c8821f1ed8d3de095f63cc35bf8dd9"
 
 [[test]]
@@ -43292,7 +43288,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L465-L498"
 module = "text"
 status = "todo"
-reason = "builds its drawables with SkRuntimeEffect (MakeForShader/ColorFilter/Blender and SkRuntimeEffectBuilder), and SkSL is not ported (phase 3); the picture part is only the sub-picture and the SkSL rejection, notes/picture-serialization.md"
+reason = "needs SkReadBuffer's allow-SkSL flag (setAllowSkSL/isAllowSkSL, not ported), and SkPictureBackedGlyphDrawable::MakeFromBuffer must reject SkSL pictures"
 span_hash = "c4da3936b011501e75a2e716fecf8a7a69f74d245d9063f44c8205b10abd5da1"
 
 [[test]]
@@ -44896,6 +44892,7 @@ macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L812-L838"
 module = "text"
 status = "todo"
+reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
 span_hash = "2b02ffae659d902643c27ba60dd2054985090dd4c13904ec893220ba991a6b81"
 
 [[test]]
@@ -44945,6 +44942,7 @@ macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L840-L884"
 module = "text"
 status = "todo"
+reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
 span_hash = "e71a56063965e018768f8339128b99b8db17add9e778a4c722af828442d0aae7"
 
 [[test]]
@@ -44984,6 +44982,7 @@ macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L737-L770"
 module = "text"
 status = "todo"
+reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
 span_hash = "73051cba0d33135d10aa6eda724f5da3319013554579025b4403a348bfdd44ef"
 
 [[test]]
@@ -44993,6 +44992,7 @@ macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L703-L735"
 module = "text"
 status = "todo"
+reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
 span_hash = "19538c7f2027572597d10e5d480fab0d80daeea7584d6886d95098eeab0a02b8"
 
 [[test]]
@@ -45002,6 +45002,7 @@ macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L772-L810"
 module = "text"
 status = "todo"
+reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
 span_hash = "2ead663c3ae08a9fa12ba7115649ea8bf1e01f3052a910a4f2e96d7679b4ae9d"
 
 [[test]]
@@ -45081,6 +45082,7 @@ macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L1414-L1494"
 module = "text"
 status = "todo"
+reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
 span_hash = "d3b0312f4eb5f2f4473fc3a0d8bf9116c5dea98c38ec90957eb61aeb72569125"
 
 [[test]]
@@ -45090,6 +45092,7 @@ macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L1375-L1401"
 module = "text"
 status = "todo"
+reason = "T23 remote glyph cache (SkStrikeServer/SkStrikeClient, SkTypefaceProxy): large, not ported"
 span_hash = "5c9fb8a0f3500c5b8093a19627d058cf20b466f2ef7a7c29cacb599f6dcd07cc"
 
 [[test]]
@@ -48296,7 +48299,7 @@ macro = "DEF_TEST"
 source = "tests/SkStrikeTest.cpp#L200-L295"
 module = "text"
 status = "todo"
-reason = "needs T10 portable typeface and remote strike flattening (T23)"
+reason = "T23: SkStrike::FlattenGlyphsByType and mergeFromBuffer (remote strike flattening) not ported"
 span_hash = "d14dc33247823ab02f49c3095708c1e3c19cf4d6ada2eac09802a1dad829dde1"
 
 [[test]]
@@ -48818,7 +48821,7 @@ macro = "DEF_TEST"
 source = "tests/StrikeForGPUTest.cpp#L27-L61"
 module = "text"
 status = "todo"
-reason = "needs T10 portable typeface and strike promise flattening (T23)"
+reason = "SkStrikePromise (flatten/MakeFromBuffer over a strike cache) not ported (T8 strike promise, T23 flattening)"
 span_hash = "2f1bd011453b797e9412e8b8324c69942e1d1d114a9e6ffd03132376d426c35d"
 
 [[test]]
@@ -50443,7 +50446,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/UnicodeTest.cpp#L22-L51"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "02624007eef825587619a1c5e6924e831abf18fdeeca7271c376eac7bf257bcc"
 
 [[test]]
@@ -50452,7 +50455,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/UnicodeTest.cpp#L53-L68"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1513379b3f03333051b2989f084b767372d6cd991e66e4a79c3d70b48193fe57"
 
 [[test]]

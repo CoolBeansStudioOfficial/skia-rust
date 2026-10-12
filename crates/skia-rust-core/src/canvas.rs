@@ -22,7 +22,7 @@
 //!   text, drawables, shadows, meshes, annotations (`SkFont`, ... are not ported; the edge-AA
 //!   quad and image-set draws are, see [`Canvas::experimental_draw_edge_aa_quad`]); image filters on
 //!   paints and layers (`AutoLayerForImageFilter`, `internalDrawDeviceWithFilter`, backdrops;
-//!   `skif` is Phase 3); `saveBehind`/`drawClippedToSaveBehind` (Android only); mask filter
+//!   `skif` is Phase 3); mask filter
 //!   auto-layers (`useDrawCoverageMaskForMaskFilters` is false for the raster device); the
 //!   blurred-rrect fast path; `SkRasterHandleAllocator`; `SkNWayCanvas`. The virtual
 //!   `willSave`/`didConcat`/`onDrawRect`/... of a subclass are [`CanvasHooks`] (D7), which pictures
@@ -48,8 +48,8 @@ use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::data::Data;
 use crate::device::{
-    CreateInfo, Device, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyph, PendingGlyphKind,
-    clip_shader,
+    CreateInfo, Device, DeviceTransformRestore, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyph,
+    PendingGlyphKind, clip_shader,
 };
 use crate::drawable::Drawable;
 use crate::floating_point::is_finite_all;
@@ -64,6 +64,7 @@ use crate::image_filter_types::{
     round_out,
 };
 use crate::image_info::{ColorInfo, ImageInfo};
+use crate::image_raster::CopyPixelsMode;
 use crate::lattice_iter::LatticeIter;
 use crate::m44::M44;
 use crate::mask_filter::MaskFilterType;
@@ -85,6 +86,7 @@ use crate::shader::Shader;
 use crate::shaders::ImageShader;
 use crate::size::ISize;
 use crate::slug::Slug;
+use crate::special_image::SpecialImage;
 use crate::stroke_rec::StrokeRec;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 use crate::text_blob::TextBlob;
@@ -244,7 +246,16 @@ pub struct SaveLayerRec<'a> {
     pub(crate) backdrop_tile_mode: TileMode,
     pub(crate) color_space: Option<&'a ColorSpace>,
     pub(crate) flags: SaveLayerFlags,
+    /// Relative scale of the image content that initializes the layer (`fExperimentalBackdropScale`).
+    pub(crate) experimental_backdrop_scale: f32,
+    /// Image filters applied to the layer when it is restored (`fFilters`). A `None` entry is the
+    /// identity.
+    pub(crate) filters: &'a [Option<ImageFilter>],
 }
+
+/// The most image filters a layer takes (`SkCanvas::kMaxFiltersPerLayer`).
+// Port of: include/core/SkCanvas.h#L694 (chrome/m156)
+const MAX_FILTERS_PER_LAYER: usize = 16;
 
 impl Default for SaveLayerRec<'_> {
     /// No bounds, no paint, no backdrop, no flags.
@@ -256,6 +267,8 @@ impl Default for SaveLayerRec<'_> {
             backdrop_tile_mode: TileMode::Clamp,
             color_space: None,
             flags: SaveLayerFlags::empty(),
+            experimental_backdrop_scale: 1.0,
+            filters: &[],
         }
     }
 }
@@ -288,6 +301,26 @@ impl<'a> SaveLayerRec<'a> {
     #[must_use]
     pub fn backdrop_tile_mode(mut self, backdrop_tile_mode: TileMode) -> Self {
         self.backdrop_tile_mode = backdrop_tile_mode;
+        self
+    }
+
+    /// The scale of the intermediate image the backdrop is evaluated at, relative to the device
+    /// (`SkCanvasPriv::ScaledBackdropLayer`'s `backdropScale`, the `fExperimentalBackdropScale`
+    /// of the record). `1.0` is the unscaled backdrop.
+    #[doc(alias = "fExperimentalBackdropScale")]
+    #[doc(alias = "SkCanvasPriv::ScaledBackdropLayer")]
+    #[must_use]
+    pub fn experimental_backdrop_scale(mut self, scale: f32) -> Self {
+        self.experimental_backdrop_scale = scale;
+        self
+    }
+
+    /// The image filters applied to the layer when it is restored, in order (`SkCanvas::SaveLayerRec`
+    /// `FilterSpan`). A `None` entry is the identity. A paint's image filter takes their place.
+    #[doc(alias = "FilterSpan")]
+    #[must_use]
+    pub fn filters(mut self, filters: &'a [Option<ImageFilter>]) -> Self {
+        self.filters = filters;
         self
     }
 
@@ -548,6 +581,38 @@ pub enum ContentChangeMode {
     Retain,
 }
 
+/// What kind of surface a [`SurfaceBase`] belongs to, which decides how it makes its snapshot
+/// (`SkSurface_Base::onNewImageSnapshot`).
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum SnapshotKind {
+    /// A surface whose snapshots are not made here (the GPU surfaces): no image.
+    #[default]
+    Unsupported,
+    /// A raster surface (`SkSurface_Raster`). The snapshot shares the pixels when the surface
+    /// owns them, and copies them when they belong to the caller (`owns_pixels` is false).
+    Raster { owns_pixels: bool },
+    /// `SkNullSurface`: no pixels, so no image.
+    Null,
+}
+
+/// The surface that owns a canvas, as `SkCanvas::getSurface` returns it (`SkSurface*`). The
+/// surface owns its canvas, so this is a handle that borrows the canvas instead of an owner.
+#[doc(alias = "SkSurface")]
+#[derive(Debug)]
+pub struct CanvasSurface<'a> {
+    canvas: &'a Canvas,
+    base: Rc<SurfaceBase>,
+}
+
+impl CanvasSurface<'_> {
+    /// `makeImageSnapshot()`: an image of the surface's current pixels, which do not change when
+    /// the surface is drawn to later. `None` if the surface has no pixels.
+    #[doc(alias = "makeImageSnapshot")]
+    pub fn image_snapshot(&mut self) -> Option<Image> {
+        self.base.image_snapshot(self.canvas)
+    }
+}
+
 /// The part of `SkSurface_Base` a canvas talks to: the generation ID that changes whenever the
 /// canvas is about to draw. Shared between a surface and its canvas.
 ///
@@ -561,6 +626,7 @@ pub enum ContentChangeMode {
 pub struct SurfaceBase {
     generation_id: Cell<u32>,
     cached_image: RefCell<Option<Image>>,
+    snapshot: Cell<SnapshotKind>,
 }
 
 impl SurfaceBase {
@@ -613,6 +679,67 @@ impl SurfaceBase {
         self.cached_image.borrow().clone()
     }
 
+    /// Records what kind of surface this base belongs to (see [`SnapshotKind`]).
+    pub fn set_snapshot_kind(&self, kind: SnapshotKind) {
+        self.snapshot.set(kind);
+    }
+
+    /// `SkSurface::makeImageSnapshot()` of the surface that owns `canvas`: the same image is
+    /// returned until the next draw (`refCachedImage`).
+    // Port of: src/image/SkSurface.cpp#L90-L92 (chrome/m156)
+    pub fn image_snapshot(&self, canvas: &Canvas) -> Option<Image> {
+        if let Some(cached) = self.cached_image() {
+            return Some(cached);
+        }
+        let cached = self.new_image_snapshot(canvas, None)?;
+        self.set_cached_image(cached.clone());
+        Some(cached)
+    }
+
+    /// The image of `subset` of the surface's current pixels (`makeImageSnapshot(bounds)` for a
+    /// `subset` smaller than the surface, which the caller intersects first).
+    // Port of: src/image/SkSurface.cpp#L94-L106 (chrome/m156)
+    pub fn image_snapshot_subset(&self, canvas: &Canvas, subset: &IRect) -> Option<Image> {
+        self.new_image_snapshot(canvas, Some(subset))
+    }
+
+    /// `SkSurface_Raster::onNewImageSnapshot`, for the kind this base was given.
+    // Port of: src/image/SkSurface_Raster.cpp#L112-L136 (chrome/m156)
+    fn new_image_snapshot(&self, canvas: &Canvas, subset: Option<&IRect>) -> Option<Image> {
+        let owns_pixels = match self.snapshot.get() {
+            SnapshotKind::Unsupported | SnapshotKind::Null => return None,
+            SnapshotKind::Raster { owns_pixels } => owns_pixels,
+        };
+        canvas
+            .with_root_bitmap(|bitmap| {
+                if let Some(subset) = subset {
+                    debug_assert!(IRect::from_wh(bitmap.width(), bitmap.height()).contains(subset));
+                    let mut dst = Bitmap::new();
+                    if !dst
+                        .try_alloc_pixels_info(&bitmap.info().with_dimensions(subset.size()), None)
+                    {
+                        return None;
+                    }
+                    let read = dst.peek_pixels_mut().is_some_and(|mut pm| {
+                        bitmap.read_pixels_to_pixmap(&mut pm, (subset.left, subset.top))
+                    });
+                    debug_assert!(read);
+                    dst.set_immutable(); // key, so MakeFromBitmap doesn't make a copy of the buffer
+                    return dst.as_image();
+                }
+
+                // The snapshot shares the pixel ref (a clone of the handle); the next write to the
+                // surface's bitmap copies it first. Pixels we do not own are always copied.
+                let cpm = if owns_pixels {
+                    CopyPixelsMode::Never
+                } else {
+                    CopyPixelsMode::Always
+                };
+                crate::images::make_image_from_raster_bitmap(bitmap, cpm)
+            })
+            .flatten()
+    }
+
     /// Caches `image` as the snapshot of the surface until its next draw.
     pub fn set_cached_image(&self, image: Image) {
         *self.cached_image.borrow_mut() = Some(image);
@@ -632,7 +759,7 @@ impl SurfaceBase {
 struct Layer {
     paint: Paint,
     /// The image filters applied when the layer is restored (`fImageFilters`).
-    filters: Vec<ImageFilter>,
+    filters: Vec<Option<ImageFilter>>,
     is_coverage: bool,
     discard: bool,
     includes_padding: bool,
@@ -647,6 +774,8 @@ struct MCRec {
     matrix: M44,
     deferred_save_count: i32,
     layer: Option<Layer>,
+    /// The pixels a save-behind keeps (`fBackImage`).
+    back_image: Option<BackImage>,
 }
 
 impl MCRec {
@@ -656,8 +785,18 @@ impl MCRec {
             matrix: prev.matrix,
             deferred_save_count: 0,
             layer: None,
+            back_image: None,
         }
     }
+}
+
+/// The device pixels under a save-behind, put back under the drawing when the save is restored
+/// (`SkCanvas::BackImage`).
+// Port of: include/core/SkCanvas.h#L2470-L2480 (chrome/m156)
+#[derive(Debug)]
+struct BackImage {
+    image: SpecialImage,
+    loc: IPoint,
 }
 
 /// Where glyphs are drawn: at points, or with `RSXform`s (the `positions` of `drawGlyphs`).
@@ -784,6 +923,7 @@ impl CanvasState {
                 matrix: M44::new_identity(),
                 deferred_save_count: 0,
                 layer: None,
+                back_image: None,
             }],
             devices: vec![device],
             quick_reject_bounds: Rect::new_empty(),
@@ -1025,6 +1165,107 @@ impl CanvasState {
         self.top_device_mut().push_clip_stack();
     }
 
+    // Port of: src/core/SkCanvas.cpp#L514-L530 (chrome/m156), with `onDoSaveBehind`'s default
+    // (true): no canvas subclass overrides it here.
+    fn only_axis_aligned_save_behind(&mut self, bounds: Option<&Rect>) -> i32 {
+        if let Some(bounds) = bounds
+            && !self.local_clip_bounds().intersects(bounds)
+        {
+            // Assuming clips never expand, if the request bounds is outside of the current clip
+            // there is no need to copy/restore the area, so just devolve back to a regular save.
+            self.save();
+        } else {
+            self.save_count += 1;
+            self.internal_save();
+            self.internal_save_behind(bounds);
+        }
+        self.save_count - 1
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L1102-L1140 (chrome/m156)
+    fn internal_save_behind(&mut self, local_bounds: Option<&Rect>) {
+        let dev_clip_bounds = self.top_device().dev_clip_bounds();
+        let dev_bounds = if let Some(local_bounds) = local_bounds {
+            // Map the local bounds into the top device's coordinate space (this is not
+            // necessarily the full global CTM transform).
+            let (mapped, _) = self
+                .top_device()
+                .state()
+                .local_to_device()
+                .map_rect(local_bounds);
+            IRect::intersect(&mapped.round(), &dev_clip_bounds).unwrap_or_else(IRect::new_empty)
+        } else {
+            dev_clip_bounds
+        };
+        if dev_bounds.is_empty() {
+            return;
+        }
+
+        // This is getting the special image from the current device, which is then drawn into
+        // (both by a client, and the drawClippedToSaveBehind below). Since this is not saving a
+        // layer, with its own device, we need to explicitly copy the back image contents so that
+        // its original content is available when we splat it back later during restore.
+        let Some(back_image) = self.top_device_mut().snap_special(&dev_bounds, true) else {
+            return;
+        };
+
+        // we really need the save, so we can wack the fMCRec
+        self.check_for_deferred_save();
+
+        self.mc_rec_mut().back_image = Some(BackImage {
+            image: back_image,
+            loc: IPoint::new(dev_bounds.left, dev_bounds.top),
+        });
+
+        let mut paint = Paint::default();
+        paint.set_blend_mode(BlendMode::Clear);
+        self.on_draw_behind(&paint);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2070-L2112 (chrome/m156)
+    fn on_draw_behind(&mut self, paint: &Paint) {
+        // The most recent save-behind record that has a back image bounds what is drawn; with no
+        // back image there is nothing to draw.
+        let Some(bounds) = self.mc_stack.iter().rev().find_map(|rec| {
+            rec.back_image.as_ref().map(|back| {
+                IRect::from_xywh(
+                    back.loc.x,
+                    back.loc.y,
+                    back.image.width(),
+                    back.image.height(),
+                )
+            })
+        }) else {
+            return;
+        };
+
+        // The backimage location (and thus bounds) were defined in the device's space, so mark
+        // it as a clip. We use a clip instead of just drawing a rect in case the paint has an
+        // image filter on it (which is applied before any auto-layer so the filter is clipped).
+        self.top_device_mut().push_clip_stack();
+        {
+            // We also have to temporarily whack the device matrix since clipRegion is affected by
+            // the global-to-device matrix and clipRect is affected by the local-to-device.
+            let mut restore =
+                DeviceTransformRestore::new(self.top_device_mut(), &M44::new_identity());
+            restore
+                .device()
+                .clip_rect(&Rect::from(bounds), ClipOp::Intersect, false);
+            // ~adtr will reset the local-to-device matrix so that drawPaint() shades correctly.
+        }
+
+        // The layer, if any, ends after the clip is popped, as the `std::optional` in Skia does
+        // at the end of the function.
+        let layer = self.about_to_draw(paint, None, PredrawFlags::NONE);
+        if let Some(layer) = &layer {
+            self.top_device_mut().draw_paint(layer.paint());
+        }
+        self.top_device_mut().pop_clip_stack();
+        if let Some(layer) = layer {
+            self.end_auto_layer(&layer);
+        }
+    }
+
     // Port of: src/core/SkCanvas.cpp#L496-L512 (chrome/m156)
     fn save_layer(&mut self, rec: &SaveLayerRec<'_>) -> i32 {
         if rec.paint.is_some_and(|p| self.nothing_to_draw(p)) {
@@ -1074,12 +1315,15 @@ impl CanvasState {
         // MatrixTransform bilerp also smoothed cropped edges. See skbug.com/40042614
         restore_paint.set_anti_alias(true);
 
-        // `paintFilter`: the paint's image filter, taken before `restore_paint` lost it.
-        let filters: Vec<ImageFilter> = rec
-            .paint
-            .and_then(Paint::image_filter)
-            .into_iter()
-            .collect();
+        // `paintFilter ? FilterSpan{&paintFilter, 1} : rec.fFilters`: the paint's image filter,
+        // taken before `restore_paint` lost it, else the record's filters, at most
+        // kMaxFiltersPerLayer of them.
+        // Port of: src/core/SkCanvas.cpp#L904-L908 (chrome/m156)
+        let mut filters: Vec<Option<ImageFilter>> = match rec.paint.and_then(Paint::image_filter) {
+            Some(paint_filter) => vec![Some(paint_filter)],
+            None => rec.filters.to_vec(),
+        };
+        filters.truncate(MAX_FILTERS_PER_LAYER);
         let cf = restore_paint.color_filter();
         let blender = restore_paint.blender();
 
@@ -1275,10 +1519,13 @@ impl CanvasState {
             // 'rec.fBackdrop', so allow the draw to transform the prior device contents if
             // necessary to evaluate the backdrop filter. If no filters are involved, then the
             // devices differ by integer translations and are always compatible.
-            // (skia-rust: the experimental backdrop scale is not ported; it is always 1.)
             let backdrop_paint = Paint::default();
-            let backdrop_filters: Vec<ImageFilter> = rec.backdrop.cloned().into_iter().collect();
-            let compat = if !filters.is_empty() || rec.backdrop.is_some() {
+            let backdrop_filters: Vec<Option<ImageFilter>> =
+                rec.backdrop.cloned().into_iter().map(Some).collect();
+            // Port of: src/core/SkCanvas.cpp#L1074 (chrome/m156)
+            #[allow(clippy::float_cmp)] // Skia compares the scale with exactly 1
+            let scale_backdrop = rec.experimental_backdrop_scale != 1.0;
+            let compat = if !filters.is_empty() || rec.backdrop.is_some() || scale_backdrop {
                 DeviceCompatibleWithFilter::Unknown
             } else {
                 DeviceCompatibleWithFilter::Yes
@@ -1296,7 +1543,7 @@ impl CanvasState {
                 &backdrop_paint,
                 compat,
                 &color_info,
-                1.0,
+                rec.experimental_backdrop_scale,
                 rec.backdrop_tile_mode,
                 false,
             );
@@ -1333,6 +1580,7 @@ impl CanvasState {
         // now detach these from fMCRec so we can pop(). Gets freed after its drawn
         let mut rec = self.mc_stack.pop().expect("checked above");
         let layer = rec.layer.take();
+        let back_image = rec.back_image.take();
         let mut layer_device = if layer.is_some() {
             self.devices.pop()
         } else {
@@ -1342,6 +1590,19 @@ impl CanvasState {
         let matrix = self.mc_rec().matrix;
         self.top_device_mut().pop_clip_stack();
         self.top_device_mut().state_mut().set_global_ctm(&matrix);
+
+        if let Some(back_image) = back_image {
+            // Port of: src/core/SkCanvas.cpp#L1161-L1168 (chrome/m156)
+            let mut paint = Paint::default();
+            paint.set_blend_mode(BlendMode::DstOver);
+            self.top_device_mut().draw_special(
+                &back_image.image,
+                &Matrix::translate(back_image.loc),
+                &SamplingOptions::default(),
+                &paint,
+                SrcRectConstraint::Strict,
+            );
+        }
 
         // Draw the layer's device contents into the now-current older device. We can't call
         // public draw functions since we don't want to record them.
@@ -2678,7 +2939,7 @@ impl CanvasState {
     ) {
         let output_bounds = self.top_device().dev_clip_bounds();
         let Some((mapping, src_bounds)) = get_layer_mapping_and_bounds(
-            std::slice::from_ref(filter),
+            std::slice::from_ref(&Some(filter.clone())),
             self.top_device().state().local_to_device44(),
             &output_bounds,
             Some(dst),
@@ -2896,7 +3157,7 @@ fn irect_join(dst: &mut IRect, r: &IRect) {
 #[allow(clippy::too_many_lines)] // mirrors get_layer_mapping_and_bounds
 #[allow(clippy::float_cmp)] // mirrors `scaleFactor != 1.f` in SkCanvas.cpp
 fn get_layer_mapping_and_bounds(
-    filters: &[ImageFilter],
+    filters: &[Option<ImageFilter>],
     local_to_dst: &M44,
     target_output: &IRect,
     content_bounds: Option<&Rect>,
@@ -2927,7 +3188,7 @@ fn get_layer_mapping_and_bounds(
     // transforms with perspective and skew from triggering excessive buffer allocations.
     let mut mapping = Mapping::new();
     let mut capability = MatrixCapability::Complex;
-    for filter in filters {
+    for filter in filters.iter().flatten() {
         capability = capability.min(filter.ctm_capability());
     }
     if !mapping.decompose_ctm(local_to_dst, capability, center) {
@@ -2972,11 +3233,12 @@ fn get_layer_mapping_and_bounds(
         // `LayerSpace<SkIRect>::Union` over the filters' input bounds.
         layer_bounds = IRect::new_empty();
         for (i, filter) in filters.iter().enumerate() {
-            let bounds = filter.as_base().get_input_bounds(
-                &mapping,
-                *target_output,
-                content_bounds.copied(),
-            );
+            // A null filter is the identity: its input is the whole base layer.
+            let bounds = filter.as_ref().map_or(base_layer_bounds, |filter| {
+                filter
+                    .as_base()
+                    .get_input_bounds(&mapping, *target_output, content_bounds.copied())
+            });
             if i == 0 {
                 layer_bounds = bounds;
             } else {
@@ -2987,7 +3249,7 @@ fn get_layer_mapping_and_bounds(
         // due to required inputs for filters (e.g. a displacement map with a large radius).
         if layer_bounds.width() > max_layer_dim || layer_bounds.height() > max_layer_dim {
             let ideal_mapping = Mapping::from_layer_matrix(mapping.layer_matrix());
-            for filter in filters {
+            for filter in filters.iter().flatten() {
                 let ideal_layer_bounds = filter.as_base().get_input_bounds(
                     &ideal_mapping,
                     *target_output,
@@ -3062,7 +3324,7 @@ fn internal_draw_device_with_filter(
     ctm: &M44,
     src: Option<&mut dyn Device>,
     dst: &mut dyn Device,
-    filters: &[ImageFilter],
+    filters: &[Option<ImageFilter>],
     paint: &Paint,
     compat: DeviceCompatibleWithFilter,
     filter_color_info: &ColorInfo,
@@ -3258,7 +3520,7 @@ fn internal_draw_device_with_filter(
     let filters_or_null: Vec<Option<&ImageFilter>> = if filters.is_empty() {
         vec![None]
     } else {
-        filters.iter().map(Some).collect()
+        filters.iter().map(Option::as_ref).collect()
     };
 
     for filter in filters_or_null {
@@ -3541,6 +3803,15 @@ impl Canvas {
         self.state.borrow_mut().surface = surface;
     }
 
+    /// The surface that owns this canvas (`getSurface`), `None` for a canvas that no surface
+    /// made. The surface owns the canvas, so the handle borrows it.
+    // Port of: src/core/SkCanvas.cpp#L365-L367 (chrome/m156)
+    #[doc(alias = "getSurface")]
+    pub fn get_surface(&self) -> Option<CanvasSurface<'_>> {
+        let base = self.state.borrow().surface.clone()?;
+        Some(CanvasSurface { canvas: self, base })
+    }
+
     /// Restores every save, discarding (not drawing) the layers still open, as `~SkCanvas` does.
     // Port of: src/core/SkCanvas.cpp#L347-L363 (chrome/m156)
     pub fn abandon_layers(&self) {
@@ -3697,6 +3968,28 @@ impl Canvas {
             Some(pm) => self.state.borrow_mut().write_pixels(&pm, x, y),
             None => false,
         }
+    }
+
+    /// Saves the matrix and clip, and keeps the device's pixels under `subset` (local
+    /// coordinates; `None` for the whole device) so that the restore puts them back under what
+    /// was drawn (`SkCanvasPriv::SaveBehind`, `only_axis_aligned_saveBehind`). Returns the previous
+    /// save count.
+    #[doc(alias = "saveBehind")]
+    #[doc(alias = "SkCanvasPriv::SaveBehind")]
+    pub fn save_behind(&self, subset: Option<&Rect>) -> usize {
+        usize::try_from(
+            self.state
+                .borrow_mut()
+                .only_axis_aligned_save_behind(subset),
+        )
+        .unwrap_or(0)
+    }
+
+    /// Draws `paint` over the most recent save-behind area only (`drawClippedToSaveBehind`,
+    /// `SkCanvasPriv::DrawBehind`). Draws nothing without an active save-behind.
+    #[doc(alias = "drawClippedToSaveBehind")]
+    pub fn draw_clipped_to_save_behind(&self, paint: &Paint) {
+        self.state.borrow_mut().on_draw_behind(paint);
     }
 
     /// Saves the matrix and clip; returns the previous save count (`save`).

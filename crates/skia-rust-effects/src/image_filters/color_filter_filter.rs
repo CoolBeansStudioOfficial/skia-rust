@@ -6,11 +6,15 @@
 //! `SkColorFilterImageFilter`: applies a color filter to its input.
 
 use skia_rust_core::color_filter::ColorFilter;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter::{flatten_common, input_at, unflatten_common};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::{IRect, Rect, rect_priv};
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::image_filters::crop_filter::crop;
 
@@ -26,6 +30,17 @@ pub struct ColorFilterImageFilter {
 impl ImageFilterBase for ColorFilterImageFilter {
     fn common(&self) -> &ImageFilterCommon {
         &self.common
+    }
+
+    // Port of: src/effects/imagefilters/SkColorFilterImageFilter.cpp#L40 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkColorFilterImageFilter"
+    }
+
+    // Port of: src/effects/imagefilters/SkColorFilterImageFilter.cpp#L107-L111 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_common(&self.common, buffer);
+        buffer.write_color_filter(Some(&self.color_filter));
     }
 
     // Port of: src/effects/imagefilters/SkColorFilterImageFilter.cpp#L35 (chrome/m156)
@@ -122,4 +137,15 @@ pub fn color_filter(
         Some(rect) => crop(&rect, TileMode::Decal, filter),
         None => filter,
     }
+}
+
+/// `SkColorFilterImageFilter::CreateProc`.
+// Port of: src/effects/imagefilters/SkColorFilterImageFilter.cpp#L113-L118 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ImageFilter> {
+    let (inputs, crop_rect) = unflatten_common(buffer, 1, registry)?;
+    let cf = buffer.read_color_filter(registry);
+    color_filter(cf, input_at(&inputs, 0), crop_rect)
 }

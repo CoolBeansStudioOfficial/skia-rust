@@ -66,4 +66,20 @@ macro_rules! def_fuzz {
             $crate::replay::replay(stringify!($name), $fn_name);
         }
     };
+    // A fuzzer whose replay fails on purpose, because Skia itself fails on every input (design
+    // docs/design/fuzz.md §5): the test is `#[ignore]`d with the reason, and the manifest entry
+    // is `failing`.
+    ($name:ident, $fn_name:ident, ignore = $reason:literal, |$fuzz:ident| $body:block) => {
+        #[doc = concat!("`DEF_FUZZ(", stringify!($name), ", fuzz)`.")]
+        #[allow(non_snake_case)] // the C++ `fuzz_##name`
+        pub fn $fn_name($fuzz: &mut $crate::Fuzz<'_>) $body
+
+        #[cfg(test)]
+        #[test]
+        #[ignore = $reason]
+        #[allow(non_snake_case)] // the manifest name, verbatim
+        fn $name() {
+            $crate::replay::replay(stringify!($name), $fn_name);
+        }
+    };
 }
