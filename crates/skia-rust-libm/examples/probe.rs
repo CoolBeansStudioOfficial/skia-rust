@@ -15,14 +15,16 @@
 //! (uniform over the bit patterns between `xlo` and `xhi`, both of the same sign) or `symbits`
 //! (as `bits` between `|xlo|` and `|xhi|` with a random sign). Clean-room evidence:
 //! docs/design/libm-cleanroom.md.
-// Probe tool, not ported arithmetic: the casts build test inputs; short names are math variables.
+// Probe tool, not ported arithmetic: the casts build test inputs; short names are math variables;
+// the platform `std` math functions are exactly what it measures (hence `disallowed_methods`).
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
     clippy::many_single_char_names,
     clippy::cast_possible_wrap,
     clippy::float_cmp,
-    clippy::type_complexity
+    clippy::type_complexity,
+    clippy::disallowed_methods
 )]
 
 use std::io::Write;
@@ -177,6 +179,7 @@ fn ours32(name: &str) -> Option<fn(f32) -> f32> {
         "sinf" => skia_rust_libm::sinf,
         "cosf" => skia_rust_libm::cosf,
         "tanf" => skia_rust_libm::tanf,
+        "atanf" => skia_rust_libm::atanf,
         _ => return None,
     })
 }

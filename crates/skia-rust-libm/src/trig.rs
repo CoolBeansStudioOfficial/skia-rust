@@ -151,6 +151,8 @@ mod tests {
 
     /// Within a few ulps of the host libm over a sweep that exercises every reduction path.
     #[test]
+    // The host libm is only a loose (few ulp) sanity reference here.
+    #[allow(clippy::disallowed_methods)]
     fn close_to_host() {
         let mut x = 1.0e-3_f32;
         while x < 3.0e38 {
