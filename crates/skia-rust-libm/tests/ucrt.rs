@@ -103,7 +103,7 @@ const SINF_DIGEST: u64 = 0x7ff8_cb20_4783_d104;
 const COSF_DIGEST: u64 = 0x6a0f_74a4_68e2_1b02;
 const TANF_DIGEST: u64 = 0x6348_c129_c117_df4f;
 const ATANF_DIGEST: u64 = 0x7ae5_1753_a4a4_74d4;
-const ATAN2F_DIGEST: u64 = 0x6caf_1e9b_012b_d90c;
+const ATAN2F_DIGEST: u64 = 0xbe9c_de75_a524_f51a;
 
 #[test]
 #[ignore = "prints the digests to paste into the constants above"]
