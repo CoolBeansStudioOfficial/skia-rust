@@ -115,7 +115,7 @@ for spec in $tiers; do
       : > "$tdir/bench-crashed-$pass.txt"
       # Some benches crash this headless build (they need a GPU context or an unavailable
       # resource): run again without the bench that was running when nanobench died.
-      for attempt in $(seq 1 3); do
+      for attempt in $(seq 1 40); do
         margs=(); (( ${#excl[@]} )) && margs=(--match "${excl[@]}")
         SKIA_ORACLE_CPU_CAP=$cap timeout 2400 ./nanobench --config 8888 565 f16 --loops 1 --samples 1 \
             --cpu true --gpu false --nativeFonts false --resourcePath resources --pre_log \
@@ -128,7 +128,7 @@ for spec in $tiers; do
             echo "$a $(addr2line -f -C -e ./nanobench "$a" | paste -sd' ')"
           done | tee "$tdir/bench-crash-symbols-$pass.txt"
         fi
-        last=$(grep '^Running ' "$tdir/nanobench-$pass.log" | tail -n 1 | cut -f1 | sed 's/^Running //')
+        last=$(grep '^Setup ' "$tdir/nanobench-$pass.log" | tail -n 1 | sed 's/^Setup //')
         [[ -n $last ]] || break
         [[ " ${excl[*]} " == *"~^${last}\$ "* ]] && break   # crashed again at the same place
         echo "$last" >> "$tdir/bench-crashed-$pass.txt"

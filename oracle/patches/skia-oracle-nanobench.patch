@@ -91,7 +91,18 @@
  static bool write_canvas_png(Target* target, const SkString& filename) {
  
      if (filename.isEmpty()) {
-@@ -1639,6 +1708,10 @@
+@@ -1539,6 +1608,10 @@
+         if (!configs.empty()) {
+             log.beginBench(
+                     bench->getUniqueName(), bench->getSize().width(), bench->getSize().height());
++            if (!FLAGS_oracleRawPath.isEmpty()) {
++                // skia-rust oracle: lets the CI wrapper find the bench whose setup crashes.
++                SkDebugf("Setup %s\n", bench->getUniqueName());
++            }
+             bench->delayedSetup();
+         }
+         for (int i = 0; i < configs.size(); ++i) {
+@@ -1639,6 +1712,10 @@
                  write_canvas_png(target, pngFilename);
              }
  
