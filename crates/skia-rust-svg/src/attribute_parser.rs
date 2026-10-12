@@ -795,7 +795,7 @@ impl<'a> AttributeParser<'a> {
                     return false;
                 };
                 // skia-rust: libm (tanf)
-                m.set_skew_x(degrees_to_radians(angle).tan());
+                m.set_skew_x(skia_rust_core::libm::tanf(degrees_to_radians(angle)));
                 true
             },
             &mut m,
@@ -813,7 +813,7 @@ impl<'a> AttributeParser<'a> {
                     return false;
                 };
                 // skia-rust: libm (tanf)
-                m.set_skew_y(degrees_to_radians(angle).tan());
+                m.set_skew_y(skia_rust_core::libm::tanf(degrees_to_radians(angle)));
                 true
             },
             &mut m,

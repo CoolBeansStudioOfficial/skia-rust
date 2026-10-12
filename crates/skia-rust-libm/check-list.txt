@@ -1,0 +1,4 @@
+sinf
+cosf
+tanf
+atanf

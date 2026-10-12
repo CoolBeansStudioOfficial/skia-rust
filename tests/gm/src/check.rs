@@ -188,6 +188,8 @@ impl Outcome {
 #[derive(Clone, Debug, Serialize)]
 pub struct Check {
     pub config: &'static str,
+    /// The GM this comparison is for: a variant of a `def_variants_gm!` set has its own name.
+    pub name: String,
     pub tier: &'static str,
     /// How the tier ran (`None` if it did not).
     pub selection: Option<String>,
@@ -199,7 +201,8 @@ pub struct Check {
     pub outcome: Outcome,
 }
 
-/// A GM's overall result.
+/// A GM's overall result. For a set of variants ([`check_gm_set`]) it is the worst of the
+/// variants' verdicts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Verdict {
@@ -213,7 +216,7 @@ pub enum Verdict {
 pub struct GmReport {
     /// The registry key (`gm::<file>::<registration name>`).
     pub key: String,
-    /// The GM's name (`<config>/gm/<name>`).
+    /// The GM's name (`<config>/gm/<name>`); for a set of variants, the names joined by `, `.
     pub name: String,
     pub verdict: Verdict,
     pub checks: Vec<Check>,
@@ -229,7 +232,7 @@ impl fmt::Display for GmReport {
             write!(
                 f,
                 "  {}/{}: tier {} [{how}] vs {against}{proxy}: ",
-                c.config, self.name, c.tier
+                c.config, c.name, c.tier
             )?;
             match &c.outcome {
                 Outcome::Match => writeln!(f, "match")?,
@@ -318,9 +321,10 @@ fn render(src: &dyn Src, config: Config, sel: Selection, oracle_n32: ColorType) 
 
 /// `8888` on a host whose N32 is `host_n32`, for a tier the goldens have no variant of that byte
 /// order for.
-fn no_variant_check(config: Config, tp: &TierPlan, host_n32: ColorType) -> Check {
+fn no_variant_check(config: Config, name: &str, tp: &TierPlan, host_n32: ColorType) -> Check {
     Check {
         config: config.tag(),
+        name: name.to_owned(),
         tier: tp.tier.name(),
         selection: None,
         oracle_tier: None,
@@ -364,7 +368,7 @@ pub fn check_gm(
                 .collect();
             let oracle_tiers = oracle_tiers.as_slice();
             if oracle_tiers.is_empty() {
-                checks.push(no_variant_check(config, tp, opts.host_n32));
+                checks.push(no_variant_check(config, &name, tp, opts.host_n32));
                 continue;
             }
             let mut push = |selection: Option<Selection>,
@@ -372,6 +376,7 @@ pub fn check_gm(
                             outcome: Outcome| {
                 checks.push(Check {
                     config: config.tag(),
+                    name: name.clone(),
                     tier: tp.tier.name(),
                     selection: selection.map(|s| s.to_string()),
                     oracle_tier,
@@ -447,27 +452,77 @@ pub fn check_gm(
     }
 }
 
-/// The body of every `def_gm!` test: checks the GM against the goldens on every tier.
+/// The verdict of a set of variants: the worst of their verdicts. A set with no variant is not
+/// checkable (it has nothing to compare).
+fn worst_verdict(verdicts: impl IntoIterator<Item = Verdict>) -> Verdict {
+    let mut worst = None;
+    for verdict in verdicts {
+        match verdict {
+            Verdict::Failing => return Verdict::Failing,
+            Verdict::NotCheckable => worst = Some(Verdict::NotCheckable),
+            Verdict::Passing => worst = worst.or(Some(Verdict::Passing)),
+        }
+    }
+    worst.unwrap_or(Verdict::NotCheckable)
+}
+
+/// Checks a manifest id that registers several GMs (`DEF_VARIANTS`, `def_variants_gm!`) under one
+/// key: each variant is checked as [`check_gm`] does, and the id's verdict is the worst of them,
+/// so it passes only when every variant matches its goldens on every checkable tier.
+///
+/// The variants keep their own names (`encode-color-types-webp-lossless`, …) in the checks, which
+/// are concatenated in variant order. The mapping from manifest ids is docs/PORTING.md §11,
+/// "Variant sets".
+// Port of: gm/encode_color_types.cpp#L183-L186 (DEF_VARIANTS, chrome/m156): one manifest id,
+// several GMs.
+#[must_use]
+pub fn check_gm_set(
+    key: &str,
+    srcs: &[GmSrc],
+    store: &GoldenStore,
+    plan: &[TierPlan],
+    opts: &Options,
+) -> GmReport {
+    let reports: Vec<GmReport> = srcs
+        .iter()
+        .map(|src| check_gm(key, src, store, plan, opts))
+        .collect();
+    GmReport {
+        key: key.to_owned(),
+        name: reports
+            .iter()
+            .map(|r| r.name.as_str())
+            .collect::<Vec<_>>()
+            .join(", "),
+        verdict: worst_verdict(reports.iter().map(|r| r.verdict)),
+        checks: reports.into_iter().flat_map(|r| r.checks).collect(),
+    }
+}
+
+/// The body of every `def_gm!` and `def_variants_gm!` test: checks the GM (or the set of
+/// variants) against the goldens on every tier.
 ///
 /// # Panics
-/// If the goldens cannot be loaded or the GM's verdict is [`Verdict::Failing`]. A
+/// If the goldens cannot be loaded or the verdict is [`Verdict::Failing`]. A
 /// [`Verdict::NotCheckable`] GM passes the test (with a warning); `cargo xtask inventory verify`
 /// still does not count it as passing.
-pub fn run_gm_test(reg: &GmRegistration) {
+pub fn run_gm_set_test(key: &str, srcs: &[GmSrc]) {
     let store = GoldenStore::shared().unwrap_or_else(|e| panic!("loading goldens: {e}"));
     let plan = plan(store);
-    let report = check_gm(
-        &reg.key(),
-        &GmSrc::from_registration(reg),
-        store,
-        &plan,
-        &Options::default(),
-    );
+    let report = check_gm_set(key, srcs, store, &plan, &Options::default());
     match report.verdict {
         Verdict::Passing => {}
         Verdict::NotCheckable => eprintln!("warning: not every tier checkable here\n{report}"),
         Verdict::Failing => panic!("{report}"),
     }
+}
+
+/// [`run_gm_set_test`] for a single `def_gm!` registration.
+///
+/// # Panics
+/// As [`run_gm_set_test`].
+pub fn run_gm_test(reg: &GmRegistration) {
+    run_gm_set_test(&reg.key(), &[GmSrc::from_registration(reg)]);
 }
 
 #[cfg(test)]

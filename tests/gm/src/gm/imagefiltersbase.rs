@@ -148,7 +148,11 @@ fn draw_patch(canvas: &Canvas, _image: &Image, r: Rect, imf: Option<ImageFilter>
 // Port of: gm/imagefiltersbase.cpp#L100-L109 (chrome/m156), draw_atlas
 fn draw_atlas(canvas: &Canvas, atlas: &Image, r: Rect, imf: Option<ImageFilter>) {
     let rad = degrees_to_radians(15.0);
-    let xform = RSXform::new(rad.cos(), rad.sin(), (r.width() * 0.15, 0.0));
+    let xform = RSXform::new(
+        skia_rust_core::libm::cosf(rad),
+        skia_rust_core::libm::sinf(rad),
+        (r.width() * 0.15, 0.0),
+    );
     let mut paint = Paint::default();
     paint.set_image_filter(imf);
     paint.set_anti_alias(true);

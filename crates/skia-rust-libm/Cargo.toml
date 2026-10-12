@@ -1,0 +1,13 @@
+[package]
+name = "skia-rust-libm"
+description = "Pure-Rust elementary functions bit-identical to the Windows x64 UCRT, for Skia's ported math"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true

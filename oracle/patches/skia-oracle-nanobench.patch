@@ -1,0 +1,115 @@
+--- a/bench/nanobench.cpp
++++ b/bench/nanobench.cpp
+@@ -34,7 +34,9 @@
+ #include "include/private/SkAssert.h"
+ #include "include/private/SkLog.h"
+ #include "include/private/SkMacros.h"
++#include "include/core/SkStream.h"
+ #include "src/core/SkAutoMalloc.h"
++#include "src/core/SkCpu.h"
+ #include "src/core/SkColorSpacePriv.h"
+ #include "src/core/SkLeanWindows.h"
+ #include "src/core/SkOSFile.h"
+@@ -236,6 +238,9 @@
+                   "Create separate perfetto trace files for each benchmark?\n"
+                   "Will only take effect if perfetto tracing is enabled. See --trace.");
+ 
++static DEFINE_string(oracleRawPath, "",
++                     "skia-rust oracle: if set, write the raw pixels (.raw) and a .json of every "
++                     "bench result to <dir>/<config>/bench/<name>. Use with --loops 1 --samples 1.");
+ static DEFINE_bool(runtimeCPUDetection, true, "Skip runtime CPU detection and optimization");
+ 
+ static double now_ms() { return SkTime::GetNSecs() * 1e-6; }
+@@ -466,6 +471,70 @@
+     return loops;
+ }
+ 
++// skia-rust oracle: raw output dump, same layout and metadata as dm/OracleDump.cpp. Test tooling
++// only.
++static void oracle_mkdirs(const SkString& dir) {
++    for (size_t i = 1; i <= (size_t)dir.size(); i++) {
++        if (i == (size_t)dir.size() || dir.c_str()[i] == '/') {
++            SkString prefix(dir.c_str(), i);
++            sk_mkdir(prefix.c_str());
++        }
++    }
++}
++
++static const char* oracle_cpu_tier() {
++#if defined(SK_CPU_X86)
++    if (SkCpu::Supports(SkX64::ML4)) { return "ml4"; }
++    if (SkCpu::Supports(SkX64::ML3)) { return "ml3"; }
++    if (SkCpu::Supports(SkX64::SSSE3)) { return "ssse3"; }
++    return "baseline";
++#elif defined(SK_CPU_ARM64)
++    return "neon";
++#else
++    return "baseline";
++#endif
++}
++
++static void oracle_dump(Target* target, const char* config, const char* name) {
++    SkBitmap bmp;
++    if (target->getCanvas() &&
++        kUnknown_SkColorType == target->getCanvas()->imageInfo().colorType()) {
++        return;
++    }
++    if (!target->capturePixels(&bmp)) {
++        return;
++    }
++    SkString dir = SkOSPath::Join(FLAGS_oracleRawPath[0], config);
++    dir = SkOSPath::Join(dir.c_str(), "bench");
++    SkString base = SkOSPath::Join(dir.c_str(), name);
++    oracle_mkdirs(SkOSPath::Dirname(base.c_str()));
++
++    const SkImageInfo& info = bmp.info();
++    SkDynamicMemoryWStream pixels;
++    for (int y = 0; y < info.height(); ++y) {
++        pixels.write(bmp.getAddr(0, y), info.minRowBytes());
++    }
++    sk_sp<SkData> bytes = pixels.detachAsData();
++    SkFILEWStream raw(SkStringPrintf("%s.raw", base.c_str()).c_str());
++    SkString meta;
++    meta.appendf("{\n  \"sink\": \"%s\",\n  \"src\": \"bench\",\n  \"name\": \"%s\",\n",
++                 config, name);
++    const char* cap = getenv("SKIA_ORACLE_CPU_CAP");
++    meta.appendf("  \"cpu_cap\": \"%s\",\n  \"cpu_tier\": \"%s\",\n", cap ? cap : "",
++                 oracle_cpu_tier());
++    meta.appendf("  \"kind\": \"pixels\",\n  \"width\": %d,\n  \"height\": %d,\n",
++                 info.width(), info.height());
++    meta.appendf("  \"color_type\": \"%s\",\n  \"alpha_type\": \"%s\"\n}\n",
++                 ToolUtils::colortype_name(info.colorType()),
++                 ToolUtils::alphatype_name(info.alphaType()));
++    SkFILEWStream json(SkStringPrintf("%s.json", base.c_str()).c_str());
++    if (!raw.isValid() || !json.isValid() || !raw.write(bytes->data(), bytes->size()) ||
++        !json.write(meta.c_str(), meta.size())) {
++        SkDebugf("OracleDump: failed to write %s\n", base.c_str());
++        abort();
++    }
++}
++
+ static bool write_canvas_png(Target* target, const SkString& filename) {
+ 
+     if (filename.isEmpty()) {
+@@ -1539,6 +1608,10 @@
+         if (!configs.empty()) {
+             log.beginBench(
+                     bench->getUniqueName(), bench->getSize().width(), bench->getSize().height());
++            if (!FLAGS_oracleRawPath.isEmpty()) {
++                // skia-rust oracle: lets the CI wrapper find the bench whose setup crashes.
++                SkDebugf("Setup %s\n", bench->getUniqueName());
++            }
+             bench->delayedSetup();
+         }
+         for (int i = 0; i < configs.size(); ++i) {
+@@ -1639,6 +1712,10 @@
+                 write_canvas_png(target, pngFilename);
+             }
+ 
++            if (!FLAGS_oracleRawPath.isEmpty()) {
++                oracle_dump(target, config, bench->getUniqueName());
++            }
++
+             // Building stats.plot often shows up in profiles,
+             // so skip building it when we're not going to print it anyway.
+             const bool want_plot = !FLAGS_quiet && !FLAGS_ms;

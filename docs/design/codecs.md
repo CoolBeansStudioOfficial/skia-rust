@@ -645,7 +645,7 @@ Open questions for the coordinator:
    codecs and its Rust EXIF/ICC parsers in scope as wave C-R, exclude BMP/ICO-Rust (34) until
    `image` publishes the needed revision, and record the dependencies like skrifa? (Recommended:
    yes. These tests are self-checking and the crates are Skia's own implementation.)
-   **Status: proceeding per recommendation, pending maintainer confirmation.** The PNG part is
+   **Decided (2026-10-12): approved as recommended.** The PNG part is
    ported in `port/codec-cr-png` (`png =0.18.1`, the version Skia's `MODULE.bazel` pins); the
    default (non-`for_android`) build is the one ported, so Q5's patch is not needed for it.
    The JPEG part (`SkJpegRustCodec` on `zune-jpeg =0.5.16-rc1`, `SkJpegRustEncoder` on
@@ -659,6 +659,9 @@ Open questions for the coordinator:
    against `goldens-m156` to prove the Linux build is equivalent. Codec pixels are integer
    code, but the colour and pipeline stages run per tier, and skcms SKX vs Windows matters (R4).
    Recommended: (b) once C-A…C-D land, with the equivalence check as a gate.
+   **Decided: approved (2026-10-12), option (b).** `.github/workflows/oracle.yml` builds the CPU-only
+   Linux DM, runs the equivalence check against `goldens-m156` and renders `--src image`
+   (`8888`/`565`/`f16`) as workflow artifacts (`oracle/README.md`, "CI-hosted oracle").
 3. **Q3 — crate split.** Five library crates plus `skia-rust-codec` (recommended), or one
    codec crate with `third_party/` modules? The split costs 5 crate names on crates.io
    (reserve them) and makes licensing exact.

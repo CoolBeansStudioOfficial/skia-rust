@@ -15822,8 +15822,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaclip.cpp#L135-L156"
 module = "raster"
-status = "todo"
-reason = "Mac-only: the GM is compiled only under SK_BUILD_FOR_MAC and needs CoreGraphics (SkCreateCGImageRefWithColorspace, SkMakeImageFromCGImage); not built on Linux"
+status = "excluded"
+reason = "compiled only under SK_BUILD_FOR_MAC (aaclip.cpp#L101-L158, CoreGraphics); the oracle build is Windows, so the registration is not built and there is no golden"
 span_hash = "8b64f11f2af01a35226bdc31952790d5bc7f5f7a739bd9655d0fe00b9915b5cd"
 
 [[test]]
@@ -18435,8 +18435,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1061-L1061"
 module = "effects"
-status = "todo"
-reason = "needs TextureSetRenderer with color, image and mask filter paints (effects); not ported"
+status = "passing"
 span_hash = "a4a296604e5ae628158a09de482008e91ff1c1cad67625110dd9f06b6b402e12"
 
 [[test]]
@@ -18445,8 +18444,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1060-L1060"
 module = "raster"
-status = "todo"
-reason = "needs the YUV texture-set renderer (JPEG decoded to YUV planes) and TextureSetRenderer batching; not ported"
+status = "passing"
 span_hash = "e3c6f4ceb0fc30242793ca02a4d9ec886a7aa21225a11c2a558445463bfb8bd6"
 
 [[test]]
@@ -18455,8 +18453,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1059-L1059"
 module = "effects"
-status = "todo"
-reason = "needs TextureSetRenderer with shader paints (effects); not ported"
+status = "passing"
 span_hash = "9dca3a98ae0a2421a79916683e05a3bdf84662cf6859cfd9520dfea7a2751787"
 
 [[test]]
@@ -19726,8 +19723,8 @@ kind = "gm"
 macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L188-L188"
 module = "codec"
-status = "todo"
-reason = "not ported: DEF_VARIANTS registers three GMs per manifest id, which the one-GM-per-name registration cannot express yet"
+status = "failing"
+reason = "see notes/gm_encode_color_types_cpp_SkEncodedImageFormat_kWEBP.md (DEF_VARIANTS: the f16 normal variants differ on the decoded premul pair, 1 F16 ulp / 1 8-bit level; 8888 and 565 match)"
 span_hash = "5c06e81aa5205c6cbfaeb468b02ed765240cff984513105fc850029631d2dcc6"
 
 [[test]]
@@ -19736,8 +19733,8 @@ kind = "gm"
 macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L189-L189"
 module = "codec"
-status = "todo"
-reason = "not ported: DEF_VARIANTS, as the entry above (the one-GM-per-name registration cannot express the three variants yet)"
+status = "failing"
+reason = "see notes/gm_encode_color_types_cpp_SkEncodedImageFormat_kWEBP_2.md (the lossy set, as the entry above: the f16 normal variants differ on the decoded premul pair)"
 span_hash = "44de642452e3eb339e86b9e7e4e8c57eb9c127f1d1b14af0d11fca99c4048646"
 
 [[test]]
@@ -21317,8 +21314,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hdr_pip_blur.cpp#L199-L199"
 module = "effects"
-status = "todo"
-reason = "needs SkCanvas::makeSurface (an offscreen surface with a Rec2020 colour space made from a canvas) and SkSurface::makeTemporaryImage, which are not ported; SkImage::makeColorSpace and SkImages::MakeWithFilter are on main"
+status = "failing"
+reason = "see notes/gm_hdr_pip_blur_cpp_HDRPiPBlurGM.md (ported with makeSurface and makeTemporaryImage; every config differs by 1 level or less on about half the pixels: colour-space transfer or blur rounding, not localised)"
 span_hash = "32e3564d88a9e68bf785432ec2bda3fc35e99bd25ac14df9217f0d51fe3cef6b"
 
 [[test]]
@@ -21327,8 +21324,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hello_bazel_world.cpp#L60-L60"
 module = "raster"
-status = "todo"
-reason = "GM::isBazelOnly() is true: only the Bazel build runs it, so there is no golden"
+status = "excluded"
+reason = "not in the GN build's GM list (gn/gm.gni) that makes the oracle, and isBazelOnly() is true: only the Bazel build runs it, so there is no golden"
 span_hash = "da2f9e3c07fd030d054dd811c08f9de4b4dc4d508993afab9cfb0660ba5f3952"
 
 [[test]]
@@ -21770,8 +21767,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilterstransformed.cpp#L318-L363"
 module = "effects"
-status = "failing"
-reason = "Ignored: perspective (m2) rows differ from the golden by 1 f16 ulp on 202 pixels, on every tier. Hypothesis: the 1-ulp error comes from cot = 1/tan(PI/6) via host libm tanf (glibc gives 0.5773503, correctly rounded is 0.57735026), which the oracle's UCRT may round differently. Not confirmed; stopped per the libm rule."
+status = "passing"
 span_hash = "a2ce37f21d7f73a67469fbf45c00970de152a09f523d6b38a3cd49da871b2974"
 
 [[test]]
@@ -23317,8 +23313,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pictureshader.cpp#L239-L306"
 module = "effects"
-status = "failing"
-reason = "blocked on libm: glibc tanf(pi/6) is 1 ulp above the UCRT value used by the oracle (SkM44::Perspective cot); passes on every tier with the UCRT value (port/libm). See notes/gm_pictureshader_cpp_pictureshader_persp.md"
+status = "passing"
 span_hash = "f0ac1763cc55e0128c976cc379a7e2e53b0a2dbdfaf09c99f580111842281a2e"
 
 [[test]]
@@ -23426,8 +23421,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/postercircle.cpp#L152-L152"
 module = "raster"
-status = "failing"
-reason = "f16 config mismatches on every tier (565 and 8888 match); needs an oracle rp-dump to locate the divergence; see notes/gm_postercircle_cpp_PosterCircleGM.md"
+status = "passing"
 span_hash = "3ab1d2908d8a9bd94e2c42c5534e2ecfc31db3433868a0a134de6b8bfe29a57a"
 
 [[test]]
@@ -24090,8 +24084,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L245-L245"
 module = "text"
-status = "failing"
-reason = "see notes/gm-scaledemojiperspective-test.md (565 and f16 differ in a few pixels; re-checked on main 3f14c4d: same hashes, 565 848b8bc8 vs d0fe24b7, f16 dfdc4561 vs 28f84587)"
+status = "passing"
 span_hash = "fc541cd23891d42640c055361d022cb76a47841081af87ed4e963a1cf5962158"
 
 [[test]]
@@ -25874,7 +25867,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/BentleyOttmann1Test.cpp#L14-L71"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "299572c7f03f33f474d344f21892dd82088cde4c25cb589330721f58a9084843"
 
 [[test]]
@@ -25883,7 +25876,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/BruteForceCrossingsTest.cpp#L14-L72"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "e9377401393c811fa3b346ca083989c8d5183ff864b1afbadc78b8c2db6bffd3"
 
 [[test]]
@@ -25892,7 +25885,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/ContourTest.cpp#L12-L98"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "279dcf77c417436e13676d10d35a05cf2267e790847f86ed9faa214ef5739f62"
 
 [[test]]
@@ -25901,7 +25894,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/EventQueueTest.cpp#L51-L128"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "778038b1b72b865fefe8864562fdcd331ecac00b214cd9ff9b99f3f6296424a8"
 
 [[test]]
@@ -25910,7 +25903,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/EventQueueTest.cpp#L191-L246"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "a6fb896b4296b0bc3992c91ea7b17a02179c083a6284dc9e97b2446d7aa36b65"
 
 [[test]]
@@ -25919,7 +25912,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/EventQueueTest.cpp#L28-L49"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "591b5ff87f71430c646b856c3b1f306f127df371ca702500e12f3a5684530efc"
 
 [[test]]
@@ -25928,7 +25921,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L106-L129"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "f111a89995d5c281b3c56724be6c4da2eb8acd753d05c3ca261ac5f0fea6681d"
 
 [[test]]
@@ -25937,7 +25930,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L12-L65"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "dbcec0edf84c03a7237cf17c112dfc0e24d9128a07321149bb42bce922c3cf78"
 
 [[test]]
@@ -25946,7 +25939,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L84-L104"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "3c3e17828cc3390ce9baafe80debd4eb425c1a9daa12c8e644f5f0bb8567643f"
 
 [[test]]
@@ -25955,7 +25948,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L131-L162"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "d3a427a85e7ecee01ea0a9242641d611b22ec86a9d253a500ab01332ee9ec68f"
 
 [[test]]
@@ -25964,7 +25957,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L138-L211"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "41d7866d6926b738386b616820e70b7b19e8735a040765e458397d820a66e4bc"
 
 [[test]]
@@ -25973,7 +25966,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L109-L132"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ff464b0ea81f49d005df442f0dcad7c070c7570ae9b7ec12b7b36925bd38cc56"
 
 [[test]]
@@ -25982,7 +25975,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L213-L277"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "5c5a716301392e21d4b519e78737b778ecb35eb6e19ee6d5e6c80fe5bfaf8682"
 
 [[test]]
@@ -25991,7 +25984,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L305-L375"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "e98905f3d0bfbb14f109ce535e26e0ba1c201b8b4296226150a984509d6ea0f3"
 
 [[test]]
@@ -26000,7 +25993,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L26-L45"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ef6754f068403db9802638125209c9a0625fbcd7d13c73a5761e88e2a5d03771"
 
 [[test]]
@@ -26009,7 +26002,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L47-L65"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "7d5dbcffb7b04709e5b16c43c84270c1489cf42da73df314632f6699598f75b8"
 
 [[test]]
@@ -26018,7 +26011,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L93-L107"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "efd742b7c8aa3f881da6787af2763148c571788a59805373153745f85a698866"
 
 [[test]]
@@ -26027,7 +26020,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L67-L91"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "b196de7c2b45b9ccc87a3a4f11db953bbb581c9890b8b2105c61d8be62106ade"
 
 [[test]]
@@ -26036,7 +26029,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/PointTest.cpp#L9-L47"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "6e13ee16cc666738cc9b02e48abfa4379dad755c022c0eb9a4fa9e0cffa31536"
 
 [[test]]
@@ -26045,7 +26038,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L9-L33"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "5581ba4ab0a803d1e3e559d07ac9c988eb71149655c51fae7543f553c3c4d13c"
 
 [[test]]
@@ -26054,7 +26047,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L222-L272"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "0f8acae12a61ba4d529654430af1ede7a3884ba697be54e7df3bdd560cbeaf90"
 
 [[test]]
@@ -26063,7 +26056,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L90-L179"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "6369585a65d7864b2aca032d2cbc37a811554ec1d66157f11ddca1f325190e18"
 
 [[test]]
@@ -26072,7 +26065,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L181-L220"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "6a92fa390ac4113fe72c243b5406a56cee4f322fdb0d934fca5b07b130077eb1"
 
 [[test]]
@@ -26081,7 +26074,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L39-L88"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "745cd8431dc3a6d9b371432f18057f2b07be02ffd504118c20e7602c05a62dc7"
 
 [[test]]
@@ -26090,7 +26083,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L274-L307"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "dca68ff5bde63a511a69fa72a752bddc0897bc97dafd9e5f53c89eb9cac600c1"
 
 [[test]]
@@ -26099,7 +26092,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L309-L342"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ed350e2f892d9588b3414726b0bd1d37812adba9e28dcefa73261654847714d4"
 
 [[test]]
@@ -26108,7 +26101,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SweepLineTest.cpp#L96-L223"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "8fd1e40e76eb71bf98f9e1ece4ed7bce5dd713a2608071e3fcef7930ff18fb60"
 
 [[test]]
@@ -26117,7 +26110,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SweepLineTest.cpp#L38-L94"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ce8b4adfb8a1dacf34e14c24fcab240caf43c4ffd1dfee62f907e6ca2d49ae15"
 
 [[test]]
@@ -34701,8 +34694,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L935-L1118"
 module = "effects"
-status = "todo"
-reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
+status = "passing"
 span_hash = "8919614c6ba66b3f18d088a537126666cf8fefaf4f4648555532f86ec9d2151c"
 
 [[test]]
@@ -34711,8 +34703,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L75-L110"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "0cee14bd055d60b8ba11bc1c26bf2eb616f3fa2bab023997847bb7539a71caa8"
 
 [[test]]
@@ -34721,8 +34712,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1205-L1329"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "7f040f5e8eb339611e89353569e8c9aafe5d3b74ce02e5c411b1eea98254f3ff"
 
 [[test]]
@@ -34731,8 +34721,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L228-L281"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "8a7ede3298e6d8b6e13ebe08c323c1637493a8201d43fa663bb2507694b3a83a"
 
 [[test]]
@@ -34741,8 +34730,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L112-L226"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "1f71392e2cca295a1921a919e0fa53674624f301bf856aaeab6f7e5e6ce14b4b"
 
 [[test]]
@@ -34751,8 +34739,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L283-L321"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "f3e9658e6c2e55952e3d07e2a00336d1b5eaf798d2b278ccd17c99709e2a3d2e"
 
 [[test]]
@@ -34761,8 +34748,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L485-L932"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "26c0d5e13841f0866e31ecdd45adac15608493bc3a745069f22454747bed98ed"
 
 [[test]]
@@ -34771,8 +34757,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L323-L415"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "bd83ad66c9f141eceafc771d8f64dc6ce3c329bcbe68540cc3996f64e18e8715"
 
 [[test]]
@@ -34799,8 +34784,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1120-L1203"
 module = "effects"
-status = "todo"
-reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
+status = "passing"
 span_hash = "fb3bcbe96da112d41cacc3db4725ea649e707a39e44019bfc7056b6fcf2fc5ff"
 
 [[test]]
@@ -45152,8 +45136,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1478-L1530"
 module = "sksl"
-status = "todo"
-reason = "needs GrSkSLFP (Ganesh only)"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope (#if defined(SK_GANESH), GrSkSLFP)"
 span_hash = "c4ff78dc59ba0c7ffa6daf62af4e26b736d8dc2c86c77c3191153c77b23d529f"
 
 [[test]]
@@ -45445,7 +45429,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L183-L187"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8c86b2afd1337753caca7cec08469795419ac57db135e5a695d9cbffedc1b08c"
 
 [[test]]
@@ -45454,7 +45438,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L177-L181"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "978ae019c27e6251a66bc73bbd6b03f57d67e48a08c25ca2f39e9ec55f8f5903"
 
 [[test]]
@@ -45463,7 +45447,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L195-L199"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fa1c910e32a0ccb38869200809e6859a4bfe25ecdf2b367386bb8c88aaa73870"
 
 [[test]]
@@ -45472,7 +45456,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L189-L193"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6a1099108a73b1c70e90b416a0615374693e47aa9dfd71278e45e89c75570ea4"
 
 [[test]]
@@ -45481,7 +45465,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L210-L217"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9ecf3e9230a134f5d63634a21890270bbf737b5047402081cdddecdd87baa2cd"
 
 [[test]]
@@ -45490,7 +45474,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L225-L229"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3179dc075a4f7c6fbfd8395c14cec58a550b6aa52d2c41d52dcb3e543b17645a"
 
 [[test]]
@@ -45499,7 +45483,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L219-L223"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cc9c4db228d0171fdcbb9474381d6809dd2af22baf3bc8bf1fb51968bc3d80b4"
 
 [[test]]
@@ -45508,7 +45492,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLErrorTest.cpp#L201-L208"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1ca9b78dc3008ab662a4ceec3fda9383818abb9eff33a8a249c881c08f4f2a87"
 
 [[test]]
@@ -53117,8 +53101,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L465-L514"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "0c6bc99f3dd425203f0902b4329fba7b05370d706a7ed5ab5a1f5bb4e76e72f2"
 
 [[test]]
@@ -53127,8 +53111,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L558-L577"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "d6168d2be1ff4f5dd5518b2aa884f773e66690908fb826a61368e866fbc41d7a"
 
 [[test]]
@@ -53137,8 +53121,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L428-L461"
 module = "gpu"
-status = "todo"
-reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
+status = "excluded"
+reason = "records on Recorders created on other threads; Recorder stays !Send as in skia-safe (maintainer decision 2026-10-12, docs/design/gpu.md §10); the precompile-only threaded tests are ported and passing"
 span_hash = "3fb42a8d02f9e5d30039c3a56380fb3852ffcd076ee11b859f31f2db414cf026"
 
 [[test]]

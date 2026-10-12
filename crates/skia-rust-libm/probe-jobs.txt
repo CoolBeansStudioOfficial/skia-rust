@@ -1,0 +1,2 @@
+# tag fn n xmode xlo xhi [ymode ylo yhi]   (see examples/probe.rs; earlier rounds: probe-jobs.round*.txt)
+smoke sinf 1000 bits 0.5 1.0

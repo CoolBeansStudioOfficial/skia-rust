@@ -162,6 +162,11 @@ A GM is checked by rendering it exactly as DM does and comparing the SHA-256 of 
 
 The registration name must equal the manifest id's name verbatim (`gm/dashing.cpp::Dashing5GM(true)` → `"Dashing5GM(true)"`; a second registration with the same name in one file is `"FooGM#2"`): `cargo xtask inventory verify` maps the registry key `gm::<file_snake>::<name>` back to the manifest id. When the name is not an identifier, give the generated test an identifier and the name as a string (`FooGM_true = "FooGM(true)"`). `BG` is a `Color` (`SK_ColorWHITE` → `Color::WHITE`); `canvas` is a `&Canvas`; `error_msg` is a `&mut String`.
 
+**Variant sets (`DEF_VARIANTS`).** One `DEF_VARIANTS(…)` call registers several GMs (`gm/encode_color_types.cpp`: `kNormal`, `kOpaque`, `kGray`, each with its own `getName()`, which is its golden name), but the manifest has one id per call (`gm/encode_color_types.cpp::SkEncodedImageFormat::kWEBP`, `…::kWEBP#2` for the second call). The mapping is therefore per manifest id, not per GM:
+- Port it as `def_variants_gm!(Name = "<manifest name>", [ <GM expr>, <GM expr>, … ]);`, one expression per variant in the macro's order. The test `Name` checks all of them and the `registry::VariantsRegistration` is keyed `gm::<file>::<manifest name>`, the same key a single GM with that name would get, so `xtask` (`verify_gms::gm_key`) maps the id to it unchanged.
+- Each variant is checked as a single GM (`check::check_gm`, the same configs and tiers, its own golden name). The set's verdict is the worst of the variants': `failing` if any variant fails, `not-checkable` if any cannot be checked and none fails, `passing` only when every variant passes on every checkable tier. A set never passes with a variant missing or unchecked. The checks keep their variant's name, and `gm-verify` reports one entry per id.
+- A failing set is `#[ignore = "see notes/…"]` like any GM, and its manifest entry is `failing` with the note. A variant that skips on a config (its canvas colour type is not its own) is a skip the oracle must also make, as for a single GM.
+
 **Class GMs** (`class FooGM : public skiagm::GM`) implement the `GM` trait, one method per override:
 
 | `skiagm::GM` | `GM` trait |

@@ -1,0 +1,70 @@
+name: libm-cleanroom-probe
+
+# Clean-room black-box probe of the platform math library (docs/design/libm-cleanroom.md).
+#  * jobs:  evaluates the platform (UCRT) functions on the inputs listed in probe-jobs.txt.
+#  * check: compares skia-rust-libm against the platform function on every f32 bit pattern.
+on:
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo run --release -p skia-rust-libm --example probe -- jobs crates/skia-rust-libm/probe-jobs.txt out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-dump
+          path: out
+
+  nsel:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        fn: [sinf, cosf]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Which quadrant computation does the platform follow, per binade
+        shell: bash
+        run: cargo run --release -p skia-rust-libm --example probe -- nsel ${{ matrix.fn }} | tee nsel-${{ matrix.fn }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-nsel-${{ matrix.fn }}
+          path: nsel-${{ matrix.fn }}.txt
+
+  ledger:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Near-midpoint ledgers (exhaustive over the listed ranges)
+        shell: bash
+        run: cargo run --release -p skia-rust-libm --example probe -- ledger ledger crates/skia-rust-libm/ledger-spec.txt | tee ledger-summary.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-ledger
+          path: |
+            ledger
+            ledger-summary.txt
+
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compare against the platform on every f32 bit pattern
+        shell: bash
+        run: |
+          fns=$(grep -v '^#' crates/skia-rust-libm/check-list.txt | tr '\n' ' ')
+          mkdir -p mismatch
+          cargo run --release -p skia-rust-libm --example probe -- check mismatch $fns | tee mismatch/summary.txt || true
+          cargo run --release -p skia-rust-libm --example probe -- check2 mismatch 100000000 atan2f | tee -a mismatch/summary.txt
+      - name: The crate's own tests (digests, and the bit-for-bit UCRT comparison on Windows x64)
+        run: cargo test -p skia-rust-libm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-mismatch
+          path: mismatch

@@ -170,6 +170,53 @@ mod tests {
     }
 
     #[test]
+    fn variant_ids_are_one_key_per_manifest_id() {
+        // `DEF_VARIANTS(format, quality, name)` is one manifest id per macro call (the name is
+        // the format, `#2` for the second call), and the registration of that id checks all its
+        // variants (`def_variants_gm!`): the verdict is per id, so the mapping is the plain one.
+        assert_eq!(
+            gm_key("gm/encode_color_types.cpp::SkEncodedImageFormat::kWEBP").as_deref(),
+            Some("gm::encode_color_types::SkEncodedImageFormat::kWEBP")
+        );
+        assert_eq!(
+            gm_key("gm/encode_color_types.cpp::SkEncodedImageFormat::kWEBP#2").as_deref(),
+            Some("gm::encode_color_types::SkEncodedImageFormat::kWEBP#2")
+        );
+        let entries = vec![
+            (
+                "gm/encode_color_types.cpp::SkEncodedImageFormat::kWEBP".to_owned(),
+                "todo".to_owned(),
+            ),
+            (
+                "gm/encode_color_types.cpp::SkEncodedImageFormat::kWEBP#2".to_owned(),
+                "passing".to_owned(),
+            ),
+        ];
+        let results = BTreeMap::from([
+            (
+                "gm::encode_color_types::SkEncodedImageFormat::kWEBP".to_owned(),
+                Verdict::Passing,
+            ),
+            (
+                "gm::encode_color_types::SkEncodedImageFormat::kWEBP#2".to_owned(),
+                Verdict::Failing,
+            ),
+        ]);
+        let r = check(&entries, &results);
+        assert_eq!(
+            r.newly_passing,
+            [(
+                "gm/encode_color_types.cpp::SkEncodedImageFormat::kWEBP".to_owned(),
+                "todo".to_owned()
+            )]
+        );
+        assert_eq!(
+            r.regressions,
+            ["gm/encode_color_types.cpp::SkEncodedImageFormat::kWEBP#2"]
+        );
+    }
+
+    #[test]
     fn check_classifies() {
         let entries = vec![
             ("gm/a.cpp::pass".to_owned(), "passing".to_owned()),

@@ -690,8 +690,8 @@ impl M44 {
         let denom_inv = ieee_float_divide(1.0, far - near);
         let half_angle = angle * 0.5;
         debug_assert!(half_angle != 0.0);
-        // skia-rust: libm (tan)
-        let cot = ieee_float_divide(1.0, half_angle.tan());
+        // skia-rust: libm (tan), bit-identical to the oracle's UCRT
+        let cot = ieee_float_divide(1.0, crate::libm::tanf(half_angle));
 
         let mut m = Self::new_identity();
         m.set_rc(0, 0, cot);

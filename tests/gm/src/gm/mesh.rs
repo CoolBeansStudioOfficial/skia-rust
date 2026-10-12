@@ -688,7 +688,7 @@ impl MeshUniformsGm {
         // `TimeUtils::SineWave(0, period, phase, 0, 1)`: `0.5*sin(phase*2π/period) + 0.5`.
         let sine_wave = |period: f32, phase: f32| {
             let t = f64::from(phase) * 2.0 * f64::from(std::f32::consts::PI) / f64::from(period);
-            0.5 * (t as f32).sin() + 0.5
+            0.5 * skia_rust_core::libm::sinf(t as f32) + 0.5
         };
         self.degrees = 0.0 * 360.0 / 10.0 + 45.0;
         // prime number periods, like locusts.
