@@ -506,6 +506,8 @@ pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
 #[cfg(test)]
+pub mod sk_xmp_test;
+#[cfg(test)]
 pub mod skbug5221;
 #[cfg(test)]
 pub mod skbug6389;
