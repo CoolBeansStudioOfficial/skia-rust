@@ -11,6 +11,7 @@ Standard library only, so the workflow needs no Rust build. Subcommands:
                              argument, `565`/`f16` results (independent of N32 order) go to that
                              tier (the BGRA tier name) and `8888` results to <tier>
   merge <out.json> <in.json>...   merge several one-tier files into one
+  patterns <equivalence.json>   print DM --match patterns (anchored) for the mismatched results
   compare <ours.json> <goldens.json> <tier> <ours-dir> <objects.tar> <report-prefix>
                              compare our hashes with a published golden tier and classify
                              every mismatch (pixel counts, deltas, R/B swap, ...)
@@ -252,6 +253,13 @@ def cmd_compare(ours_json, goldens_json, tier, ours_dir, objects_tar, report_pre
     print(f"{len(matched)}/{len(compared)} outputs match {tier}")
 
 
+def cmd_patterns(report_path):
+    with open(report_path) as f:
+        report = json.load(f)
+    for rid in sorted(report["mismatches"]):
+        print("^" + rid.split("/")[-1] + "$")
+
+
 def main(argv):
     cmd, args = argv[1], argv[2:]
     if cmd == "gn-args":
@@ -260,6 +268,8 @@ def main(argv):
         cmd_hash(*args)
     elif cmd == "merge":
         cmd_merge(*args)
+    elif cmd == "patterns":
+        cmd_patterns(*args)
     elif cmd == "compare":
         cmd_compare(*args)
     else:
