@@ -38,6 +38,7 @@ use crate::graphite::resource::{AnyResourceRef, Resource, ResourceRef};
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::resource_types::{ImmutableSamplerInfo, SamplerDesc};
 use crate::graphite::sampler::Sampler;
+use crate::graphite::sparse_strips::msaa_lut::generate_msaa_lut;
 
 /// `kGlobalGraphicsPipelineCacheSizeLimit` under `GPU_TEST_UTILS`, the build the GPU oracle's
 /// DM ran in. The non-test value is 512.
@@ -134,6 +135,10 @@ pub struct GlobalCache {
     inner: Mutex<Inner>,
     /// Set once, by `setPipelineCallback`.
     callbacks: OnceLock<PipelineCallbacks>,
+    /// `fMSAAMaskLUT`: the static MSAA 8x mask lookup table of sparse strips, which the C++
+    /// generates when the cache is made (`SK_ENABLE_SPARSE_STRIPS`) and is generated on first use
+    /// here.
+    msaa_mask_lut: OnceLock<Vec<u8>>,
 }
 
 impl Default for GlobalCache {
@@ -162,7 +167,16 @@ impl GlobalCache {
                 static_vertex_buffer: None,
             }),
             callbacks: OnceLock::new(),
+            msaa_mask_lut: OnceLock::new(),
         }
+    }
+
+    /// `getMSAA8MaskLUT()`: the static MSAA 8x mask lookup table.
+    // Port of: src/gpu/graphite/GlobalCache.h#L145-L150 (chrome/m156)
+    #[doc(alias = "getMSAA8MaskLUT")]
+    #[must_use]
+    pub fn get_msaa8_mask_lut(&self) -> &[u8] {
+        self.msaa_mask_lut.get_or_init(generate_msaa_lut::<u8>)
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
