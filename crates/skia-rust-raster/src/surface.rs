@@ -289,6 +289,16 @@ impl<'a> Surface<'a> {
         self.base.image_snapshot(&self.canvas)
     }
 
+    /// An image of the surface's current pixels, for a use that ends before the surface is drawn to
+    /// again (`makeTemporaryImage`). A raster surface does not override `onMakeTemporaryImage`, so
+    /// this is the default: the snapshot of [`image_snapshot`](Self::image_snapshot).
+    // Port of: src/image/SkSurface.cpp#L108-L110 and the default onMakeTemporaryImage in
+    // src/image/SkSurface_Base.h#L98 (chrome/m156)
+    #[doc(alias = "makeTemporaryImage")]
+    pub fn make_temporary_image(&mut self) -> Option<Image> {
+        self.image_snapshot()
+    }
+
     /// An image of the `bounds` of the surface's current pixels (`makeImageSnapshot(bounds)`);
     /// `None` if `bounds` does not intersect the surface.
     // Port of: src/image/SkSurface.cpp#L94-L106 (chrome/m156)

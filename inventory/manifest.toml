@@ -21592,8 +21592,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hdr_pip_blur.cpp#L199-L199"
 module = "effects"
-status = "todo"
-reason = "needs SkCanvas::makeSurface (an offscreen surface with a Rec2020 colour space made from a canvas) and SkSurface::makeTemporaryImage, which are not ported; SkImage::makeColorSpace and SkImages::MakeWithFilter are on main"
+status = "failing"
+reason = "see notes/gm_hdr_pip_blur_cpp_HDRPiPBlurGM.md (ported with makeSurface and makeTemporaryImage; every config differs by 1 level or less on about half the pixels: colour-space transfer or blur rounding, not localised)"
 span_hash = "32e3564d88a9e68bf785432ec2bda3fc35e99bd25ac14df9217f0d51fe3cef6b"
 
 [[test]]
