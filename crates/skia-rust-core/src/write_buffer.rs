@@ -491,6 +491,18 @@ impl BinaryWriteBuffer {
         }
     }
 
+    /// Writes a 4-byte-aligned point array: its count, then the points (`writePointArray`).
+    // Port of: src/core/SkWriteBuffer.cpp#L110-L113 (chrome/m156)
+    #[doc(alias = "writePointArray")]
+    pub fn write_point_array(&mut self, values: &[Point]) {
+        self.writer
+            .write32(i32::try_from(values.len()).unwrap_or(i32::MAX));
+        for value in values {
+            self.writer.write_scalar(value.x);
+            self.writer.write_scalar(value.y);
+        }
+    }
+
     /// Writes the 9 entries of `matrix` (`writeMatrix`).
     // Port of: src/core/SkWriteBuffer.cpp#L119-L121 (chrome/m156)
     #[doc(alias = "writeMatrix")]
@@ -632,15 +644,10 @@ impl BinaryWriteBuffer {
     /// Writes a paint (`writePaint`): the stroke width and miter, the color, and the packed flags,
     /// then the effects if the paint has any (`SkPaintPriv::Flatten`).
     ///
-    /// Returns false, if the paint has an image filter (not written yet) or an effect that cannot
-    /// be flattened. The buffer is then not usable.
-    // Port of: src/core/SkPaintPriv.cpp#L261-L287 (chrome/m156), with the arms of the
-    // flattenables that are ported; the image filter is written as null
+    /// Returns false if an effect cannot be flattened. The buffer is then not usable.
+    // Port of: src/core/SkPaintPriv.cpp#L261-L287 (chrome/m156), Flatten
     #[doc(alias = "writePaint")]
     pub fn write_paint(&mut self, paint: &Paint) -> bool {
-        if paint.image_filter().is_some() {
-            return false;
-        }
         let path_effect = paint.path_effect();
         let shader = paint.shader();
         let mask_filter = paint.mask_filter();
@@ -648,10 +655,12 @@ impl BinaryWriteBuffer {
         let blender = paint.blender();
         // The paint takes the simple form when it has no effects. A blend mode is not an effect
         // (a paint with one has a blender, which `asBlendMode` sees through).
+        let image_filter = paint.image_filter();
         let has_effects = path_effect.is_some()
             || shader.is_some()
             || mask_filter.is_some()
             || color_filter.is_some()
+            || image_filter.is_some()
             || paint.as_blend_mode().is_none();
         let flat_flags = if has_effects { FLAT_HAS_EFFECTS } else { 0 };
 
@@ -665,8 +674,7 @@ impl BinaryWriteBuffer {
             self.write_shader(shader.as_ref());
             self.write_mask_filter(mask_filter.as_ref());
             self.write_color_filter(color_filter.as_ref());
-            // The image filter is null.
-            self.writer.write32(0);
+            self.write_image_filter(image_filter.as_ref());
             self.write_blender(blender.as_ref());
         }
         !self.flatten_failed
@@ -755,6 +763,14 @@ impl BinaryWriteBuffer {
         let mut bytes = vec![0u8; self.bytes_written()];
         self.writer.flatten(&mut bytes);
         crate::data::Data::new_from_vec(bytes)
+    }
+
+    /// Writes a string as its length, its bytes, a terminating `\0`, and the padding to 4 bytes
+    /// (`writeString`). `None` is written as `""`.
+    // Port of: src/core/SkWriteBuffer.cpp (chrome/m156), writeString, via SkWriter32::writeString
+    #[doc(alias = "writeString")]
+    pub fn write_string(&mut self, value: Option<&str>) {
+        self.writer.write_string(value);
     }
 
     /// Writes the size of `data` and the bytes padded to 4 (`writeByteArray`).

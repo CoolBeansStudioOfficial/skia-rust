@@ -101,6 +101,7 @@ fn sub_runs(
         matrix,
         paint,
         &strike_device_info(control),
+        skia_rust_core::strike_cache::StrikeCache::global(),
         SubRunCreationBehavior::AddSubRuns,
     )
 }
@@ -263,6 +264,7 @@ fn glyphs_with_no_masks_make_no_sub_runs() {
             Matrix::i(),
             &paint(),
             &strike_device_info(control()),
+            skia_rust_core::strike_cache::StrikeCache::global(),
             SubRunCreationBehavior::AddSubRuns,
         )
     };
@@ -285,6 +287,7 @@ fn strike_calculations_only_makes_no_sub_runs() {
         Matrix::i(),
         &paint(),
         &strike_device_info(control()),
+        skia_rust_core::strike_cache::StrikeCache::global(),
         SubRunCreationBehavior::StrikeCalculationsOnly,
     );
     assert!(container.is_empty());

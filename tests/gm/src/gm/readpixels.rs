@@ -5,8 +5,8 @@
 #![allow(clippy::cast_precision_loss)] // mirrors the C++ int-to-scalar conversions of small sizes (exact in f32)
 #![allow(clippy::cast_sign_loss)] // mirrors the C++ size_t row byte counts of small images
 //
-// Not ported: `ReadPixelsCodecGM` (its canvas needs a colour space, which the GM harness does not
-// give it).
+// `ReadPixelsCodecGM` is skip-matching only: its `onDraw` returns `kSkip` on a canvas with no
+// colour space, which the GM harness never gives it, so only that path is ported.
 
 use crate::canvas::Canvas;
 use crate::tool_utils::get_resource_as_data;
@@ -44,8 +44,8 @@ fn make_raster_image(color_type: ColorType) -> Option<Image> {
     codec.get_image(info, None::<&Options>).ok()
 }
 
-// Port of: gm/readpixels.cpp#L53-L58 (chrome/m156), make_codec_image
-// (the image is only used by `ReadPixelsCodecGM`, which is not ported).
+// `make_codec_image` (gm/readpixels.cpp#L53-L58) is not ported: only the colour-space drawing of
+// `ReadPixelsCodecGM` uses it, and that path never runs on the harness canvas.
 
 // Port of: gm/readpixels.cpp#L75-L80 (chrome/m156), make_parametric_transfer_fn
 fn make_parametric_transfer_fn(primaries: &ColorSpacePrimaries) -> ColorSpace {
@@ -266,3 +266,39 @@ impl GM for ReadPixelsPictureGm {
 
 // Port of: gm/readpixels.cpp#L313 (chrome/m156), DEF_GM( return new ReadPixelsPictureGM; )
 crate::def_gm!(ReadPixelsPictureGM, ReadPixelsPictureGm);
+
+/// `kEncodedWidth` and `kEncodedHeight` of `ReadPixelsCodecGM`.
+// Port of: gm/readpixels.cpp#L246-L247 (chrome/m156)
+const K_ENCODED_SIZE: i32 = 8;
+
+/// `ReadPixelsCodecGM`. Skip-matching only: `onDraw` returns `kSkip` when the canvas has no colour
+/// space, and the harness canvas never has one, so the colour-space drawing is not ported.
+// Port of: gm/readpixels.cpp#L191-L243 (chrome/m156), ReadPixelsCodecGM
+struct ReadPixelsCodecGm;
+
+impl GM for ReadPixelsCodecGm {
+    // Port of: gm/readpixels.cpp#L196 (chrome/m156), getName
+    fn name(&self) -> String {
+        "readpixelscodec".to_string()
+    }
+
+    // Port of: gm/readpixels.cpp#L198-L200 (chrome/m156), getISize
+    fn size(&mut self) -> ISize {
+        ISize::new(3 * (K_ENCODED_SIZE + 1), 12 * (K_ENCODED_SIZE + 1))
+    }
+
+    // Port of: gm/readpixels.cpp#L202-L206 (chrome/m156), onDraw: the colour-space check
+    fn on_draw_with_error(&mut self, canvas: &Canvas, error_msg: &mut String) -> DrawResult {
+        if canvas.image_info().color_space().is_none() {
+            error_msg.clear();
+            error_msg.push_str("This gm is only interesting in color correct modes.");
+            return DrawResult::Skip;
+        }
+        panic!(
+            "ReadPixelsCodecGM's colour-space drawing is not ported; the harness canvas has none"
+        );
+    }
+}
+
+// Port of: gm/readpixels.cpp#L251 (chrome/m156), DEF_GM( return new ReadPixelsCodecGM; )
+crate::def_gm!(ReadPixelsCodecGM, ReadPixelsCodecGm);

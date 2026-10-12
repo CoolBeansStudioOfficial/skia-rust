@@ -3,6 +3,7 @@
 //! drawables) by the [`sub_run_container`]; the atlas sub runs are drawn through the device's
 //! atlas delegate.
 
+pub mod chrome_remote_glyph_cache;
 pub mod distance_field_adjust_table;
 pub mod glyph_vector;
 pub mod packed_gpu_glyph_id;
@@ -13,6 +14,7 @@ pub mod sub_run_container;
 pub mod sub_run_control;
 pub mod text_blob;
 pub mod text_blob_redraw_coordinator;
+pub mod typeface_remote;
 pub mod vertex_filler;
 
 use skia_rust_core::mask::MaskFormat as GlyphMaskFormat;

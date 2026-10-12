@@ -63,6 +63,7 @@ use skia_rust_core::shader::Shader;
 use skia_rust_core::size::ISize;
 use skia_rust_core::slug::Slug;
 use skia_rust_core::special_image::SpecialImage;
+use skia_rust_core::strike_cache::StrikeCache;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec, Style as StrokeStyleKind};
 use skia_rust_core::surface_props::{PixelGeometry, SurfaceProps};
 use skia_rust_core::vertices::Vertices;
@@ -3707,6 +3708,7 @@ impl CoreDevice for Device {
             list,
             paint,
             &strike_device_info,
+            StrikeCache::global(),
         )
         .map(Slug::from_base)
     }

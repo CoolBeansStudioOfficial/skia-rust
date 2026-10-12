@@ -9,17 +9,23 @@
 use std::sync::Arc;
 
 use skia_rust_core::canvas::Canvas;
+use skia_rust_core::data::Data;
 use skia_rust_core::drawable::{Drawable, DrawableBase};
 use skia_rust_core::glyph::skglyph::{empty_rect, full_rect, rect_intersection, rect_union};
 use skia_rust_core::glyph::{Glyph, GlyphRect, PictureBackedGlyphDrawable};
 use skia_rust_core::mask::MaskFormat;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::packed_glyph_id::PackedGlyphId;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::point::Point;
 use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::runtime_effect::{RuntimeEffect, RuntimeShaderBuilder};
 use skia_rust_core::write_buffer::BinaryWriteBuffer;
+use skia_rust_effects::flattenable::REGISTRY;
+use skia_rust_effects::image_filters::runtime_shader;
 
 use crate::{def_test, reporter_assert};
 
@@ -403,3 +409,146 @@ def_test!(SkPictureBackedGlyphDrawable_Basic, |reporter| {
     reporter_assert!(reporter, bad_drawable.is_none());
     reporter_assert!(reporter, !bad_read_buffer.is_valid());
 });
+
+/// `SkSLSource` (`SkPictureBackedGlyphDrawable` test): which kind of runtime effect a drawable uses.
+// Port of: tests/SkGlyphTest.cpp#L372-L376 (chrome/m156)
+#[derive(Clone, Copy)]
+enum SkSLSource {
+    Shader,
+    ColorFilter,
+    Blender,
+    ImageFilter,
+}
+
+/// `kMaxPictureOpsToUnrollInsteadOfRef` (`SkCanvasPriv.h`).
+// Port of: src/core/SkCanvasPriv.h#L115 (chrome/m156)
+const K_MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF: usize = 1;
+
+/// `make_sksl_drawable`: a drawable whose paint uses a runtime effect of `source`.
+// Port of: tests/SkGlyphTest.cpp#L378-L422 (chrome/m156), make_sksl_drawable
+fn make_sksl_drawable(source: SkSLSource) -> Option<Drawable> {
+    let rect = Rect::from_wh(50.0, 50.0);
+
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(rect, false);
+
+    let mut paint = Paint::default();
+
+    match source {
+        SkSLSource::Shader => {
+            let effect = RuntimeEffect::make_for_shader(
+                "half4 main(float2 xy) { return half4(0, 1, 0, 1); }",
+                None,
+            )
+            .expect("SkASSERT(effect)");
+            paint.set_shader(effect.make_shader(Data::new_empty(), &[], None::<&Matrix>));
+        }
+
+        SkSLSource::ColorFilter => {
+            let effect = RuntimeEffect::make_for_color_filter(
+                "half4 main(half4 color) { return 0.5 * color; }",
+                None,
+            )
+            .expect("SkASSERT(effect)");
+            paint.set_color_filter(effect.make_color_filter(Data::new_empty(), &[]));
+        }
+
+        SkSLSource::Blender => {
+            let effect = RuntimeEffect::make_for_blender(
+                "half4 main(half4 src, half4 dst) { return src + dst; }",
+                None,
+            )
+            .expect("SkASSERT(effect)");
+            paint.set_blender(effect.make_blender(Data::new_empty(), &[]));
+        }
+
+        SkSLSource::ImageFilter => {
+            let effect = RuntimeEffect::make_for_shader(
+                "uniform shader child;\
+                 half4 main(float2 xy) { return 0.5 * child.eval(xy); }",
+                None,
+            )
+            .expect("SkASSERT(effect)");
+            let builder = RuntimeShaderBuilder::new(effect);
+            paint.set_image_filter(runtime_shader(&builder, 0.0, "child", None, false));
+        }
+    }
+
+    // See note in make_nested_sksl_drawable: We include enough ops that this drawable will be
+    // preserved as a sub-picture when we wrap it in a second layer.
+    for _ in 0..=K_MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF {
+        canvas.draw_rect(rect, &paint);
+    }
+
+    recorder.finish_recording_as_drawable()
+}
+
+/// `make_nested_sksl_drawable`: a drawable that draws the picture of `make_sksl_drawable`, so the
+/// runtime effect is inside a nested picture.
+// Port of: tests/SkGlyphTest.cpp#L424-L440 (chrome/m156), make_nested_sksl_drawable
+fn make_nested_sksl_drawable(source: SkSLSource) -> Option<Drawable> {
+    let rect = Rect::from_wh(50.0, 50.0);
+
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(rect, false);
+
+    let sksl_drawable = make_sksl_drawable(source).expect("a drawable");
+    let sksl_picture = sksl_drawable
+        .make_picture_snapshot()
+        .expect("a picture snapshot");
+
+    // We need to ensure that the op count of our picture is larger than this threshold, so we
+    // actually get a nested (embedded) picture, rather than just playing the ops back.
+    debug_assert!(sksl_picture.approximate_op_count() > K_MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF);
+    canvas.draw_picture(&sksl_picture, None, None);
+
+    recorder.finish_recording_as_drawable()
+}
+
+// Port of: tests/SkGlyphTest.cpp#L465-L498 (chrome/m156), SkPictureBackedGlyphDrawable_RejectsAnyShadersThatNeedSkSL
+def_test!(
+    SkPictureBackedGlyphDrawable_RejectsAnyShadersThatNeedSkSL,
+    |reporter| {
+        for source in [
+            SkSLSource::Shader,
+            SkSLSource::ColorFilter,
+            SkSLSource::Blender,
+            SkSLSource::ImageFilter,
+        ] {
+            for drawable in [
+                make_sksl_drawable(source),
+                make_nested_sksl_drawable(source),
+            ] {
+                // Make sure that regardless if the passed in buffer has sksl set or not, we
+                // don't deserialize it.
+                for allow_sksl in [true, false] {
+                    // skia-rust: `skiatest::ReporterContext` is not ported; the label it adds to
+                    // failures is not reported here.
+                    reporter_assert!(reporter, drawable.is_some());
+
+                    let mut write_buffer = BinaryWriteBuffer::new();
+                    PictureBackedGlyphDrawable::flatten_drawable(
+                        &mut write_buffer,
+                        drawable.as_ref(),
+                    );
+
+                    // `snapshotAsData` is never null here: the buffer is a fresh `SkBinaryWriteBuffer`.
+                    let data = write_buffer.snapshot_as_data();
+                    reporter_assert!(reporter, data.size() > 0);
+
+                    let mut read_buffer = ReadBuffer::new(data.as_bytes());
+                    read_buffer.set_allow_sksl(allow_sksl);
+
+                    // The registry is passed explicitly, as skia-rust has no global one.
+                    let dst_drawable = PictureBackedGlyphDrawable::from_buffer_with_registry(
+                        &mut read_buffer,
+                        &REGISTRY,
+                    );
+
+                    reporter_assert!(reporter, !read_buffer.is_valid());
+                    reporter_assert!(reporter, dst_drawable.is_none());
+                }
+            }
+        }
+    }
+);

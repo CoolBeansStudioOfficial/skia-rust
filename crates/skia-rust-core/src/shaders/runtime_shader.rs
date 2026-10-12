@@ -5,7 +5,6 @@
 
 //! `SkRuntimeShader`: a shader that runs a [`RuntimeEffect`] through the Raster Pipeline.
 //!
-//! skia-rust: flattening is not ported.
 
 use core::fmt;
 use std::sync::Arc;
@@ -14,10 +13,14 @@ use crate::capabilities::Capabilities;
 use crate::color_space::ColorSpace;
 use crate::data::Data;
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
 use crate::matrix::Matrix;
+use crate::read_buffer::ReadBuffer;
+use crate::write_buffer::BinaryWriteBuffer;
 use skia_rust_sksl::codegen::rp;
 use skia_rust_sksl::tracing::DebugTracePriv;
 
+use crate::picture_priv;
 use crate::point::IPoint;
 use crate::runtime_effect::{ChildPtr, RuntimeEffect, TracedShader};
 use crate::runtime_effect_priv::{
@@ -175,7 +178,41 @@ fn new_debug_trace(source: &[u8], coord: IPoint) -> DebugTracePriv {
     debug_trace
 }
 
+/// `SkRuntimeShader::CreateProc`: rebuilds a runtime shader from its effect, uniforms, legacy local
+/// matrix (before `kNoShaderLocalMatrix`) and children.
+// Port of: src/shaders/SkRuntimeShader.cpp#L140-L186 (chrome/m156), CreateProc
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, registry: &FlattenableRegistry) -> Option<Shader> {
+    let effect = priv_::read_effect(buffer, |sksl, options| {
+        RuntimeEffect::make_for_shader(sksl, options)
+    })?;
+    let uniforms = buffer
+        .read_byte_array_as_data()
+        .unwrap_or_else(Data::new_empty);
+    let mut local_matrix = None;
+    if buffer.is_version_lt(picture_priv::VERSION_NO_SHADER_LOCAL_MATRIX) {
+        const HAS_LEGACY_LOCAL_MATRIX_FLAG: i32 = 1 << 1;
+        let flags = buffer.read32();
+        if flags & HAS_LEGACY_LOCAL_MATRIX_FLAG != 0 {
+            local_matrix = Some(buffer.read_matrix());
+        }
+    }
+    let children = priv_::read_child_effects(buffer, &effect, registry)?;
+    effect.make_shader(uniforms, &children, local_matrix.as_ref())
+}
+
 impl ShaderBase for RuntimeShader {
+    // Port of: src/shaders/SkRuntimeShader.h#L59 (chrome/m156), SK_FLATTENABLE_HOOKS (getTypeName)
+    fn type_name(&self) -> &'static str {
+        "SkRuntimeShader"
+    }
+
+    // Port of: src/shaders/SkRuntimeShader.cpp#L138-L146 (chrome/m156), flatten
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        priv_::write_stable_key_or_source(buffer, &self.effect);
+        buffer.write_byte_array(self.uniform_data(None).as_bytes());
+        priv_::write_child_effects(buffer, &self.children);
+    }
+
     // Port of: src/shaders/SkRuntimeShader.h#L40 (chrome/m156)
     fn is_opaque(&self) -> bool {
         priv_::always_opaque(&self.effect)

@@ -28,6 +28,7 @@ use skia_rust_core::paint_priv::compute_luminance_color;
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::scaler_context::ScalerContextBuildFlags;
+use skia_rust_core::strike::StrikeForGpuCacheInterface;
 use skia_rust_core::surface_props::PixelGeometry;
 
 use crate::text_gpu::sub_run_container::{
@@ -308,12 +309,14 @@ impl TextBlob {
         paint: &Paint,
         position_matrix: &Matrix,
         strike_device_info: &StrikeDeviceInfo,
+        strike_cache: &dyn StrikeForGpuCacheInterface,
     ) -> TextBlob {
         let container = SubRunContainer::make(
             glyph_run_list,
             position_matrix,
             paint,
             strike_device_info,
+            strike_cache,
             SubRunCreationBehavior::AddSubRuns,
         );
 
