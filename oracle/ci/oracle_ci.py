@@ -108,7 +108,7 @@ def cmd_hash(directory, tier, cpu_tier, toolchain_path, out_path, free_tier=None
         "skia_commit": p["commit"],
         "tiers": {tier: {"toolchain": toolchain, "results": results}},
     }
-    if free_tier:
+    if free_tier and free_results:
         doc["tiers"][free_tier] = {"toolchain": toolchain, "results": free_results}
     with open(out_path, "w") as f:
         json.dump(doc, f, sort_keys=True)

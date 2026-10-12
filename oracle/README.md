@@ -28,6 +28,77 @@ All builds use clang-cl, the compiler Chrome ships Skia with. Every run records 
 
 Runs use `--nativeFonts false`, i.e. Skia's portable test font manager, which is pure Skia and identical on every platform (and is what Skia's default bots run). That manager returns null for every font file, so GMs that load real fonts (`ToolUtils::CreateTypefaceFromResource`) skipped or drew with the empty typeface; no golden contains Fontations, FreeType or DirectWrite output. Text goldens are therefore trustworthy for the portable typefaces; Fontations pixels need a separate oracle configuration (`docs/design/text.md` §1, §7.3).
 
+## CI-hosted oracle (CPU)
+
+The Windows server is gone. Since 2026-10-12 the CPU oracle also runs on GitHub's hosted runners: `.github/workflows/oracle.yml` (`workflow_dispatch` only; it never runs on a PR or push) builds Skia at the pinned revision on `ubuntu-latest` with clang, renders with the same DM and the same patch, and uploads goldens-format hash files as workflow artifacts. Nothing is published from CI: the maintainer downloads the artifacts and publishes them as release assets. Design: `docs/design/gpu.md` §3.1 (Q1), `modules.md` Q6, `codecs.md` Q2 (b), `bench.md` Q1 and §5.2.
+
+```
+gh api -X POST repos/<owner>/skia-rust/actions/workflows/oracle.yml/dispatches -f ref=<branch>
+# optional inputs: builds (JSON list), extras, lottie_configs, nanobench, libm_shim, rebuild, goldens_release
+gh run download <run id> -n oracle-dm-hashes-m156      # the image and lottie hashes
+```
+
+A GitHub quirk: a workflow file must exist on the default branch before it can be dispatched by name, unless a push has registered it once. To dispatch from a branch before the first merge, push the branch with a temporary `push:` trigger for a throwaway branch name, then remove the trigger.
+
+### Jobs
+
+| Job | What it does |
+|---|---|
+| `build` (one per build: `x64-sse2-rgba`, `x64-sse41-rgba`, `x64-scalar-rgba`) | Clones Skia at the pin, syncs its dependencies, copies `oracle/dm/*`, applies `patches/skia-oracle.patch`, `gn gen` with the args of `tiers.toml`, `ninja dm nanobench`. Caches `dm`, `nanobench`, `args.gn`, `toolchain.txt` and `resources/` (key: pin + GN args + patch + `oracle/dm` + the nanobench switch). The Skia checkout with its dependencies is cached separately (key: pin). A cold build takes about 40 minutes on the 4-vCPU runner (`dm` 17, nanobench 1 more); a cache hit takes seconds. |
+| `render` (one per tier: `cpu-x64-sse2-rgba`, `-rt-ml3`, `-rt-ml4`, `cpu-x64-sse41-rgba`, `cpu-x64-scalar-rgba`) | Restores the binaries and renders `--src gm --config 8888` with `SKIA_ORACLE_CPU_CAP`, compares every hash with the published tier of the same name (`oracle/ci/oracle_ci.py compare`: counts, and a class for every mismatch computed from the golden objects), then (`extras`) renders `--src image` (`8888 565 f16` over `resources/images`) and `--src lottie` (`resources/skottie`). Takes about 5 minutes. Uploads `oracle-results-<tier>`. |
+| `collect` | Merges the image and lottie hashes of all tiers into `oracle-dm-hashes-m156`. |
+
+### Build
+
+`oracle/ci/oracle_ci.py gn-args <build>` turns `tiers.toml` into Linux args: the shared args, `extra_cflags` with the `/clang:` prefixes removed (`-ffp-contract=off`, `-msse4.1`, `-DSK_R32_SHIFT=0`, `-DSKRP_CPU_SCALAR`) and `cc="clang"`. Two args differ from Skia's Linux defaults: `skia_use_freetype=false` and `skia_use_fontconfig=false`, because Skia enables both only on Linux and the Windows oracle has neither (the runs use the portable test font manager either way). The compiler is the runner's `clang` (18.1.3, libstdc++, glibc 2.39 at the time of writing); the Windows oracle used clang-cl 23.1.2. `toolchain.txt` in every artifact records compiler, runner image and GN args. partition_alloc stays at Skia's default (on), as on Windows. The compiler is not part of the cache key (a runner image update does not rebuild); pass `rebuild` after one.
+
+### Artifacts
+
+- `oracle-results-<tier>`: `results/<tier>/hashes-gm.json` (our `--src gm` hashes), `equivalence.{md,json}`, `hashes-image.json`, `hashes-lottie.json`, `equivalence-shim.*` (diagnostic, below), the DM logs, `results/cpu.txt` (runner CPU) and `libm-imports.txt`.
+- `oracle-dm-hashes-m156`: `dm-image-hashes-m156.json` and `dm-lottie-hashes-m156.json`, in the format of `hashes-m156.json` (`{skia_branch, skia_commit, tiers: {<tier>: {toolchain, results: {<id>: sha256}}}}`; ids are `<config>/<src>/<options>/<name>`, hashes are SHA-256 of the raw bytes DM wrote, as everywhere else), and `equivalence-m156.md`. `8888` results are filed under the RGBA tier names (`cpu-x64-sse2-rgba`, ...). `565` and `f16` do not depend on the N32 byte order, so they are filed under the BGRA tier names (`cpu-x64-sse2`, `-rt-ml3`, `-rt-ml4`, `cpu-x64-sse41`, `cpu-x64-scalar`), like the existing `565`/`f16` goldens. Hashes only, no objects (the renders are large and can be redone from the cached build).
+
+### The runner CPU matters
+
+The hosted runners are a mix of AMD EPYC (Zen 3 `7763`, Zen 4 `9V74`/`9V45`) and Intel Xeon (`8370C`, `8573C`) machines, and a job cannot choose. Intel's `rcpps`/`rsqrtps` estimates differ from AMD's (design `raster-pipeline.md` §4.6), and the baseline (SSE2) and ml3 raster pipeline use them. `run_tiers.sh` therefore fails the job on a non-AMD CPU (`REQUIRE_AMD`, default on); re-run the failed job (`POST .../actions/runs/<id>/rerun-failed-jobs`) to get another runner. `ml4` needs AVX-512 (Zen 4 or Intel) and `ml3` needs AVX2/FMA/F16C; a runner without them fails the leg the same way. The oracle host was a Zen 4. Zen 3 and Zen 4 runners gave identical hashes wherever both could run the tier.
+
+### Equivalence with `goldens-m156`
+
+`--src gm --config 8888`, 909 results per tier, against the published RGBA variant tiers (m156, runs on AMD runners):
+
+| Tier | byte-identical | different |
+|---|---|---|
+| `cpu-x64-sse2-rgba` | 898 | 11 |
+| `cpu-x64-sse2-rgba-rt-ml3` | 898 | 11 |
+| `cpu-x64-sse2-rgba-rt-ml4` | 898 | 11 |
+| `cpu-x64-sse41-rgba` | 898 | 11 |
+| `cpu-x64-scalar-rgba` | 896 | 13 |
+
+(98.8 to 99.0 %.) The 11 results that differ on every tier, and the 2 extra on `scalar`, fall into these cause classes:
+
+| Class | GMs | Evidence |
+|---|---|---|
+| Windows-only GM code | `rasterallocator` (57,956 px) | `gm/rasterhandleallocator.cpp` has separate `SK_BUILD_FOR_MAC`, `SK_BUILD_FOR_WIN` (GDI) and generic implementations; our output equals the golden with R and B swapped. Not reproducible on Linux. |
+| libm (glibc vs UCRT), float functions | `parsedpaths` (47 px), `shadow_utils`, `shadow_utils_occl` (and `_gray` on scalar), `gradients_powerless_hue_LCH`, `imagefilter_transformed_image` | skia-rust fails the same GMs against the Windows goldens with the same pixel counts (`parsedpaths`: 47, `notes/gm_arcto_cpp_parsedpaths.md`). The `libm_shim` diagnostic (`oracle/ci/libm_shim.c`: float `sinf`, `cosf`, `tanf`, `atan2f`, `cbrtf`, ... computed in double and rounded, which is how the UCRT implements most of them) makes `parsedpaths`, `shadow_utils*`, `LCH` and `imagefilter_transformed_image` byte-identical to the golden. |
+| libm, other functions | `longpathdash` (double `sin`/`cos`, 15 px, 5 with the shim), `gradients_color_space_many_stops` and `gradients_powerless_hue_OKLCH` (`cbrtf`: UCRT's equals neither glibc's nor the double-rounded one; the shim moves `many_stops` from 46 to 181 differing pixels, skia-rust's own number), `blurrect_compare` (1 px), `poster_circle` (scalar tier only, 1 to 3 px) | The same set as the skia-rust libm notes (`notes/gm-gradients.cpp-OKLCH-libm.md`, `notes/gm_dashing_cpp_longpathdash.md`). |
+| Unexplained | `scaledemojiperspective_test` (482 px, delta 47) | skia-rust matches the Windows golden here, Linux Skia does not. The GM draws the Test SVG emoji typeface under perspective as drawables. To investigate (expat/SVG or a drawable-path libm call). |
+| Intel vs AMD (never on a passing run) | an Intel Xeon 8573C run differed in 32 (baseline) and 44 (ml3) outputs: perspective GMs, `xfermodes*`, `HSL_duck`, `patch_*`, `vertices`; its `ml4` run (`rcp14`) still had only the 11 | The vendor estimate effect. Hence `REQUIRE_AMD`. |
+
+Not a cause: CPU tier dispatch (`oracle_ci.py hash` rejects a result whose metadata says another runtime tier ran, and the tiers behave as the classes in `tiers.toml` say), N32 order (the RGBA variant goldens exist for this; only `rasterallocator` is order-related), fonts (every text GM matches: the portable font manager is pure Skia, with no FreeType or fontconfig), and Skia's bundled zlib, libpng, libjpeg-turbo, expat and ICU, which are the same sources on both hosts.
+
+Verdict: the Linux build reproduces the Windows goldens byte for byte except where libm reaches the pixels (and one Windows-only GM). Both are "real Skia"; where they differ, the host libm decides, which is the same question skia-rust's own libm mismatches ask (the libm port is on hold). Linux-rendered goldens are therefore trustworthy as extra goldens, and a mismatch of ours against a CI-rendered `image` or `lottie` golden that falls into the libm classes above is a libm question, not a port bug.
+
+### Image and lottie results
+
+`--src image` renders 6,789 `8888`, 1,776 `565` and 4,095 `f16` results per tier (28,116 tasks); 106 tasks fail, all on `progressive_kitten_missing_eof.jpg` (a truncated file; partial-decode modes report errors) and produce no result. `--src lottie` renders all 187 files (`8888`, a 1000x1000 filmstrip each). The RGBA `8888` image results are identical on `sse2`, `ml3` and `sse41` (1 result differs on `scalar`); `565`/`f16` differ in 656 results between `sse2` and `ml3`, in none for `sse41` and `scalar`; 36 lottie files differ between `sse2` and `ml3` and 49 between `sse2` and `scalar`. For the Rust side these are per-tier goldens like the `gm` ones.
+
+### Diagnostics
+
+`oracle_ci.py compare` writes a class per mismatch (`n32-byte-order` when swapping R and B of ours equals the golden, `off-by-one`, `pixels`, `size`) with the differing pixel count and maximum channel delta. The `libm_shim` step re-renders only the mismatched GMs with `LD_PRELOAD=oracle/ci/libm_shim.so` and compares again (`equivalence-shim.md`); it is for finding causes, never for goldens. `libm-imports.txt` lists the libm functions the `dm` binary imports.
+
+### Not covered yet
+
+BGRA-order `8888` for image and lottie (the Windows N32; a Linux build with `-DSK_R32_SHIFT=16` would produce it), GPU tiers (phase 2, `docs/design/gpu.md` §3.1), nanobench goldens (`bench.md` B3: the nanobench binary is built and cached, but the `--oracleRawPath` extension of the patch is still to do), the `svg` source and the `pdf`/`svg` sinks, arm64/macOS/Windows runners.
+
 ## Usage (on the server)
 
 ```

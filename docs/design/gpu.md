@@ -271,6 +271,15 @@ server's:
   - `trace/<gm>.bin`: the command trace of §3.2, written from `DawnCommandBuffer`,
     `DawnResourceProvider` and `DawnQueueManager`, the only places Graphite calls `wgpu::`.
 
+**Phase 2 plan (Skia+Dawn on CI; phase 1, the CPU build, is `.github/workflows/oracle.yml`, 2026-10-12).** Phase 1 settled the mechanics this reuses: manual dispatch only, a `build` job that caches the binaries by pin + GN args + patch hash, per-tier `render` jobs, `oracle/ci/oracle_ci.py` for GN args, hashing and comparison, hash files in the `hashes-m156.json` format uploaded as artifacts, and the maintainer publishing. The cold CPU build takes about 40 minutes on the 4-vCPU runner, so budget 1 to 2 h for Dawn. Steps:
+
+1. **Build job `gpu-dawn-linux`** on `ubuntu-latest`: the `gpu-dawn` args of `tiers.toml` minus D3D12 (`skia_enable_graphite=true`, `skia_use_dawn=true`, `skia_enable_ganesh=false`, `dawn_enable_vulkan=true`), `skia_use_freetype=false`, `skia_use_fontconfig=false` as in phase 1, the `-DDAWN_SUPPORTS_CXX_MODULES=OFF` hunk dropped on Linux (it is only for clang-cl), `cmake` and `ninja` from apt, `libvulkan-dev` and `libx11-xcb-dev` for Dawn's Vulkan backend. Cache the `dm` binary only.
+2. **Mesa**: a pinned lavapipe, built from a release tag in a cached job (`mesa-<tag>-llvm-<n>` key; output: `libvulkan_lvp.so` plus `lvp_icd.json`) and selected with `VK_ICD_FILENAMES`, so the runner image's Mesa does not matter. Start with the Ubuntu archive Mesa to get a first tier, then pin.
+3. **Render job `gpu-dawn-vk-lavapipe`**: `dm --config grdawn_vk` with `SKIA_ORACLE_DAWN_ADAPTER=llvmpipe`, `SKIA_ORACLE_CPU_CAP=ml3`, run on two runner CPU types (AMD and Intel, as phase 1 found the vendor matters) with `GALLIUM_OVERRIDE_CPU_CAPS` / `LP_NATIVE_VECTOR_WIDTH` to test whether llvmpipe is then host independent. The result is a tier with `hashes.json`; whether it must be AMD-only is decided by that comparison.
+4. **WARP on `windows-2025`** (clang-cl as in the original README; the same `build`/`render` split): re-render `gpu-dawn-d3d12-warp` and compare with the published hashes, record `d3d10warp.dll`'s version.
+5. **Dumps** (`caps.json`, `pipelines/`, `trace/`) only after the plain hashes match, as separate oracle-patch commits, so a failure of the dump code cannot hide a rendering difference.
+6. Restricted `…-wgpucaps` tiers last (the `AddPreferredFeatures` filter).
+
 ### 3.2 The command trace
 
 A compact binary (or JSON lines) per GM:
