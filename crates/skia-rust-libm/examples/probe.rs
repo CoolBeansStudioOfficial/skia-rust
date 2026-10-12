@@ -434,6 +434,149 @@ fn near_tanf(eps: f64, dir: &str) {
     println!("near tanf: {n} entries (eps {eps})");
 }
 
+/// Random float with log-uniform magnitude up to `lim` and random sign.
+fn f32_in(r: &mut Rng, lim: f32, positive: bool) -> f32 {
+    let m = (r.unit() as f32 * 40.0 - 20.0).exp2().min(lim);
+    if positive || r.next() & 1 == 0 { m } else { -m }
+}
+
+/// Special values for binary-function checks.
+const SPECIALS: [u32; 28] = [
+    0x0000_0000,
+    0x8000_0000,
+    0x0000_0001,
+    0x8000_0001,
+    0x007F_FFFF,
+    0x0080_0000,
+    0x3F80_0000,
+    0xBF80_0000,
+    0x3F00_0000,
+    0x4000_0000,
+    0x7F7F_FFFF,
+    0xFF7F_FFFF,
+    0x7F80_0000,
+    0xFF80_0000,
+    0x7FC0_0000,
+    0xFFC0_0000,
+    0x7F80_0001,
+    0xFF80_0001,
+    0x7FC0_0001,
+    0x7FA0_0000,
+    0x3727_C5AC,
+    0x4B80_0000,
+    0x3EAA_AAAB,
+    0x4049_0FDB,
+    0xC049_0FDB,
+    0x3FC9_0FDB,
+    0x2000_0000,
+    0x6000_0000,
+];
+
+fn ours2(name: &str) -> Option<fn(f32, f32) -> f32> {
+    Some(match name {
+        "atan2f" => skia_rust_libm::atan2f,
+        _ => return None,
+    })
+}
+
+fn plat2(name: &str) -> fn(f32, f32) -> f32 {
+    match name {
+        "atan2f" => f32::atan2,
+        "powf" => f32::powf,
+        _ => panic!("no binary function {name}"),
+    }
+}
+
+/// Random and special-value comparison of a binary function (`n` random pairs per thread).
+fn check_binary(name: &str, n: u64, dir: &str) {
+    let (Some(ours), platform) = (ours2(name), plat2(name)) else {
+        println!("{name}: no implementation");
+        return;
+    };
+    let threads = std::thread::available_parallelism().map_or(4, usize::from);
+    let results: Vec<(u64, Vec<(u32, u32, u32, u32)>)> = std::thread::scope(|sc| {
+        let hs: Vec<_> = (0..threads as u64)
+            .map(|t| {
+                sc.spawn(move || {
+                    let mut r = Rng(0xC0FF_EE00 ^ t.wrapping_mul(0x9E37_79B9));
+                    let mut count = 0u64;
+                    let mut list = Vec::new();
+                    let test =
+                        |y: f32, x: f32, count: &mut u64, list: &mut Vec<(u32, u32, u32, u32)>| {
+                            let p = platform(std::hint::black_box(y), std::hint::black_box(x));
+                            let o = ours(y, x);
+                            if p.to_bits() != o.to_bits() {
+                                *count += 1;
+                                if list.len() < 200_000 {
+                                    list.push((y.to_bits(), x.to_bits(), p.to_bits(), o.to_bits()));
+                                }
+                            }
+                        };
+                    if t == 0 {
+                        for &a in &SPECIALS {
+                            for &b in &SPECIALS {
+                                test(f32::from_bits(a), f32::from_bits(b), &mut count, &mut list);
+                            }
+                        }
+                    }
+                    for i in 0..n {
+                        let (y, x) = match i % 6 {
+                            0 => (
+                                f32::from_bits(r.next() as u32),
+                                f32::from_bits(r.next() as u32),
+                            ),
+                            1 => (f32_in(&mut r, 1000.0, false), f32_in(&mut r, 1000.0, false)),
+                            2 => {
+                                let x = f32_in(&mut r, 1000.0, false);
+                                (x * (r.unit() as f32 * 2.0 - 1.0) * 1e-3, x)
+                            }
+                            3 => {
+                                let x = f32_in(&mut r, 100.0, false);
+                                (x * (1.0 + (r.unit() as f32 - 0.5) * 1e-3), x)
+                            }
+                            4 => (
+                                f32::from_bits(
+                                    (r.next() as u32) & 0x807F_FFFF
+                                        | ((r.next() as u32 % 60 + 100) << 23),
+                                ),
+                                f32::from_bits(
+                                    (r.next() as u32) & 0x807F_FFFF
+                                        | ((r.next() as u32 % 60 + 100) << 23),
+                                ),
+                            ),
+                            _ => (r.unit() as f32 * 4.0 - 2.0, r.unit() as f32 * 4.0 - 2.0),
+                        };
+                        test(y, x, &mut count, &mut list);
+                    }
+                    (count, list)
+                })
+            })
+            .collect();
+        hs.into_iter().map(|h| h.join().unwrap()).collect()
+    });
+    let total: u64 = results.iter().map(|r| r.0).sum();
+    let all: Vec<_> = results.into_iter().flat_map(|r| r.1).collect();
+    println!(
+        "{name}: {total} mismatches of {} pairs ({} specials)",
+        n * threads as u64,
+        SPECIALS.len() * SPECIALS.len()
+    );
+    for &(y, x, p, o) in all.iter().take(25) {
+        println!(
+            "  y={y:#010x} ({:e}) x={x:#010x} ({:e}) platform={p:#010x} ours={o:#010x}",
+            f32::from_bits(y),
+            f32::from_bits(x)
+        );
+    }
+    let mut out = writer_at(&format!("{dir}/{name}.mismatch2"));
+    for (y, x, p, o) in all {
+        out.write_all(&y.to_le_bytes()).unwrap();
+        out.write_all(&x.to_le_bytes()).unwrap();
+        out.write_all(&p.to_le_bytes()).unwrap();
+        out.write_all(&o.to_le_bytes()).unwrap();
+    }
+}
+
 fn writer_at(path: &str) -> std::io::BufWriter<std::fs::File> {
     std::io::BufWriter::new(std::fs::File::create(path).unwrap())
 }
@@ -459,6 +602,14 @@ fn main() {
                 w.get(5) == Some(&"neg"),
                 &args[2],
             );
+        }
+        return;
+    }
+    if args.len() >= 5 && args[1] == "check2" {
+        // probe check2 <outdir> <pairs-per-thread> <fn>...
+        std::fs::create_dir_all(&args[2]).unwrap();
+        for name in &args[4..] {
+            check_binary(name, args[3].parse().unwrap(), &args[2]);
         }
         return;
     }

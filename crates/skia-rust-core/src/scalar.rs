@@ -223,8 +223,8 @@ pub fn scalar_pow(b: scalar, e: scalar) -> scalar {
 #[doc(alias = "SkScalarSin")]
 #[must_use]
 pub fn scalar_sin(radians: scalar) -> scalar {
-    // skia-rust: libm
-    radians.sin()
+    // skia-rust: libm (bit-identical to the oracle's UCRT)
+    crate::libm::sinf(radians)
 }
 
 /// `cos(radians)`.
@@ -232,8 +232,8 @@ pub fn scalar_sin(radians: scalar) -> scalar {
 #[doc(alias = "SkScalarCos")]
 #[must_use]
 pub fn scalar_cos(radians: scalar) -> scalar {
-    // skia-rust: libm
-    radians.cos()
+    // skia-rust: libm (bit-identical to the oracle's UCRT)
+    crate::libm::cosf(radians)
 }
 
 /// `tan(radians)`.
@@ -241,8 +241,8 @@ pub fn scalar_cos(radians: scalar) -> scalar {
 #[doc(alias = "SkScalarTan")]
 #[must_use]
 pub fn scalar_tan(radians: scalar) -> scalar {
-    // skia-rust: libm
-    radians.tan()
+    // skia-rust: libm (bit-identical to the oracle's UCRT)
+    crate::libm::tanf(radians)
 }
 
 /// `asin(val)`.
