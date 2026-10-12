@@ -23,6 +23,7 @@ members = [
     "crates/skia-rust-skottie",
     "crates/skia-rust-sksg",
     "crates/skia-rust-resources",
+    "crates/skia-rust-bentleyottmann",
     "crates/skia-rust-svg",
     "crates/skia-rust-pdf",
     "benches",
@@ -70,6 +71,7 @@ skia-rust-gpu = { path = "crates/skia-rust-gpu", version = "0.156.0" }
 skia-rust-skottie = { path = "crates/skia-rust-skottie", version = "0.156.0" }
 skia-rust-sksg = { path = "crates/skia-rust-sksg", version = "0.156.0" }
 skia-rust-resources = { path = "crates/skia-rust-resources", version = "0.156.0" }
+skia-rust-bentleyottmann = { path = "crates/skia-rust-bentleyottmann", version = "0.156.0" }
 bitflags = "2"
 png = "=0.18.1"
 # Skia m156 MODULE.bazel pins for the Rust-backed JPEG codec and encoder (codecs.md C-R2): the

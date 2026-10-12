@@ -26158,7 +26158,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/BentleyOttmann1Test.cpp#L14-L71"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "299572c7f03f33f474d344f21892dd82088cde4c25cb589330721f58a9084843"
 
 [[test]]
@@ -26167,7 +26167,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/BruteForceCrossingsTest.cpp#L14-L72"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "e9377401393c811fa3b346ca083989c8d5183ff864b1afbadc78b8c2db6bffd3"
 
 [[test]]
@@ -26176,7 +26176,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/ContourTest.cpp#L12-L98"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "279dcf77c417436e13676d10d35a05cf2267e790847f86ed9faa214ef5739f62"
 
 [[test]]
@@ -26185,7 +26185,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/EventQueueTest.cpp#L51-L128"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "778038b1b72b865fefe8864562fdcd331ecac00b214cd9ff9b99f3f6296424a8"
 
 [[test]]
@@ -26194,7 +26194,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/EventQueueTest.cpp#L191-L246"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "a6fb896b4296b0bc3992c91ea7b17a02179c083a6284dc9e97b2446d7aa36b65"
 
 [[test]]
@@ -26203,7 +26203,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/EventQueueTest.cpp#L28-L49"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "591b5ff87f71430c646b856c3b1f306f127df371ca702500e12f3a5684530efc"
 
 [[test]]
@@ -26212,7 +26212,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L106-L129"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "f111a89995d5c281b3c56724be6c4da2eb8acd753d05c3ca261ac5f0fea6681d"
 
 [[test]]
@@ -26221,7 +26221,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L12-L65"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "dbcec0edf84c03a7237cf17c112dfc0e24d9128a07321149bb42bce922c3cf78"
 
 [[test]]
@@ -26230,7 +26230,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L84-L104"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "3c3e17828cc3390ce9baafe80debd4eb425c1a9daa12c8e644f5f0bb8567643f"
 
 [[test]]
@@ -26239,7 +26239,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/Int96Test.cpp#L131-L162"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "d3a427a85e7ecee01ea0a9242641d611b22ec86a9d253a500ab01332ee9ec68f"
 
 [[test]]
@@ -26248,7 +26248,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L138-L211"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "41d7866d6926b738386b616820e70b7b19e8735a040765e458397d820a66e4bc"
 
 [[test]]
@@ -26257,7 +26257,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L109-L132"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ff464b0ea81f49d005df442f0dcad7c070c7570ae9b7ec12b7b36925bd38cc56"
 
 [[test]]
@@ -26266,7 +26266,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L213-L277"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "5c5a716301392e21d4b519e78737b778ecb35eb6e19ee6d5e6c80fe5bfaf8682"
 
 [[test]]
@@ -26275,7 +26275,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L305-L375"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "e98905f3d0bfbb14f109ce535e26e0ba1c201b8b4296226150a984509d6ea0f3"
 
 [[test]]
@@ -26284,7 +26284,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L26-L45"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ef6754f068403db9802638125209c9a0625fbcd7d13c73a5761e88e2a5d03771"
 
 [[test]]
@@ -26293,7 +26293,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L47-L65"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "7d5dbcffb7b04709e5b16c43c84270c1489cf42da73df314632f6699598f75b8"
 
 [[test]]
@@ -26302,7 +26302,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L93-L107"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "efd742b7c8aa3f881da6787af2763148c571788a59805373153745f85a698866"
 
 [[test]]
@@ -26311,7 +26311,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/MyersTest.cpp#L67-L91"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "b196de7c2b45b9ccc87a3a4f11db953bbb581c9890b8b2105c61d8be62106ade"
 
 [[test]]
@@ -26320,7 +26320,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/PointTest.cpp#L9-L47"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "6e13ee16cc666738cc9b02e48abfa4379dad755c022c0eb9a4fa9e0cffa31536"
 
 [[test]]
@@ -26329,7 +26329,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L9-L33"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "5581ba4ab0a803d1e3e559d07ac9c988eb71149655c51fae7543f553c3c4d13c"
 
 [[test]]
@@ -26338,7 +26338,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L222-L272"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "0f8acae12a61ba4d529654430af1ede7a3884ba697be54e7df3bdd560cbeaf90"
 
 [[test]]
@@ -26347,7 +26347,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L90-L179"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "6369585a65d7864b2aca032d2cbc37a811554ec1d66157f11ddca1f325190e18"
 
 [[test]]
@@ -26356,7 +26356,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L181-L220"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "6a92fa390ac4113fe72c243b5406a56cee4f322fdb0d934fca5b07b130077eb1"
 
 [[test]]
@@ -26365,7 +26365,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L39-L88"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "745cd8431dc3a6d9b371432f18057f2b07be02ffd504118c20e7602c05a62dc7"
 
 [[test]]
@@ -26374,7 +26374,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L274-L307"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "dca68ff5bde63a511a69fa72a752bddc0897bc97dafd9e5f53c89eb9cac600c1"
 
 [[test]]
@@ -26383,7 +26383,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SegmentTest.cpp#L309-L342"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ed350e2f892d9588b3414726b0bd1d37812adba9e28dcefa73261654847714d4"
 
 [[test]]
@@ -26392,7 +26392,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SweepLineTest.cpp#L96-L223"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "8fd1e40e76eb71bf98f9e1ece4ed7bce5dd713a2608071e3fcef7930ff18fb60"
 
 [[test]]
@@ -26401,7 +26401,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/bentleyottmann/tests/SweepLineTest.cpp#L38-L94"
 module = "bentleyottmann"
-status = "todo"
+status = "passing"
 span_hash = "ce8b4adfb8a1dacf34e14c24fcab240caf43c4ffd1dfee62f907e6ca2d49ae15"
 
 [[test]]

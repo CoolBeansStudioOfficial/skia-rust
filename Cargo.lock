@@ -1150,6 +1150,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-bentleyottmann"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+]
+
+[[package]]
 name = "skia-rust-codec"
 version = "0.156.0"
 dependencies = [
@@ -1363,6 +1370,7 @@ dependencies = [
 name = "skia-rust-tests"
 version = "0.156.0"
 dependencies = [
+ "skia-rust-bentleyottmann",
  "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
