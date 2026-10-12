@@ -38,6 +38,21 @@ jobs:
           name: libm-nsel-${{ matrix.fn }}
           path: nsel-${{ matrix.fn }}.txt
 
+  ledger:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Near-midpoint ledgers (exhaustive over the listed ranges)
+        shell: bash
+        run: cargo run --release -p skia-rust-libm --example probe -- ledger ledger crates/skia-rust-libm/ledger-spec.txt | tee ledger-summary.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libm-ledger
+          path: |
+            ledger
+            ledger-summary.txt
+
   check:
     runs-on: windows-latest
     steps:
