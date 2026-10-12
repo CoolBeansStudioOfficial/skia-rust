@@ -109,14 +109,27 @@ for spec in $tiers; do
     # two runs differ are reported and left out. Tiers: bench-x64-sse2-rgba[-rt-ml3].
     btier=bench-${tier#cpu-}
     echo "::group::$btier: nanobench"
-    ./nanobench --dryRun --pre_log --config 8888 565 f16 --nativeFonts false --resourcePath resources \
-        > "$tdir/bench-run-list.txt" 2>&1
     for pass in 1 2; do
       rm -rf "$tdir/raw-bench$pass"; mkdir -p "$tdir/raw-bench$pass"
-      SKIA_ORACLE_CPU_CAP=$cap timeout 2400 ./nanobench --config 8888 565 f16 --loops 1 --samples 1 \
-          --cpu true --gpu false --nativeFonts false --resourcePath resources -q \
-          --oracleRawPath "$tdir/raw-bench$pass" > "$tdir/nanobench-$pass.log" 2>&1
-      echo "nanobench exit: $?" | tee -a "$tdir/nanobench-$pass.log"
+      excl=()
+      : > "$tdir/bench-crashed-$pass.txt"
+      # Some benches crash this headless build (they need a GPU context or an unavailable
+      # resource): run again without the bench that was running when nanobench died.
+      for attempt in $(seq 1 60); do
+        margs=(); (( ${#excl[@]} )) && margs=(--match "${excl[@]}")
+        SKIA_ORACLE_CPU_CAP=$cap timeout 2400 ./nanobench --config 8888 565 f16 --loops 1 --samples 1 \
+            --cpu true --gpu false --nativeFonts false --resourcePath resources --pre_log \
+            --oracleRawPath "$tdir/raw-bench$pass" "${margs[@]}" > "$tdir/nanobench-$pass.log" 2>&1
+        rc=$?
+        echo "nanobench attempt $attempt exit: $rc" | tee -a "$tdir/nanobench-$pass.log"
+        [[ $rc == 0 ]] && break
+        last=$(grep '^Running ' "$tdir/nanobench-$pass.log" | tail -n 1 | cut -f1 | sed 's/^Running //')
+        [[ -n $last ]] || break
+        [[ " ${excl[*]} " == *"~^${last}\$ "* ]] && break   # crashed again at the same place
+        echo "$last" >> "$tdir/bench-crashed-$pass.txt"
+        excl+=("~^${last}\$")
+      done
+      cp "$tdir/nanobench-$pass.log" "$tdir/nanobench-$pass.last.log"
       $ci hash "$tdir/raw-bench$pass" "$btier" "$cpu_tier" "$bin/toolchain.txt" "$tdir/hashes-bench$pass.json" "${btier/-rgba/}" || status=1
     done
     $ci stable "$tdir/hashes-bench1.json" "$tdir/hashes-bench2.json" "$tdir/hashes-bench.json" | tee "$tdir/bench-stability.txt"

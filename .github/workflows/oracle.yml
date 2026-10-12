@@ -32,6 +32,10 @@ on:
         description: "Also build nanobench (shares the build, bench.md Q1)"
         type: boolean
         default: true
+      warp:
+        description: "Also build Skia+Dawn on Windows and render the WARP tier"
+        type: boolean
+        default: true
       rebuild:
         description: "Ignore the build cache"
         type: boolean
@@ -374,3 +378,153 @@ jobs:
           name: oracle-gpu-hashes-m156
           overwrite: true
           path: merged
+
+  # ---- Windows: Skia + Dawn, D3D12 on WARP (the published gpu-dawn-d3d12-warp tier) ------------------
+  warp-build:
+    name: build (gpu-dawn, windows)
+    if: ${{ inputs.warp }}
+    runs-on: windows-2025
+    timeout-minutes: 350
+    defaults:
+      run:
+        shell: bash
+    env:
+      CLANG_WIN: C:/Program Files/LLVM
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache key
+        id: key
+        run: |
+          pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
+          vc="$(cmd //c 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -latest -property installationPath | tr -d '\r' | sed 's#\\#/#g')/VC"
+          echo "WIN_VC=$vc" >> "$GITHUB_ENV"
+          export WIN_VC="$vc"
+          python3 -I oracle/ci/oracle_ci.py gn-args gpu-dawn --windows > gn-args.txt
+          cat gn-args.txt
+          h=$( (cat gn-args.txt oracle/patches/*.patch oracle/dm/*) | sha256sum | cut -c1-16)
+          echo "bin=oracle-bin-win-gpu-dawn-${pin::12}-$h" >> "$GITHUB_OUTPUT"
+          clang-cl --version || "$CLANG_WIN/bin/clang-cl.exe" --version
+
+      - name: Restore binaries
+        id: bin
+        if: ${{ !inputs.rebuild }}
+        uses: actions/cache/restore@v4
+        with:
+          path: oracle-bin
+          key: ${{ steps.key.outputs.bin }}
+
+      - name: Fetch Skia and sync dependencies (short path)
+        if: steps.bin.outputs.cache-hit != 'true'
+        run: |
+          git config --system core.longpaths true
+          git clone --depth 1 --single-branch --branch chrome/m156 https://skia.googlesource.com/skia /c/s
+          test "$(git -C /c/s rev-parse HEAD)" = "${{ steps.key.outputs.pin }}" || true
+          cd /c/s
+          for attempt in 1 2 3 4; do
+            python3 tools/git-sync-deps && break
+            echo "git-sync-deps failed (attempt $attempt); retrying"; sleep $((60 * attempt))
+          done
+          python3 bin/fetch-gn
+          python3 bin/fetch-ninja
+
+      - name: Patch Skia
+        if: steps.bin.outputs.cache-hit != 'true'
+        run: |
+          cp oracle/dm/* /c/s/dm/
+          cd /c/s
+          for p in "$GITHUB_WORKSPACE"/oracle/patches/*.patch; do
+            git apply --check "$p"
+            git apply "$p"
+          done
+
+      - name: Build
+        if: steps.bin.outputs.cache-hit != 'true'
+        run: |
+          cd /c/s
+          mkdir -p out/oracle
+          cp "$GITHUB_WORKSPACE/gn-args.txt" out/oracle/args.gn
+          export PATH="$PWD/third_party/ninja:$PATH:/c/Program Files/CMake/bin"
+          bin/gn gen out/oracle
+          ninja -C out/oracle dm
+          mkdir -p "$GITHUB_WORKSPACE/oracle-bin"
+          cp out/oracle/dm.exe out/oracle/args.gn "$GITHUB_WORKSPACE/oracle-bin/"
+          cp -r resources "$GITHUB_WORKSPACE/oracle-bin/resources"
+          {
+            echo "tier-build = gpu-dawn (windows)"
+            echo "compiler = $("$CLANG_WIN/bin/clang-cl.exe" --version | head -n 1)"
+            echo "runner-image = ${ImageOS:-?} ${ImageVersion:-?}"
+            echo
+            echo "[args.gn]"
+            cat out/oracle/args.gn
+          } > "$GITHUB_WORKSPACE/oracle-bin/toolchain.txt"
+
+      - name: Save binaries
+        if: steps.bin.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: oracle-bin
+          key: ${{ steps.key.outputs.bin }}
+
+  warp-render:
+    name: gpu-render (WARP, run ${{ matrix.repeat }})
+    needs: warp-build
+    if: ${{ always() && !cancelled() && needs.warp-build.result == 'success' }}
+    runs-on: windows-2025
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        repeat: [1, 2]
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GPU_KIND: windows
+      CLANG_WIN: C:/Program Files/LLVM
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache key
+        id: key
+        run: |
+          pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
+          vc="$(cmd //c 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -latest -property installationPath | tr -d '\r' | sed 's#\\#/#g')/VC"
+          export WIN_VC="$vc"
+          python3 -I oracle/ci/oracle_ci.py gn-args gpu-dawn --windows > gn-args.txt
+          h=$( (cat gn-args.txt oracle/patches/*.patch oracle/dm/*) | sha256sum | cut -c1-16)
+          echo "bin=oracle-bin-win-gpu-dawn-${pin::12}-$h" >> "$GITHUB_OUTPUT"
+
+      - name: Restore binaries
+        uses: actions/cache/restore@v4
+        with:
+          path: oracle-bin
+          key: ${{ steps.key.outputs.bin }}
+          fail-on-cache-miss: true
+
+      - name: Download the published goldens
+        run: |
+          mkdir -p goldens
+          gh release download "${{ inputs.goldens_release }}" -R "$GITHUB_REPOSITORY" -D goldens \
+            -p hashes-m156.json -p objects-m156.tar
+
+      - name: Render and compare
+        run: oracle/ci/run_gpu.sh oracle-bin goldens results
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-gpu-warp-${{ matrix.repeat }}
+          path: |
+            results
+            oracle-bin/toolchain.txt
+            gn-args.txt
+          if-no-files-found: warn
