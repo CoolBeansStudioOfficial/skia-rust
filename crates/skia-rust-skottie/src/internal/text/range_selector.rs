@@ -619,35 +619,29 @@ impl Mt19937 {
 }
 
 // `std::shuffle(first, last, rng)` as the MSVC STL implements it (the standard leaves the
-// algorithm unspecified): a Fisher-Yates shuffle whose random indices come from
-// `_Rng_from_urng`, which draws 32-bit values from the engine into 64-bit words and rejects
-// biased ones. skia-rust: the oracle's STL cannot be checked here, so this is the algorithm
-// of that library as documented, not a verified match.
-#[allow(clippy::items_after_statements)] // the constants of `_Rng_from_urng`
+// algorithm unspecified): `_Random_shuffle1`, a Fisher-Yates shuffle whose random indices come from
+// `_Rng_from_urng_v2` (Daniel Lemire's "Fast Random Integer Generation in an Interval"), here for
+// `_Diff` = `ptrdiff_t` and a 32-bit engine: `_Bits` = 32, `_Udiff` = `uint64_t`, so one engine
+// output per index (`_Niter` = 1; the indices are far below 2^32) and a product of at most 96 bits.
+// Port of: microsoft/STL stl/inc/algorithm (`_Random_shuffle1`, `_Rng_from_urng_v2::operator()`).
 fn shuffle<T>(items: &mut [T], rng: &mut Mt19937) {
+    const BMASK: u64 = 0xffff_ffff;
+
     if items.is_empty() {
         return;
     }
 
-    // `_Rng_from_urng<ptrdiff_t, mt19937>`: `_Udiff` is 64 bits, the engine range is 32 bits.
-    const BITS: u32 = 32;
-    const BMASK: u64 = 0xffff_ffff;
-    let mut index = |upper: u64| -> u64 {
-        loop {
-            let mut ret: u64 = 0;
-            let mut mask: u64 = 0;
-            while mask < upper - 1 {
-                ret <<= BITS - 1;
-                ret <<= 1;
-                ret |= u64::from(rng.next_u32());
-                mask <<= BITS - 1;
-                mask <<= 1;
-                mask |= BMASK;
-            }
-            if ret / upper < mask / upper || mask % upper == upper - 1 {
-                return ret % upper;
+    let mut index = |bound: u64| -> u64 {
+        let mut product = u64::from(rng.next_u32()) * bound;
+        let mut rem = product & BMASK;
+        if rem < bound {
+            let threshold = (BMASK - bound + 1) % bound;
+            while rem < threshold {
+                product = u64::from(rng.next_u32()) * bound;
+                rem = product & BMASK;
             }
         }
+        product >> 32
     };
 
     for target in 1..items.len() {
@@ -660,3 +654,17 @@ fn shuffle<T>(items: &mut [T], rng: &mut Mt19937) {
 }
 
 opaque_debug!(RangeSelector);
+
+#[cfg(test)]
+mod tests {
+    use super::Mt19937;
+
+    // `std::mt19937 rng(42)`: reference values of the Mersenne Twister's `init_genrand(42)`.
+    #[test]
+    fn mt19937_seed_42() {
+        let mut rng = Mt19937::new(42);
+        assert_eq!(rng.next_u32(), 1_608_637_542);
+        assert_eq!(rng.next_u32(), 3_421_126_067);
+        assert_eq!(rng.next_u32(), 4_083_286_876);
+    }
+}

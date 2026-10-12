@@ -260,6 +260,10 @@ enum InventoryCommand {
         /// Run only this leg (and update only its entries).
         #[arg(long, value_enum)]
         only: Option<inventory::Leg>,
+        /// Skip this leg (repeatable); CI runs the slow `dm-image` and `dm-lottie` legs as jobs
+        /// of their own.
+        #[arg(long, value_enum, conflicts_with = "only")]
+        skip: Vec<inventory::Leg>,
     },
 }
 
@@ -279,7 +283,9 @@ fn main() -> Result<()> {
             }
             InventoryCommand::Stats => inventory::stats(&root),
             InventoryCommand::ModulePath { id } => inventory::module_path(&root, &id),
-            InventoryCommand::Verify { update, only } => inventory::verify(&root, update, only),
+            InventoryCommand::Verify { update, only, skip } => {
+                inventory::verify(&root, update, only, &skip)
+            }
         },
         Command::Oracle { command } => match command {
             OracleCommand::Deps => oracle::deps(&root),

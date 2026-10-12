@@ -341,6 +341,9 @@ fn no_variant_check(config: Config, name: &str, tp: &TierPlan, host_n32: ColorTy
 /// Renders `src` for every config in `opts` and every tier in `plan`, and compares against
 /// `store`.
 #[must_use]
+// One config x tier loop; the merge of the DM sources and the main branch's GM changes put it one
+// line over the limit.
+#[allow(clippy::too_many_lines)]
 pub fn check_gm(
     key: &str,
     src: &dyn Src,

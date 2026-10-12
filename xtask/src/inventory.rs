@@ -210,9 +210,9 @@ pub enum Leg {
 }
 
 /// Runs the ported unit tests, GMs, `SkSL` goldens, benches and fuzzers (or only the leg
-/// `only`) and checks them against the manifest. With `update`, marks newly passing entries
-/// `passing` and failing ported ones `failing`.
-pub fn verify(root: &Path, update: bool, only: Option<Leg>) -> Result<()> {
+/// `only`, or all but the legs in `skip`) and checks them against the manifest. With `update`,
+/// marks newly passing entries `passing` and failing ported ones `failing`.
+pub fn verify(root: &Path, update: bool, only: Option<Leg>, skip: &[Leg]) -> Result<()> {
     let mut m = read_manifest(root)?;
     let entries = |kind: Kind| -> Vec<(String, String)> {
         m.tests
@@ -221,7 +221,7 @@ pub fn verify(root: &Path, update: bool, only: Option<Leg>) -> Result<()> {
             .map(|e| (e.id.clone(), status_name(e.status).to_owned()))
             .collect()
     };
-    let runs = |leg: Leg| only.is_none_or(|only| only == leg);
+    let runs = |leg: Leg| only.is_none_or(|only| only == leg) && !skip.contains(&leg);
     let mut reports: Vec<(verify::Report, &str)> = Vec::new();
     if runs(Leg::Unit) {
         let results = verify::run_ported_tests(root)?;

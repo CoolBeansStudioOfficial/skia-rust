@@ -11,8 +11,8 @@
 //! the other configs are not checked ([`CONFIGS`]).
 //!
 //! `FLAGS_useLottieGlyphPaths` is false (the default): the builder flags are empty.
-//! `setTextShapingFactory(SkShapers::BestAvailable())` is not passed: the builder has no text
-//! shaping factory yet (text layers wait for Skottie text, M22).
+//! The text shaping factory is `SkShapers::BestAvailable()`, the font manager
+//! `ToolUtils::TestFontMgr()`.
 
 // The C++ converts between int and SkScalar as written (frame indices 0..=4, tile counts, the
 // 1000 pixel target size): the values are small, so the conversions are exact.
@@ -97,7 +97,8 @@ impl Src for SkottieSrc {
         builder
             .set_font_manager(test_font_mgr())
             .set_resource_provider(resource_provider)
-            .set_precomp_interceptor(precomp_interceptor);
+            .set_precomp_interceptor(precomp_interceptor)
+            .set_text_shaping_factory(skia_rust_shaper::best_available());
         let Some(animation) = builder.make_from_file(&self.path) else {
             return DmResult::new(Status::Fatal, format!("Unable to parse file: {path}"));
         };

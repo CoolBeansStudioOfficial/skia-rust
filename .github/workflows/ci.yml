@@ -137,5 +137,40 @@ jobs:
           sudo apt-get install -y mesa-vulkan-drivers
           echo "RUSTFLAGS=${RUSTFLAGS} --cfg skia_rust_adapter_tests" >> "$GITHUB_ENV"
           echo "SKIA_RUST_REQUIRE_ADAPTER=1" >> "$GITHUB_ENV"
+      # The DM legs take about 85 (dm-image) and 50 (dm-lottie) minutes, so they run as the two
+      # jobs below, in parallel with this one.
       - name: Ported tests agree with the manifest (no regressions, no unmarked passes)
-        run: cargo xtask inventory verify
+        run: cargo xtask inventory verify --skip dm-image --skip dm-lottie
+
+  # DM's `--src image` sources against the CI oracle's goldens (docs/PORTING.md). Without the
+  # goldens (not published yet) `dm-verify` reports that and checks nothing, as in the job above.
+  inventory-dm-image:
+    name: Manifest agrees with DM image sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache Skia checkout
+        uses: actions/cache@v4
+        with:
+          path: third_party/skia
+          key: skia-${{ hashFiles('inventory/skia-pin.toml') }}
+      - run: cargo xtask skia fetch
+      - run: cargo xtask inventory verify --only dm-image
+
+  # DM's `--src lottie` sources (mostly skottie-fractalnoise-sphere on the scalar tier).
+  inventory-dm-lottie:
+    name: Manifest agrees with DM lottie sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache Skia checkout
+        uses: actions/cache@v4
+        with:
+          path: third_party/skia
+          key: skia-${{ hashFiles('inventory/skia-pin.toml') }}
+      - run: cargo xtask skia fetch
+      - run: cargo xtask inventory verify --only dm-lottie

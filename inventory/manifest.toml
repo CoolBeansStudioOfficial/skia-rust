@@ -13985,7 +13985,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-brightnesscontrast-legacy.json"
 module = "skottie"
 status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+reason = "text layers render now; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4. The file's text uses the Arial font (not in the test font set); this legacy variant is a plain matrix colour filter (no pow), so the text/shape content is the first suspect (see notes/dm_lottie_skottie-brightnesscontrast.md)"
 span_hash = "161798288a36766f73a5fa72ffa03667b6442a069fe3c42d2e16f147c5e3bdcb"
 
 [[test]]
@@ -13994,7 +13994,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-brightnesscontrast.json"
 module = "skottie"
 status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+reason = "text layers render now; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4. The file's text uses the Arial font (not in the test font set) and the brightness effect uses std::pow; the legacy variant (matrix colour filter, no pow) differs too, so the text/shape content is the first suspect (see notes/dm_lottie_skottie-brightnesscontrast.md)"
 span_hash = "6e8fe04d4e193255732dd58baa881aa32b7ed52658a50ea3718348d331fd1c74"
 
 [[test]]
@@ -14003,7 +14003,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-bulge.json"
 module = "skottie"
 status = "todo"
-reason = "8888 differs from the CI oracle on sse2,sse41,ml3,ml4; the bulge effect goes through asinf and pow (libm class: glibc oracle, not a confirmed port bug; recheck with the clean-room libm)"
+reason = "8888 differs from the CI oracle on every checked tier (sse2,sse41,ml3,ml4) with the clean-room libm; the remaining host-libm calls of the effect are asinf (glibc here, 348 of 4000 sampled inputs differ from the correctly rounded value; a correctly rounded asinf changes the hash but does not match) and pow(double, double) (UCRT on the oracle); see notes/dm_lottie_skottie-gradient-radial-highlight.md"
 span_hash = "0f7e266e82bbf8e164f2acbeff508f90e307465ffd7961895d046bcb44d641b2"
 
 [[test]]
@@ -14259,8 +14259,7 @@ id = "dm/lottie/skottie-gaussian-blur.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-gaussian-blur.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "e92b52760c9d2b8f8acec19e06b1c0490a3431bc371133c701dc8c7244262d8a"
 
 [[test]]
@@ -14285,7 +14284,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-gradient-radial-highlight.json"
 module = "skottie"
 status = "todo"
-reason = "8888 differs from the CI oracle on sse2,sse41 only (scalar, ml3 and ml4 match): a tier-specific raster pipeline difference in the radial gradient with a focal point, not text and not libm; unresolved"
+reason = "8888 differs from the CI oracle on sse2,sse41 only (scalar, ml3 and ml4 match): the animated highlight reaches the focal-on-circle limit (h = +-100% clamps to +-(1 - eps)); oracle/rp-diff has no two-point-conical cases and the oracle host is gone, so a tier difference in xy_to_2pt_conical_* cannot be pinned down (see notes/dm_lottie_skottie-gradient-radial-highlight.md)"
 span_hash = "bf9b277c5d4b8fcf899bcc8c40fb237a05ae8693cb6b43f6a505f5e06d514896"
 
 [[test]]
@@ -14325,8 +14324,7 @@ id = "dm/lottie/skottie-inline-fonts.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-inline-fonts.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "0655ae9ab0a9f9c99ff7002dde531fc6155741f129cdad09d092a91ffe444eab"
 
 [[test]]
@@ -14374,8 +14372,7 @@ id = "dm/lottie/skottie-line-height.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-line-height.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "a6607d37d8eb34e71e5932b44402d220a5142aa3e76ebcdcc29b9480dc328bbe"
 
 [[test]]
@@ -14503,8 +14500,7 @@ id = "dm/lottie/skottie-multi-range-selectors.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-multi-range-selectors.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "a4d5b85f9ee58d13e29e8dca4ae8aae51b7e62ae7ed97b4b26016de80a7fca3a"
 
 [[test]]
@@ -14760,8 +14756,7 @@ id = "dm/lottie/skottie-shift-channels-fullon-alpha.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-shift-channels-fullon-alpha.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "5ec0d8c430a184a79fddba185dbf772fd2f24c4ad0ba38afc0967a110574e0d2"
 
 [[test]]
@@ -14793,8 +14788,7 @@ id = "dm/lottie/skottie-slots.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-slots.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "2407e489013bd68efca0dbbb4ce720b0d22988536cbce95cef1d6292fe02d6e2"
 
 [[test]]
@@ -14842,8 +14836,7 @@ id = "dm/lottie/skottie-sphere-transparecy.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-transparecy.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "e0f0193b4dfa05054a4708f69dc2ddc4ee71e9a9750a5a0eb8b427ad8e0dc301"
 
 [[test]]
@@ -14851,8 +14844,7 @@ id = "dm/lottie/skottie-text-allcaps.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-allcaps.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "e4dd8609d3fb688f979cac157391965242153c512f63539d74bd9715cbd71576"
 
 [[test]]
@@ -14860,8 +14852,7 @@ id = "dm/lottie/skottie-text-animatedglyphs-01.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-01.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "2052888f189222d64e005a16fd76c06aac5c67cf4a1dbaa64f9127d2f046dd83"
 
 [[test]]
@@ -14869,8 +14860,7 @@ id = "dm/lottie/skottie-text-animatedglyphs-02.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-02.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "ce30b4fa882e2547f0c106d450fb9d9518bf0faf08cfa5d5de53cedbadc15642"
 
 [[test]]
@@ -14878,8 +14868,7 @@ id = "dm/lottie/skottie-text-animatedglyphs-03.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-03.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "cd6540d94817cbeb4bb565bacd86e0d4be6495382925369ad2704a4396bbdd4e"
 
 [[test]]
@@ -14887,8 +14876,7 @@ id = "dm/lottie/skottie-text-animatedglyphs-04.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-04.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "618633cb8629f9aac993902636862c2ab0d7a8bd009e6262007c4d79b96722f6"
 
 [[test]]
@@ -14896,8 +14884,7 @@ id = "dm/lottie/skottie-text-animator-1.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-1.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "15f7481c1f9093852c8d7535c2645b5be6a8c382360601ff72d6d3551ef01e26"
 
 [[test]]
@@ -14905,8 +14892,7 @@ id = "dm/lottie/skottie-text-animator-2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-2.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "a01eb814c3a97a9acbbe274c75c18ace042b7bfb097971e2744edb012f7f3d06"
 
 [[test]]
@@ -14914,8 +14900,7 @@ id = "dm/lottie/skottie-text-animator-3.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-3.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "ed3d721cc6ef9dcef00c4176f035144eb78b91b30cdc47fe729a73993ce6da13"
 
 [[test]]
@@ -14923,8 +14908,7 @@ id = "dm/lottie/skottie-text-animator-4.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-4.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "91e1d59ac580855d582ba690c834774174a4b726b6afb0ce9c5e04407df2244a"
 
 [[test]]
@@ -14932,8 +14916,7 @@ id = "dm/lottie/skottie-text-animator-5.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-5.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "5dc66372e0653ce2bc6832e3f4f129deecf7ea418d10a1d8e0d82fdc727d0f77"
 
 [[test]]
@@ -14941,8 +14924,7 @@ id = "dm/lottie/skottie-text-animator-6.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-6.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "306cc9478b2385010c5e06bd1a9b4a7ba98e60c8cc9c4309ab27a55c91c6a78c"
 
 [[test]]
@@ -14950,8 +14932,7 @@ id = "dm/lottie/skottie-text-animator-7.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-7.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "4da3c375861eca9f15402b4517ddaf4d89a62fb9b1ead5c141109f09fa208dee"
 
 [[test]]
@@ -14959,8 +14940,7 @@ id = "dm/lottie/skottie-text-animator-8.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-8.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "fb7e0b68ae2cb3e66ff16f6bf7a43e5665d42ea529c6dfa11cc0b65b634b375e"
 
 [[test]]
@@ -14968,8 +14948,7 @@ id = "dm/lottie/skottie-text-animator-fillstrokeopacity.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-fillstrokeopacity.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "70a20622fd397607fb9aa63e1957b107156f0b9103072b3e5306ad5a914facbe"
 
 [[test]]
@@ -14977,8 +14956,7 @@ id = "dm/lottie/skottie-text-animator-linespacing.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-linespacing.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "b37864ce5c800d4d882fd2fa6c2af8c2f006115c2cc5c4605f36ca45e39721f5"
 
 [[test]]
@@ -14986,8 +14964,7 @@ id = "dm/lottie/skottie-text-animator-opacity.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-opacity.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "63d3d83d89e1843c8c658c449b75286c97ae51f6212892816c158896bcb341f2"
 
 [[test]]
@@ -14996,7 +14973,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-randomize-1.json"
 module = "skottie"
 status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+reason = "text layers render now; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4: the randomize range selector shuffles with a reconstructed MSVC std::shuffle (Lemire _Rng_from_urng_v2 over mt19937(42); the older rejection version and libc++ order were also tried, none match). Disabling the shuffle does not match either, so the cause may be elsewhere (see notes/dm_lottie_skottie-text-animator-randomize.md)"
 span_hash = "d3c7a6a499865fe13cf1af87e31aed20084f7836a46cb6a2b09bd95d1f407f6a"
 
 [[test]]
@@ -15005,7 +14982,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-randomize-2.json"
 module = "skottie"
 status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+reason = "text layers render now; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4: the randomize range selector shuffles with a reconstructed MSVC std::shuffle (Lemire _Rng_from_urng_v2 over mt19937(42); the older rejection version and libc++ order were also tried, none match). Disabling the shuffle does not match either, so the cause may be elsewhere (see notes/dm_lottie_skottie-text-animator-randomize.md)"
 span_hash = "71b08657303646319748734015d967f8d11c407f1dbe0ee34ae1342bd48d796f"
 
 [[test]]
@@ -15013,8 +14990,7 @@ id = "dm/lottie/skottie-text-animator-strokewidth.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-strokewidth.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "2664952feaa75a0fb6ff47af983554e0ce9ad3a791706505dab2a0aa2a8eff4c"
 
 [[test]]
@@ -15022,8 +14998,7 @@ id = "dm/lottie/skottie-text-baseline-shift.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-baseline-shift.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "f3dfae7eaaac3abc3f36fa1e140c2b03540489eb54b2348baaa43a3c5265f116"
 
 [[test]]
@@ -15031,8 +15006,7 @@ id = "dm/lottie/skottie-text-blur.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-blur.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "6c5f419cf0f56bb451a081969bd541498c6542c65612835050f1e00d32267fbd"
 
 [[test]]
@@ -15040,8 +15014,7 @@ id = "dm/lottie/skottie-text-emptylines.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-emptylines.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "980bc57ccb818416990857100372c68d0b50ae43886fa99b6948d56d789f2d86"
 
 [[test]]
@@ -15049,8 +15022,7 @@ id = "dm/lottie/skottie-text-fill-over-stroke.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-fill-over-stroke.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "d5e3732854a3044334425a1879048117d4d569af38de11bd39fa62136ee90add"
 
 [[test]]
@@ -15058,8 +15030,7 @@ id = "dm/lottie/skottie-text-grouping-alignment-2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-grouping-alignment-2.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "1a438bd4cb8d68c2107432f407f598e6e5aab7ee471527ba6dfd1ec3ab865cad"
 
 [[test]]
@@ -15067,8 +15038,7 @@ id = "dm/lottie/skottie-text-grouping-alignment.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-grouping-alignment.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "366d2012e10800920407b596957967c30dd65a03ee30e9871fb721dd1ef09bca"
 
 [[test]]
@@ -15076,8 +15046,7 @@ id = "dm/lottie/skottie-text-perchar-3d.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-perchar-3d.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "e205cf79803ee5d87a6579bf75abd83e3ea152d2cf908a019ff5274a5f7393aa"
 
 [[test]]
@@ -15085,8 +15054,7 @@ id = "dm/lottie/skottie-text-pointmode-downscaletofit.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-pointmode-downscaletofit.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "55027de052d10486a660d595ce3985a5b47fc341dd5d147e0b2e3ac56a08137c"
 
 [[test]]
@@ -15094,8 +15062,7 @@ id = "dm/lottie/skottie-text-pointmode-scaletofit.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-pointmode-scaletofit.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "57c30517cb506ecd8a326b7ba0566e4875ceeac8c3036baaf0a2e4ad2803fc1e"
 
 [[test]]
@@ -15103,8 +15070,7 @@ id = "dm/lottie/skottie-text-resize-to-fit.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-resize-to-fit.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "e58f6358691a6d39f1388504ee4273dd6ac6f9c8d35b9fd26f5a02751151d822"
 
 [[test]]
@@ -15112,8 +15078,7 @@ id = "dm/lottie/skottie-text-rtl.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-rtl.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "4dcabb6e61e4db8381354580f0a19ec29c9152538b0d56258d9daa79ac2c5062"
 
 [[test]]
@@ -15121,8 +15086,7 @@ id = "dm/lottie/skottie-text-scale-to-fit-maxlines.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit-maxlines.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "abf51a43af965372f72b83be7cceb64f7b8ff843fba63ea2d369ddd28f2b0cdc"
 
 [[test]]
@@ -15130,8 +15094,7 @@ id = "dm/lottie/skottie-text-scale-to-fit-minmax.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit-minmax.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "f2f5d1cc0109568a726569af3698fc649e0d12b6254c49bc66e8973e4c508edf"
 
 [[test]]
@@ -15139,8 +15102,7 @@ id = "dm/lottie/skottie-text-scale-to-fit.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "db02b67c21e9797bd4f7303bbabf692834a3ecfc4976e9a7e498ada0df2319c0"
 
 [[test]]
@@ -15148,8 +15110,7 @@ id = "dm/lottie/skottie-text-strokejoin.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-strokejoin.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "28d59b8bd69d9a548dc2d1ac4d21a7def41cb8c86de6b3081f73d43cfafe7cd4"
 
 [[test]]
@@ -15157,8 +15118,7 @@ id = "dm/lottie/skottie-text-strokescale.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-strokescale.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "19d00eadc8407f35ec80e2e4072fa74e24cb267f176c519d6256c7eab43847cc"
 
 [[test]]
@@ -15166,8 +15126,7 @@ id = "dm/lottie/skottie-text-tracking.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-tracking.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "8ca8690deb805422b1ccbd2ef3bf0e992943c69c19893800faf28ef0e063be3b"
 
 [[test]]
@@ -15175,8 +15134,7 @@ id = "dm/lottie/skottie-text-valign-2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-2.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "8f41d4978e57430441e5e659dd10c5103b3839c161f4236bf5d6bcbce3356f4f"
 
 [[test]]
@@ -15184,8 +15142,7 @@ id = "dm/lottie/skottie-text-valign-bottom.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-bottom.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "7fd6536fdaf91a08f69b022f17710fd7bb19c42c9ae6d4609cf28c1e03c9bf45"
 
 [[test]]
@@ -15193,8 +15150,7 @@ id = "dm/lottie/skottie-text-valign-scaletofit.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-scaletofit.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "1635414e999882d1b04b98b17f94976ca500cde87e88efcd4fda1a06a8ec9fee"
 
 [[test]]
@@ -15202,8 +15158,7 @@ id = "dm/lottie/skottie-text-valign-visual-2.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-visual-2.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "f0e522d1000efa71f9d174c1e17540f31480de78dc6a4937eef78318a06e771c"
 
 [[test]]
@@ -15211,8 +15166,7 @@ id = "dm/lottie/skottie-text-valign-visual-scaletofit.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-visual-scaletofit.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "c7863915ebfca07f24e018645aa3656835f840fa7a7d0f434b156aed13415ce8"
 
 [[test]]
@@ -15220,8 +15174,7 @@ id = "dm/lottie/skottie-text-valign.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "3fbbe4222ced18c80c543a618f89036fd97e8a2a2e811f72272b80e426cb8345"
 
 [[test]]
@@ -15229,8 +15182,7 @@ id = "dm/lottie/skottie-text-variations.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-variations.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "76bfcdd62ad15572dca871099e028e80ccc6e085517dc18a1557fbea5305f432"
 
 [[test]]
@@ -15238,8 +15190,7 @@ id = "dm/lottie/skottie-text-vertical-clip.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-vertical-clip.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "edfe24823850d67004addfa6ab9f8c5b81e19cd69fad54c939019a839253420a"
 
 [[test]]
@@ -15247,8 +15198,7 @@ id = "dm/lottie/skottie-text-whitespace-align.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-whitespace-align.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "e7d18544a99b59444099ba606b285632eff81720e9e56745de32f940f1a8f72f"
 
 [[test]]
@@ -15256,8 +15206,7 @@ id = "dm/lottie/skottie-text-words-linebreak.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-text-words-linebreak.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "e25e55fee86b20ebaeb3175dbbed56ae7a36444d936263272e2acf2e76a2d22e"
 
 [[test]]
@@ -15265,8 +15214,7 @@ id = "dm/lottie/skottie-textpath-01.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-01.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "cf9ae7caa436232c8e0ae648b3a3d18a498820145700cef95125082c99cbdd03"
 
 [[test]]
@@ -15274,8 +15222,7 @@ id = "dm/lottie/skottie-textpath-02.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-02.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "7c0003acbdac15474776b66da9284cdf32f5fa706c0bd73e8a0367cbf865bec4"
 
 [[test]]
@@ -15283,8 +15230,7 @@ id = "dm/lottie/skottie-textpath-03.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-03.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "cef31b7dce69146ab048ef1d7851f6ad6fcaa89eae3afb6e3bf587e8a9730de5"
 
 [[test]]
@@ -15292,8 +15238,7 @@ id = "dm/lottie/skottie-textpath-04.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-04.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "5efe7c7d8a1503bee69b633a05daa851b26f54dba2506dfd09ab125fb5b1e065"
 
 [[test]]
@@ -15301,8 +15246,7 @@ id = "dm/lottie/skottie-textpath-05.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-05.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "3a62f6e220d2650596fcc979ea801a6ab8429446bb6e1248bf99eb7d0d58d310"
 
 [[test]]
@@ -15310,8 +15254,7 @@ id = "dm/lottie/skottie-textpath-paragraph-01.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-01.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "16c0840a09ff15b54b1f49cec6905a6f87a778a1ea9896bd832f46c96cab1534"
 
 [[test]]
@@ -15319,8 +15262,7 @@ id = "dm/lottie/skottie-textpath-paragraph-02.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-02.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "c2187abfe4271392c42af1ff37e642dd42887b060fe08b1edc3278ee44b67555"
 
 [[test]]
@@ -15328,8 +15270,7 @@ id = "dm/lottie/skottie-textpath-paragraph-03.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-03.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "aa91eb33dde00df259657a1ca9fc4e987a9634616113744e10405d4619dea520"
 
 [[test]]
@@ -15337,8 +15278,7 @@ id = "dm/lottie/skottie-textpath-tracking.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-tracking.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "08fcc3ab9be1a97d0db64b4d85ba68250e14ebdb948db84b009e77a751b938b1"
 
 [[test]]
@@ -15458,8 +15398,7 @@ id = "dm/lottie/skottie_sample_webfont.json"
 kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_webfont.json"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text layers (M22): the file has a text layer, which the port does not render yet; 8888 differs from the CI oracle on sse2,sse41,ml3,ml4"
+status = "passing"
 span_hash = "6a91ac6ca704e7ecbc58b4042a7e2b3071f398bb03a9dec22718f19e4ff9627e"
 
 [[test]]
