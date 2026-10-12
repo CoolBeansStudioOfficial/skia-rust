@@ -166,7 +166,7 @@ jobs:
   render:
     name: render (${{ matrix.tier }})
     needs: build
-    if: ${{ always() && needs.build.result == 'success' && contains(inputs.builds, matrix.build) }}
+    if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -183,8 +183,10 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+        if: ${{ contains(inputs.builds, matrix.build) }}
 
       - name: Cache key
+        if: ${{ contains(inputs.builds, matrix.build) }}
         id: key
         run: |
           pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
@@ -194,6 +196,7 @@ jobs:
           echo "bin=oracle-bin-$BUILD-${pin::12}-$h" >> "$GITHUB_OUTPUT"
 
       - name: Restore binaries
+        if: ${{ contains(inputs.builds, matrix.build) }}
         uses: actions/cache/restore@v4
         with:
           path: oracle-bin
@@ -201,9 +204,11 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Tools
+        if: ${{ contains(inputs.builds, matrix.build) }}
         run: sudo apt-get install -y --no-install-recommends zstd
 
       - name: Download the published goldens
+        if: ${{ contains(inputs.builds, matrix.build) }}
         run: |
           mkdir -p goldens
           gh release download "${{ inputs.goldens_release }}" -R "$GITHUB_REPOSITORY" -D goldens \
@@ -214,6 +219,7 @@ jobs:
             || echo "::warning::hashes-m156.json differs from inventory/goldens.lock"
 
       - name: Imported libm symbols and diagnostic shim
+        if: ${{ contains(inputs.builds, matrix.build) }}
         run: |
           mkdir -p results
           nm -D --undefined-only oracle-bin/dm | grep -E ' (sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|exp|exp2|log|log2|log10|pow|cbrt|hypot|sincos|erf|fma)f?(@|$)' | tee results/libm-imports.txt
@@ -221,6 +227,7 @@ jobs:
           ldd --version | head -n 1 | tee results/glibc.txt
 
       - name: Render and compare
+        if: ${{ contains(inputs.builds, matrix.build) }}
         env:
           SHIM: ${{ inputs.libm_shim && '1' || '0' }}
           EXTRAS: ${{ inputs.extras && '1' || '0' }}
@@ -230,7 +237,7 @@ jobs:
           oracle/ci/run_tiers.sh "$BUILD" oracle-bin goldens results "${{ matrix.tier }}"
 
       - name: Upload results
-        if: always()
+        if: ${{ always() && contains(inputs.builds, matrix.build) }}
         uses: actions/upload-artifact@v4
         with:
           name: oracle-results-${{ matrix.tier }}
