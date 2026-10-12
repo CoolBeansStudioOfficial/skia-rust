@@ -18,10 +18,12 @@
     clippy::float_cmp
 )]
 
+mod atan;
 mod reduce;
 mod tan;
 mod trig;
 
+pub use atan::atanf;
 pub use tan::tanf;
 #[doc(hidden)]
 pub use tan::tanf_trace;

@@ -1,3 +1,4 @@
 sinf
 cosf
 tanf
+atanf

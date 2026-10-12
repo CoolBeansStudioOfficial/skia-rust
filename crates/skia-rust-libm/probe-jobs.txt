@@ -1,2 +1,7 @@
 # tag fn n xmode xlo xhi [ymode ylo yhi]   (see examples/probe.rs; earlier rounds: probe-jobs.round*.txt)
-smoke sinf 1000 bits 0.5 1.0
+# atan2f takes (y, x) = (first, second)
+atan2f_t1 atan2f 1000000 bits 0.001 0.1 bits 10 1000
+atan2f_t2 atan2f 1000000 bits 0.0001 0.01 bits 1 100
+atan2f_t3 atan2f 1000000 bits 0.01 1 bits 0.01 1
+atan2f_t4 atan2f 1000000 bits 1 1000 bits 0.01 1
+atan2f_t5 atan2f 1000000 symbits 0.00001 100000 symbits 0.00001 100000
