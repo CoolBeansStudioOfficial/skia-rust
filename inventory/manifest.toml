@@ -35008,8 +35008,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L935-L1118"
 module = "effects"
-status = "todo"
-reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
+status = "passing"
 span_hash = "8919614c6ba66b3f18d088a537126666cf8fefaf4f4648555532f86ec9d2151c"
 
 [[test]]
@@ -35018,8 +35017,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L75-L110"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "0cee14bd055d60b8ba11bc1c26bf2eb616f3fa2bab023997847bb7539a71caa8"
 
 [[test]]
@@ -35028,8 +35026,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1205-L1329"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "7f040f5e8eb339611e89353569e8c9aafe5d3b74ce02e5c411b1eea98254f3ff"
 
 [[test]]
@@ -35038,8 +35035,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L228-L281"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "8a7ede3298e6d8b6e13ebe08c323c1637493a8201d43fa663bb2507694b3a83a"
 
 [[test]]
@@ -35048,8 +35044,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L112-L226"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "1f71392e2cca295a1921a919e0fa53674624f301bf856aaeab6f7e5e6ce14b4b"
 
 [[test]]
@@ -35058,8 +35053,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L283-L321"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "f3e9658e6c2e55952e3d07e2a00336d1b5eaf798d2b278ccd17c99709e2a3d2e"
 
 [[test]]
@@ -35068,8 +35062,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L485-L932"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "26c0d5e13841f0866e31ecdd45adac15608493bc3a745069f22454747bed98ed"
 
 [[test]]
@@ -35078,8 +35071,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L323-L415"
 module = "core"
-status = "todo"
-reason = "needs SkHdrMetadata Agtm parse and serialize, PCHIP and RWTMO (the CLLI and MDCV parts are ported); no AGTM module is ported"
+status = "passing"
 span_hash = "bd83ad66c9f141eceafc771d8f64dc6ce3c329bcbe68540cc3996f64e18e8715"
 
 [[test]]
@@ -35106,8 +35098,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1120-L1203"
 module = "effects"
-status = "todo"
-reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
+status = "passing"
 span_hash = "fb3bcbe96da112d41cacc3db4725ea649e707a39e44019bfc7056b6fcf2fc5ff"
 
 [[test]]
