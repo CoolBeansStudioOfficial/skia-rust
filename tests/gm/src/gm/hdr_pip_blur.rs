@@ -202,5 +202,9 @@ impl GM for HdrPipBlurGm {
 }
 
 // Port of: gm/hdr_pip_blur.cpp#L199 (DEF_GM, chrome/m156)
-#[ignore = "see notes/gm_hdr_pip_blur_cpp_HDRPiPBlurGM.md"]
-crate::def_gm!(HDRPiPBlurGM, HdrPipBlurGm::default());
+
+crate::def_gm!(
+    #[ignore = "see notes/gm_hdr_pip_blur_cpp_HDRPiPBlurGM.md"]
+    HDRPiPBlurGM,
+    HdrPipBlurGm::default()
+);

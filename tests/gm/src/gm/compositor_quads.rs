@@ -3,9 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/compositor_quads.cpp (chrome/m156)
 //
-// skia-rust: the "debug" and "color" grids. The "shader", "filter" and "image" grids need
-// shaders, color/image/mask filters, YUV images and image-set batching, which are not ported
-// yet, so they are not registered here.
+// skia-rust: the "image" grid's YUV renderer draws nothing on raster (there is no GPU for its
+// `LazyYUVImage`), as DM's raster config does; see `YuvTextureSetRenderer`.
 
 // Casts and names mirror the C++ arithmetic and loop counters this file ports, so they stay
 // as written in the source.
@@ -17,18 +16,40 @@
     clippy::too_many_lines
 )]
 
+use std::cell::RefCell;
+
 use crate::prelude::*;
-use skia_rust_core::canvas::QuadAAFlags;
-use skia_rust_core::color::Color4f;
+use crate::tool_utils::{get_resource_as_data, get_resource_as_image};
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::canvas::{ImageSetEntry, QuadAAFlags, SrcRectConstraint};
+use skia_rust_core::color::{Color4f, colors};
+use skia_rust_core::color_filter::ColorFilter;
+use skia_rust_core::color_filters::{self, Clamp};
+use skia_rust_core::color_matrix::ColorMatrix;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::floating_point::float_round2int;
 use skia_rust_core::font::Font;
+use skia_rust_core::image::Image;
+use skia_rust_core::image_filter::ImageFilter;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::line_clipper::intersect_line;
+use skia_rust_core::m44::M44;
+use skia_rust_core::mask_filter::MaskFilter;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path_types::PathDirection;
 use skia_rust_core::point::Point;
+use skia_rust_core::rect::IRect;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::FilterMode;
 use skia_rust_core::scalar::{Scalar, scalar};
+use skia_rust_core::shader::Shader;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_effects::image_filters::dilate;
+use skia_rust_effects::shader_mask_filter;
 use skia_rust_tools::font_tool_utils::default_portable_typeface;
 
 const TILE_WIDTH: scalar = 40.0;
@@ -198,50 +219,58 @@ trait ClipTileRenderer {
     /// Draws the tile grid, split by the three clipping lines. Returns the draw count.
     // Port of: gm/compositor_quads.cpp#L220-L252 (chrome/m156)
     fn draw_tiles(&self, canvas: &Canvas) -> i32 {
-        // All three lines in a list
-        let [p1, p2, p3] = clip_points();
-        let mut lines = Vec::with_capacity(6);
-        lines.extend(clipping_line_segment(p1, p2));
-        lines.extend(clipping_line_segment(p2, p3));
-        lines.extend(clipping_line_segment(p3, p1));
-
-        let mut tile_id = 0;
-        let mut draw_count = 0;
-        for i in 0..ROW_COUNT {
-            for j in 0..COL_COUNT {
-                // The unclipped tile geometry
-                let tile = Rect::from_xywh(
-                    j as scalar * TILE_WIDTH,
-                    i as scalar * TILE_HEIGHT,
-                    TILE_WIDTH,
-                    TILE_HEIGHT,
-                );
-                // Base edge AA flags if there are no clips; clipped lines will only turn off edges
-                let edge_aa = [
-                    i == 0,             // Top
-                    j == COL_COUNT - 1, // Right
-                    i == ROW_COUNT - 1, // Bottom
-                    j == 0,             // Left
-                ];
-
-                // Now clip against the 3 lines formed by kClipPx and split into general purpose
-                // quads as needed.
-                let mut quad_count = 0;
-                draw_count += clip_tile(
-                    self,
-                    canvas,
-                    tile_id,
-                    &tile,
-                    None,
-                    edge_aa,
-                    &lines,
-                    &mut quad_count,
-                );
-                tile_id += 1;
-            }
-        }
-        draw_count
+        draw_tile_grid(self, canvas)
     }
+}
+
+/// The grid loop of `ClipTileRenderer::drawTiles` (`INHERITED::drawTiles`): every tile of the
+/// grid, split by the three clipping lines, drawn with `draw_tile`. A renderer that overrides
+/// `draw_tiles` calls it for the grid and then flushes what it accumulated.
+// Port of: gm/compositor_quads.cpp#L220-L252 (chrome/m156)
+fn draw_tile_grid(renderer: &(impl ClipTileRenderer + ?Sized), canvas: &Canvas) -> i32 {
+    // All three lines in a list
+    let [p1, p2, p3] = clip_points();
+    let mut lines = Vec::with_capacity(6);
+    lines.extend(clipping_line_segment(p1, p2));
+    lines.extend(clipping_line_segment(p2, p3));
+    lines.extend(clipping_line_segment(p3, p1));
+
+    let mut tile_id = 0;
+    let mut draw_count = 0;
+    for i in 0..ROW_COUNT {
+        for j in 0..COL_COUNT {
+            // The unclipped tile geometry
+            let tile = Rect::from_xywh(
+                j as scalar * TILE_WIDTH,
+                i as scalar * TILE_HEIGHT,
+                TILE_WIDTH,
+                TILE_HEIGHT,
+            );
+            // Base edge AA flags if there are no clips; clipped lines will only turn off edges
+            let edge_aa = [
+                i == 0,             // Top
+                j == COL_COUNT - 1, // Right
+                i == ROW_COUNT - 1, // Bottom
+                j == 0,             // Left
+            ];
+
+            // Now clip against the 3 lines formed by kClipPx and split into general purpose
+            // quads as needed.
+            let mut quad_count = 0;
+            draw_count += clip_tile(
+                renderer,
+                canvas,
+                tile_id,
+                &tile,
+                None,
+                edge_aa,
+                &lines,
+                &mut quad_count,
+            );
+            tile_id += 1;
+        }
+    }
+    draw_count
 }
 
 /// `maskToFlags`: the AA flags for the edges in `edge_aa` (top, right, bottom, left).
@@ -564,6 +593,474 @@ impl ClipTileRenderer for SolidColorRenderer {
 
 type RendererFactory = fn() -> Vec<Box<dyn ClipTileRenderer>>;
 
+/// `TextureSetRenderer` (compositor_quads.cpp#L648-L892): "tests `drawEdgeAAImageSet()`, but can
+/// batch the entries together in different ways". The tiles are accumulated as image-set entries
+/// and drawn with `experimental_DrawEdgeAAImageSet`, flushed after each quad or after each batch of
+/// `transform_batch_count` transforms.
+// Port of: gm/compositor_quads.cpp#L648-L892 (chrome/m156)
+struct TextureSetRenderer {
+    top_banner: String,
+    bottom_banner: String,
+    image: Image,
+    shader: Option<Shader>,
+    color_filter: Option<ColorFilter>,
+    image_filter: Option<ImageFilter>,
+    mask_filter: Option<MaskFilter>,
+    paint_alpha: f32,
+    reset_each_quad: bool,
+    transform_batch_count: i32,
+    // The mutable accumulators of the C++ class (`drawTile` and `drawAndReset` change them).
+    state: RefCell<TextureSetState>,
+}
+
+/// The accumulated set of `TextureSetRenderer` (`fDstClips`, `fPreViewMatrices`, `fSetEntries`,
+/// `fBaseCTM`, `fBatchCount`).
+#[derive(Default)]
+struct TextureSetState {
+    dst_clips: Vec<Point>,
+    pre_view_matrices: Vec<Matrix>,
+    set_entries: Vec<ImageSetEntry>,
+    base_ctm: Matrix,
+    batch_count: i32,
+}
+
+impl TextureSetRenderer {
+    // Port of: TextureSetRenderer::Make (compositor_quads.cpp#L683-L700)
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
+    fn make(
+        top_banner: &str,
+        bottom_banner: &str,
+        image: Image,
+        shader: Option<Shader>,
+        color_filter: Option<ColorFilter>,
+        image_filter: Option<ImageFilter>,
+        mask_filter: Option<MaskFilter>,
+        paint_alpha: f32,
+        reset_after_each_quad: bool,
+        transform_count: i32,
+    ) -> Box<dyn ClipTileRenderer> {
+        Box::new(Self {
+            top_banner: top_banner.to_owned(),
+            bottom_banner: bottom_banner.to_owned(),
+            image,
+            shader,
+            color_filter,
+            image_filter,
+            mask_filter,
+            paint_alpha,
+            reset_each_quad: reset_after_each_quad,
+            transform_batch_count: transform_count,
+            state: RefCell::new(TextureSetState::default()),
+        })
+    }
+
+    // Port of: TextureSetRenderer::MakeUnbatched (compositor_quads.cpp#L655-L658)
+    fn make_unbatched(image: Image) -> Box<dyn ClipTileRenderer> {
+        Self::make("Texture", "", image, None, None, None, None, 1.0, true, 0)
+    }
+
+    // Port of: TextureSetRenderer::MakeBatched (compositor_quads.cpp#L660-L665)
+    fn make_batched(image: Image, transform_count: i32) -> Box<dyn ClipTileRenderer> {
+        let subtitle = if transform_count == 0 {
+            ""
+        } else {
+            "w/ xforms"
+        };
+        Self::make(
+            "Texture Set",
+            subtitle,
+            image,
+            None,
+            None,
+            None,
+            None,
+            1.0,
+            false,
+            transform_count,
+        )
+    }
+
+    // Port of: TextureSetRenderer::MakeShader (compositor_quads.cpp#L667-L672)
+    fn make_shader(
+        name: &str,
+        image: Image,
+        shader: Shader,
+        local: bool,
+    ) -> Box<dyn ClipTileRenderer> {
+        Self::make(
+            "Shader",
+            name,
+            image,
+            Some(shader),
+            None,
+            None,
+            None,
+            1.0,
+            local,
+            0,
+        )
+    }
+
+    // Port of: TextureSetRenderer::MakeColorFilter (compositor_quads.cpp#L674-L678)
+    fn make_color_filter(
+        name: &str,
+        image: Image,
+        filter: ColorFilter,
+    ) -> Box<dyn ClipTileRenderer> {
+        Self::make(
+            "Color Filter",
+            name,
+            image,
+            None,
+            Some(filter),
+            None,
+            None,
+            1.0,
+            false,
+            0,
+        )
+    }
+
+    // Port of: TextureSetRenderer::MakeImageFilter (compositor_quads.cpp#L680-L684)
+    fn make_image_filter(
+        name: &str,
+        image: Image,
+        filter: ImageFilter,
+    ) -> Box<dyn ClipTileRenderer> {
+        Self::make(
+            "Image Filter",
+            name,
+            image,
+            None,
+            None,
+            Some(filter),
+            None,
+            1.0,
+            false,
+            0,
+        )
+    }
+
+    // Port of: TextureSetRenderer::MakeMaskFilter (compositor_quads.cpp#L686-L690)
+    fn make_mask_filter(name: &str, image: Image, filter: MaskFilter) -> Box<dyn ClipTileRenderer> {
+        Self::make(
+            "Mask Filter",
+            name,
+            image,
+            None,
+            None,
+            None,
+            Some(filter),
+            1.0,
+            false,
+            0,
+        )
+    }
+
+    // Port of: TextureSetRenderer::MakeAlpha (compositor_quads.cpp#L692-L696)
+    fn make_alpha(image: Image, alpha: f32) -> Box<dyn ClipTileRenderer> {
+        Self::make(
+            "Alpha",
+            &format!("a = {alpha:.2}"),
+            image,
+            None,
+            None,
+            None,
+            None,
+            alpha,
+            false,
+            0,
+        )
+    }
+
+    // Port of: TextureSetRenderer::configureTilePaint (compositor_quads.cpp#L782-L811)
+    fn configure_tile_paint(&self, rect: &Rect) -> Paint {
+        let mut paint = Paint::default();
+        paint.set_anti_alias(true);
+        paint.set_blend_mode(BlendMode::SrcOver);
+
+        // Send non-white RGB, that should be ignored
+        paint.set_color4f(Color4f::new(1.0, 0.4, 0.25, self.paint_alpha), None);
+
+        if let Some(shader) = &self.shader {
+            if self.reset_each_quad {
+                // Apply a local transform in the shader to map from the tile rectangle to (0,0,w,h)
+                let target = Rect::from_wh(TILE_WIDTH, TILE_HEIGHT);
+                let local = Matrix::rect_to_rect_or_identity(target, rect, None);
+                paint.set_shader(shader.with_local_matrix(&local));
+            } else {
+                paint.set_shader(shader.clone());
+            }
+        }
+
+        paint.set_color_filter(self.color_filter.clone());
+        paint.set_image_filter(self.image_filter.clone());
+        paint.set_mask_filter(self.mask_filter.clone());
+        paint
+    }
+
+    // Port of: TextureSetRenderer::drawAndReset (compositor_quads.cpp#L813-L860)
+    fn draw_and_reset(&self, canvas: &Canvas) -> i32 {
+        let mut state = self.state.borrow_mut();
+        // Early out if there's nothing to draw
+        if state.set_entries.is_empty() {
+            return 0;
+        }
+
+        if !self.reset_each_quad && self.transform_batch_count > 0 {
+            // A batch is completed
+            state.batch_count += 1;
+            if state.batch_count < self.transform_batch_count {
+                // Haven't hit the point to submit yet, but end the current tile
+                return 0;
+            }
+
+            // Submitting all tiles back to where fBaseCTM was the canvas' matrix, while the canvas
+            // currently has the CTM of the last tile batch, so reset it.
+            canvas.set_matrix(&M44::from(&state.base_ctm));
+        }
+
+        let last_tile_rect = state.set_entries[state.set_entries.len() - 1].dst_rect;
+        let paint = self.configure_tile_paint(&last_tile_rect);
+
+        canvas.experimental_draw_edge_aa_image_set(
+            &state.set_entries,
+            &state.dst_clips,
+            &state.pre_view_matrices,
+            FilterMode::Linear,
+            Some(&paint),
+            SrcRectConstraint::Fast,
+        );
+
+        // Reset for next tile
+        state.dst_clips.clear();
+        state.pre_view_matrices.clear();
+        state.set_entries.clear();
+        state.batch_count = 0;
+
+        1
+    }
+}
+
+impl ClipTileRenderer for TextureSetRenderer {
+    // Port of: TextureSetRenderer::drawTiles (compositor_quads.cpp#L727-L732)
+    fn draw_tiles(&self, canvas: &Canvas) -> i32 {
+        let mut draws = draw_tile_grid(self, canvas);
+        // Push the last tile set
+        draws += self.draw_and_reset(canvas);
+        draws
+    }
+
+    // Port of: TextureSetRenderer::drawTile (compositor_quads.cpp#L734-L781)
+    fn draw_tile(
+        &self,
+        canvas: &Canvas,
+        rect: &Rect,
+        clip: Option<&[Point; 4]>,
+        edge_aa: [bool; 4],
+        _tile_id: i32,
+        _quad_id: i32,
+    ) -> i32 {
+        let mut state = self.state.borrow_mut();
+        // Now don't actually draw the tile, accumulate it in the growing entry set
+        let mut has_clip = false;
+        if let Some(clip) = clip {
+            // Record the four points into fDstClips
+            state.dst_clips.extend_from_slice(clip);
+            has_clip = true;
+        }
+
+        let mut matrix_idx: Option<usize> = None;
+        if !self.reset_each_quad && self.transform_batch_count > 0 {
+            // Handle transform batching. This works by capturing the CTM of the first tile draw,
+            // and then calculate the difference between that and future CTMs for later tiles.
+            if state.pre_view_matrices.is_empty() {
+                state.base_ctm = canvas.total_matrix();
+                state.pre_view_matrices.push(Matrix::new_identity());
+                matrix_idx = Some(0);
+            } else {
+                // Calculate matrix s.t. getTotalMatrix() = fBaseCTM * M
+                match state.base_ctm.invert() {
+                    None => {
+                        // SkDebugf("Cannot invert CTM, transform batching will not be correct.\n")
+                        eprintln!("Cannot invert CTM, transform batching will not be correct.");
+                    }
+                    Some(inv_base) => {
+                        let pre_view = Matrix::concat(&inv_base, &canvas.total_matrix());
+                        if state.pre_view_matrices.last() != Some(&pre_view) {
+                            // Add the new matrix
+                            state.pre_view_matrices.push(pre_view);
+                        } // else re-use the last matrix
+                        matrix_idx = Some(state.pre_view_matrices.len() - 1);
+                    }
+                }
+            }
+        }
+
+        // This acts like the whole image is rendered over the entire tile grid, so derive local
+        // coordinates from 'rect', based on the grid to image transform.
+        let grid = Rect::from_wh(
+            COL_COUNT as scalar * TILE_WIDTH,
+            ROW_COUNT as scalar * TILE_HEIGHT,
+        );
+        let image_rect = Rect::from(IRect::from_wh(self.image.width(), self.image.height()));
+        let grid_to_image = Matrix::rect_to_rect_or_identity(grid, image_rect, None);
+        let (local_rect, _) = grid_to_image.map_rect(rect);
+
+        // drawTextureSet automatically derives appropriate local quad from localRect if clipPtr
+        // is not null.
+        state.set_entries.push(ImageSetEntry::new(
+            self.image.clone(),
+            local_rect,
+            *rect,
+            matrix_idx,
+            1.0,
+            mask_to_flags(edge_aa),
+            has_clip,
+        ));
+        drop(state);
+
+        if self.reset_each_quad {
+            // Only ever draw one entry at a time
+            self.draw_and_reset(canvas)
+        } else {
+            0
+        }
+    }
+
+    // Port of: TextureSetRenderer::drawBanner (compositor_quads.cpp#L862-L869)
+    fn draw_banner(&self, canvas: &Canvas) {
+        if !self.top_banner.is_empty() {
+            draw_text(canvas, &self.top_banner);
+        }
+        canvas.translate((0.0, 15.0));
+        if !self.bottom_banner.is_empty() {
+            draw_text(canvas, &self.bottom_banner);
+        }
+    }
+}
+
+/// `YUVTextureSetRenderer` (compositor_quads.cpp#L894-L995): a JPEG decoded to YUV planes, drawn
+/// as an image set.
+///
+/// skia-rust: on raster there is no GPU, so `LazyYUVImage::refImage(nullptr, kFromPixmaps)` is
+/// always null (`tools/gpu/YUVUtils.cpp`, `ensureYUVImage`). `drawTiles` returns before drawing the
+/// grid, so this renderer draws nothing and reports zero draws, as DM's raster config does. Its
+/// banner is still drawn. The JPEG is kept only so the renderer is built as in the C++ code.
+// Port of: gm/compositor_quads.cpp#L894-L995 (chrome/m156)
+struct YuvTextureSetRenderer {
+    _jpeg_data: Option<Vec<u8>>,
+}
+
+impl ClipTileRenderer for YuvTextureSetRenderer {
+    // Port of: YUVTextureSetRenderer::drawTiles (compositor_quads.cpp#L901-L916), the raster case
+    // where refImage is null.
+    fn draw_tiles(&self, _canvas: &Canvas) -> i32 {
+        0
+    }
+
+    // Port of: YUVTextureSetRenderer::drawTile (compositor_quads.cpp#L918-L943). Not reached on
+    // raster: `draw_tiles` returns first.
+    fn draw_tile(
+        &self,
+        _canvas: &Canvas,
+        _rect: &Rect,
+        _clip: Option<&[Point; 4]>,
+        _edge_aa: [bool; 4],
+        _tile_id: i32,
+        _quad_id: i32,
+    ) -> i32 {
+        0
+    }
+
+    // Port of: YUVTextureSetRenderer::drawBanner (compositor_quads.cpp#L944-L949)
+    fn draw_banner(&self, canvas: &Canvas) {
+        draw_text(canvas, "Texture");
+        canvas.translate((0.0, 15.0));
+        draw_text(canvas, "YUV + alpha - GPU Only");
+    }
+}
+
+// Port of: gm/compositor_quads.cpp#L1006-L1020 (chrome/m156)
+fn make_shader_renderers() -> Vec<Box<dyn ClipTileRenderer>> {
+    let pts = [
+        Point::new(0.0, 0.0),
+        Point::new(0.25 * TILE_WIDTH, 0.25 * TILE_HEIGHT),
+    ];
+    let colors = [colors::BLUE, colors::WHITE];
+    let gradient = Gradient::new(
+        Colors::new(&colors, None, TileMode::Mirror, None),
+        Interpolation::default(),
+    );
+    let shader = gradient_shaders::linear_gradient((pts[0], pts[1]), &gradient, None)
+        .expect("a linear gradient");
+
+    let info = ImageInfo::new((1, 1), ColorType::Alpha8, AlphaType::Opaque, None);
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(&info, None);
+    bm.erase_color(Color::WHITE);
+    let image = bm.as_image().expect("a 1x1 image");
+
+    vec![
+        TextureSetRenderer::make_shader("Gradient", image.clone(), shader.clone(), false),
+        TextureSetRenderer::make_shader("Local Gradient", image, shader, true),
+    ]
+}
+
+// Port of: gm/compositor_quads.cpp#L1022-L1029 (chrome/m156)
+#[allow(clippy::cast_possible_wrap)] // kMatrixCount is 5
+fn make_image_renderers() -> Vec<Box<dyn ClipTileRenderer>> {
+    let mandrill = get_resource_as_image("images/mandrill_512.png").expect("mandrill_512.png");
+    let mandrill_jpeg = get_resource_as_data("images/mandrill_h1v1.jpg");
+    vec![
+        TextureSetRenderer::make_unbatched(mandrill.clone()),
+        TextureSetRenderer::make_batched(mandrill.clone(), 0),
+        TextureSetRenderer::make_batched(mandrill, MATRIX_COUNT as i32),
+        Box::new(YuvTextureSetRenderer {
+            _jpeg_data: mandrill_jpeg,
+        }),
+    ]
+}
+
+// Port of: gm/compositor_quads.cpp#L1031-L1054 (chrome/m156)
+fn make_filtered_renderers() -> Vec<Box<dyn ClipTileRenderer>> {
+    let mandrill = get_resource_as_image("images/mandrill_512.png").expect("mandrill_512.png");
+
+    let mut cm = ColorMatrix::default();
+    cm.set_saturation(10.0);
+    let color_filter = color_filters::matrix(&cm, Clamp::Yes).expect("a saturation color filter");
+    let image_filter = dilate((8.0, 8.0), None, None).expect("a dilate image filter");
+
+    let alphas = [colors::TRANSPARENT, colors::BLACK];
+    let alpha_gradient = Gradient::new(
+        Colors::new(&alphas, None, TileMode::Clamp, None),
+        Interpolation::default(),
+    );
+    let alpha_shader = gradient_shaders::radial_gradient(
+        (
+            Point::new(
+                0.5 * TILE_WIDTH * COL_COUNT as scalar,
+                0.5 * TILE_HEIGHT * ROW_COUNT as scalar,
+            ),
+            0.25 * TILE_WIDTH * COL_COUNT as scalar,
+        ),
+        &alpha_gradient,
+        None,
+    )
+    .expect("a radial gradient");
+    let mask_filter = shader_mask_filter::new(alpha_shader);
+
+    vec![
+        TextureSetRenderer::make_alpha(mandrill.clone(), 0.5),
+        TextureSetRenderer::make_color_filter("Saturation", mandrill.clone(), color_filter),
+        // NOTE: won't draw correctly until SkCanvas' AutoLoopers are used to handle image filters
+        TextureSetRenderer::make_image_filter("Dilate", mandrill.clone(), image_filter),
+        // NOTE: blur mask filters do work (tested locally), but visually they don't make much
+        // sense, since each quad is blurred independently
+        TextureSetRenderer::make_mask_filter("Shader", mandrill, mask_filter),
+    ]
+}
+
 // Port of: gm/compositor_quads.cpp#L996-L1000 (chrome/m156)
 fn make_debug_renderers() -> Vec<Box<dyn ClipTileRenderer>> {
     vec![
@@ -740,4 +1237,19 @@ crate::def_gm!(
 crate::def_gm!(
     CompositorGM_color = "CompositorGM(\"color\", make_solid_color_renderers)",
     CompositorGm::new("color", make_solid_color_renderers)
+);
+// Port of: gm/compositor_quads.cpp#L1059-L1059 (chrome/m156)
+crate::def_gm!(
+    CompositorGM_shader = "CompositorGM(\"shader\", make_shader_renderers)",
+    CompositorGm::new("shader", make_shader_renderers)
+);
+// Port of: gm/compositor_quads.cpp#L1060-L1060 (chrome/m156)
+crate::def_gm!(
+    CompositorGM_image = "CompositorGM(\"image\", make_image_renderers)",
+    CompositorGm::new("image", make_image_renderers)
+);
+// Port of: gm/compositor_quads.cpp#L1061-L1061 (chrome/m156)
+crate::def_gm!(
+    CompositorGM_filter = "CompositorGM(\"filter\", make_filtered_renderers)",
+    CompositorGm::new("filter", make_filtered_renderers)
 );
