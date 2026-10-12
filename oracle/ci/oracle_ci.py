@@ -39,7 +39,7 @@ def linux_flag(flag):
     return flag[len("/clang:"):] if flag.startswith("/clang:") else flag
 
 
-def gn_args(build_name):
+def gn_args(build_name, windows=False):
     cfg = load_config()
     build = next(b for b in cfg["build"] if b["name"] == build_name)
     args = list(cfg["gn"]["args"]) + list(build.get("args", []))
@@ -47,6 +47,13 @@ def gn_args(build_name):
         # Linux: Dawn's Vulkan backend only.
         args = [a for a in args if not a.startswith("dawn_enable_d3d12")] + ["dawn_enable_d3d12=false"]
     cflags = [linux_flag(f) for f in cfg["gn"].get("extra_cflags", []) + build.get("extra_cflags", [])]
+    if windows:
+        # The Windows oracle as `cargo xtask oracle build` configures it: clang-cl, BGRA, the
+        # tiers.toml flags unchanged (CLANG_WIN and WIN_VC come from the workflow).
+        win = ['clang_win="%s"' % os.environ["CLANG_WIN"], 'win_vc="%s"' % os.environ["WIN_VC"]]
+        win += list(cfg["gn"]["args"]) + list(build.get("args", []))
+        win.append("extra_cflags=[" + ", ".join('"%s"' % f for f in cfg["gn"].get("extra_cflags", []) + build.get("extra_cflags", [])) + "]")
+        return "\n".join(win) + "\n"
     if not build_name.endswith("-rgba"):
         # The Windows oracle's N32 is BGRA; Linux's is RGBA unless told otherwise.
         cflags.append("-DSK_R32_SHIFT=16")
@@ -296,7 +303,7 @@ def cmd_patterns(report_path):
 def main(argv):
     cmd, args = argv[1], argv[2:]
     if cmd == "gn-args":
-        sys.stdout.write(gn_args(*args))
+        sys.stdout.write(gn_args(args[0], windows="--windows" in args[1:]))
     elif cmd == "hash":
         cmd_hash(*args)
     elif cmd == "merge":
