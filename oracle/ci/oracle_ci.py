@@ -93,6 +93,9 @@ def cmd_hash(directory, tier, cpu_tier, toolchain_path, out_path, free_tier=None
             meta = json.load(f)
         if meta.get("cpu_tier") != cpu_tier:
             wrong.append((rid, meta.get("cpu_tier")))
+    if not results and not free_results:
+        print("no DM outputs found")
+        sys.exit(1)
     if wrong:
         print(f"{len(wrong)} results ran at another CPU tier than `{cpu_tier}`, e.g. {wrong[0]}")
         sys.exit(1)
