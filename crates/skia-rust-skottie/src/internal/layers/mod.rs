@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: modules/skottie/src/layers (chrome/m156)
 //
-// The layer types: audio, footage (image and video), null, precomp, shape, solid. The text layer
-// is M22; `text_layer` is its boundary.
+// The layer types: audio, footage (image and video), null, precomp, shape, solid, and text
+// (`text_layer`: the font table and `attachTextLayer`; the adapter is in `internal::text`).
 
 pub mod audio_layer;
 pub mod footage_layer;

@@ -16,4 +16,5 @@ pub mod layer;
 pub mod layers;
 pub mod path;
 pub mod skottie_priv;
+pub mod text;
 pub mod transform;

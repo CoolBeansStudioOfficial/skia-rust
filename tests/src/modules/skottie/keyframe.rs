@@ -39,6 +39,7 @@ impl<T: Bindable + Default + Clone> MockProperty<T> {
                 None,
                 None,
                 None,
+                skia_rust_shaper::factory::primitive_factory(),
                 (100.0, 100.0).into(),
                 10.0,
                 1.0,

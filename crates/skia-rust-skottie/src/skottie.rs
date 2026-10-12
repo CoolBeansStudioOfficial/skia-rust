@@ -9,11 +9,11 @@
 // setters take `&mut self` and return `&mut Self`, so a builder can be reused after `make`, which
 // is what `getSlotManager` and `getLayerInfo` rely on.
 //
-// Not yet ported (see the module docs of `internal::effects` and `internal::text`): the text
-// shaping factory (`setTextShapingFactory`) and text layers wait for the shaper (M5/M22), and the
-// layer effects for M21.
+// The text shaping factory (`setTextShapingFactory`) is the factory of `skia_rust_shaper`; without
+// one the text is shaped with the primitive shaper.
 
 use std::rc::Rc;
+use std::sync::Arc;
 
 use skia_rust_core::canvas::{Canvas, SaveLayerRec};
 use skia_rust_core::clip_op::ClipOp;
@@ -28,6 +28,7 @@ use skia_rust_core::t_pin::t_pin;
 use skia_rust_sksg::{InvalidationController, RenderNode};
 
 use skia_rust_resources::ResourceProvider;
+use skia_rust_shaper::factory::{Factory, primitive_factory};
 
 use crate::external_layer::PrecompInterceptor;
 use crate::internal::animator::Animator;
@@ -180,6 +181,7 @@ pub struct Builder {
     marker_observer: Option<Rc<dyn MarkerObserver>>,
     precomp_interceptor: Option<Rc<dyn PrecompInterceptor>>,
     expression_manager: Option<Rc<dyn ExpressionManager>>,
+    shaping_factory: Option<Arc<dyn Factory>>,
     slot_manager: Option<Rc<SlotManager>>,
     stats: Stats,
     layer_info: Vec<LayerInfo>,
@@ -272,6 +274,15 @@ impl Builder {
     #[doc(alias = "setExpressionManager")]
     pub fn set_expression_manager(&mut self, em: Rc<dyn ExpressionManager>) -> &mut Self {
         self.expression_manager = Some(em);
+        self
+    }
+
+    /// Registers a factory to be used when shaping text. If unspecified, text will be shaped with
+    /// primitive shaping.
+    // Port of: modules/skottie/src/Skottie.cpp#L340-L343 (chrome/m156)
+    #[doc(alias = "setTextShapingFactory")]
+    pub fn set_text_shaping_factory(&mut self, factory: Arc<dyn Factory>) -> &mut Self {
+        self.shaping_factory = Some(factory);
         self
     }
 
@@ -371,6 +382,9 @@ impl Builder {
             self.marker_observer.take(),
             self.precomp_interceptor.take(),
             self.expression_manager.take(),
+            self.shaping_factory
+                .clone()
+                .unwrap_or_else(primitive_factory),
             size,
             duration,
             fps,

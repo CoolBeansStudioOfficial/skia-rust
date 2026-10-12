@@ -4,9 +4,7 @@
 // Ported from Skia: modules/skottie/utils/SkottieUtils.cpp, SkottieUtils.h (chrome/m156)
 //
 // `CustomPropertyManager`: collects the color, opacity and transform property handles of an
-// animation by key, and gets and sets them by key. The text properties (`getText`, `setText`,
-// `onTextProperty`) belong to the text layers of M22 and are not here yet, and neither is the
-// precomp interceptor (`ExternalAnimationPrecompInterceptor`), which no ported GM uses.
+// animation by key, and gets and sets them by key. The precomp interceptor (`ExternalAnimationPrecompInterceptor`), which no ported GM uses.
 
 use std::cell::{Ref, RefCell};
 use std::collections::BTreeMap;
@@ -15,7 +13,8 @@ use std::rc::Rc;
 use crate::skottie::MarkerObserver;
 use crate::skottie_property::{
     ColorPropertyHandle, ColorPropertyValue, LazyHandle, NodeType, OpacityPropertyHandle,
-    OpacityPropertyValue, PropertyObserver, TransformPropertyHandle, TransformPropertyValue,
+    OpacityPropertyValue, PropertyObserver, TextPropertyHandle, TextPropertyValue,
+    TransformPropertyHandle, TransformPropertyValue,
 };
 
 /// A property key (`CustomPropertyManager::PropKey`).
@@ -73,6 +72,16 @@ impl HandleAccess for OpacityPropertyHandle {
     }
 }
 
+impl HandleAccess for TextPropertyHandle {
+    type Value = TextPropertyValue;
+    fn get_value(&self) -> TextPropertyValue {
+        self.get()
+    }
+    fn set_value(&self, value: &TextPropertyValue) {
+        self.set(value);
+    }
+}
+
 impl HandleAccess for TransformPropertyHandle {
     type Value = TransformPropertyValue;
     fn get_value(&self) -> TransformPropertyValue {
@@ -95,6 +104,7 @@ struct State {
     prefix: String,
     color_map: PropMap<ColorPropertyHandle>,
     opacity_map: PropMap<OpacityPropertyHandle>,
+    text_map: PropMap<TextPropertyHandle>,
     transform_map: PropMap<TransformPropertyHandle>,
     markers: Vec<MarkerInfo>,
     current_node: String,
@@ -155,6 +165,24 @@ impl PropertyObserver for PropertyInterceptor {
             self.state
                 .borrow_mut()
                 .opacity_map
+                .entry(key)
+                .or_default()
+                .push(handle);
+        }
+    }
+
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L51-L58 (onTextProperty)
+    fn on_text_property(
+        &self,
+        node_name: Option<&str>,
+        handle: LazyHandle<'_, TextPropertyHandle>,
+    ) {
+        let key = self.state.borrow().accept_key(node_name, ".Text");
+        if !key.is_empty() {
+            let handle = handle();
+            self.state
+                .borrow_mut()
+                .text_map
                 .entry(key)
                 .or_default()
                 .push(handle);
@@ -331,6 +359,34 @@ impl CustomPropertyManager {
     #[must_use]
     pub fn set_opacity(&self, key: &str, o: OpacityPropertyValue) -> bool {
         set_value(key, &o, &self.state.borrow().opacity_map)
+    }
+
+    /// The keys of the text properties (`getTextProps`).
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L229-L231 (getTextProps)
+    #[must_use]
+    pub fn get_text_props(&self) -> Vec<PropKey> {
+        get_props(&self.state.borrow().text_map)
+    }
+
+    /// The value of a text property, or the default if the key is unknown (`getText`).
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L233-L235 (getText)
+    #[must_use]
+    pub fn get_text(&self, key: &str) -> TextPropertyValue {
+        get_value(key, &self.state.borrow().text_map)
+    }
+
+    /// A copy of the handle `index` of a text property (`getTextHandle`).
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L237-L240 (getTextHandle)
+    #[must_use]
+    pub fn get_text_handle(&self, key: &str, index: usize) -> Option<Box<TextPropertyHandle>> {
+        get_handle(key, index, &self.state.borrow().text_map)
+    }
+
+    /// Sets every handle of a text property (`setText`). False if the key is unknown.
+    // Port of: modules/skottie/utils/SkottieUtils.cpp#L242-L244 (setText)
+    #[must_use]
+    pub fn set_text(&self, key: &str, t: &TextPropertyValue) -> bool {
+        set_value(key, t, &self.state.borrow().text_map)
     }
 
     /// The keys of the transform properties (`getTransformProps`).

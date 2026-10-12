@@ -8,9 +8,6 @@
 // after the animation is built. A slot tracks the target of the bound property and a weak handle
 // of the adapter that owns it, which it syncs after setting the value. Slot IDs are kept in
 // insertion order (Skia iterates a hash table).
-//
-// The text slots (`setTextSlot`, `getTextSlot`, `SlotInfo::fTextSlotIDs`) come with the text
-// layers of M22.
 
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
@@ -23,6 +20,8 @@ use skia_rust_resources::{FrameData, ImageAsset, SizeFit};
 
 use crate::internal::animator::{AnimatablePropertyContainer, Prop, ScalarTarget};
 use crate::internal::skottie_priv::SceneGraphRevalidator;
+use crate::internal::text::text_adapter::TextAdapter;
+use crate::skottie_property::TextPropertyValue;
 use crate::skottie_value::ColorValue;
 
 /// The ID of a slot.
@@ -85,7 +84,7 @@ pub struct SlotInfo {
     pub vec2_slot_ids: Vec<SlotID>,
     /// The image slots (`fImageSlotIDs`).
     pub image_slot_ids: Vec<SlotID>,
-    /// The text slots (`fTextSlotIDs`). Text layers are not ported yet: always empty.
+    /// The text slots (`fTextSlotIDs`).
     pub text_slot_ids: Vec<SlotID>,
 }
 
@@ -123,6 +122,7 @@ pub struct SlotManager {
     scalar_map: RefCell<SlotMap<ValuePair<ScalarTarget>>>,
     vec2_map: RefCell<SlotMap<ValuePair<Prop<V2>>>>,
     image_map: RefCell<SlotMap<Rc<ImageAssetProxy>>>,
+    text_map: RefCell<SlotMap<Rc<TextAdapter>>>,
     revalidator: Rc<SceneGraphRevalidator>,
 }
 
@@ -142,6 +142,7 @@ impl SlotManager {
             scalar_map: RefCell::new(SlotMap::new()),
             vec2_map: RefCell::new(SlotMap::new()),
             image_map: RefCell::new(SlotMap::new()),
+            text_map: RefCell::new(SlotMap::new()),
             revalidator,
         }
     }
@@ -217,6 +218,21 @@ impl SlotManager {
         true
     }
 
+    /// Sets the text of a text slot. Returns false if there is no such slot.
+    // Port of: modules/skottie/src/SlotManager.cpp#L108-L117 (chrome/m156)
+    #[doc(alias = "setTextSlot")]
+    pub fn set_text_slot(&self, slot_id: &str, t: &TextPropertyValue) -> bool {
+        let map = self.text_map.borrow();
+        let Some(adapter_group) = map.find(slot_id) else {
+            return false;
+        };
+        for text_adapter in adapter_group {
+            text_adapter.set_text(t);
+        }
+        self.revalidator.revalidate();
+        true
+    }
+
     /// The color of a color slot.
     // Port of: modules/skottie/src/SlotManager.cpp#L119-L123 (chrome/m156)
     #[doc(alias = "getColorSlot")]
@@ -257,6 +273,22 @@ impl SlotManager {
         let map = self.vec2_map.borrow();
         let value_group = map.find(slot_id)?;
         value_group.first().map(|pair| pair.value.get())
+    }
+
+    /// The text of a text slot.
+    // Port of: modules/skottie/src/SlotManager.cpp#L144-L149 (chrome/m156)
+    #[doc(alias = "getTextSlot")]
+    #[must_use]
+    pub fn text_slot(&self, slot_id: &str) -> Option<TextPropertyValue> {
+        let map = self.text_map.borrow();
+        let adapter_group = map.find(slot_id)?;
+        adapter_group.first().map(|adapter| adapter.get_text())
+    }
+
+    /// Tracks a text adapter under a slot ID (`trackTextValue`).
+    // Port of: modules/skottie/src/SlotManager.cpp#L175-L178 (chrome/m156)
+    pub(crate) fn track_text_value(&self, slot_id: &str, adapter: Rc<TextAdapter>) {
+        self.text_map.borrow_mut().entry(slot_id).push(adapter);
     }
 
     /// Tracks a color value under a slot ID (`trackColorValue`).
@@ -329,7 +361,7 @@ impl SlotManager {
             scalar_slot_ids: self.scalar_map.borrow().ids(),
             vec2_slot_ids: self.vec2_map.borrow().ids(),
             image_slot_ids: self.image_map.borrow().ids(),
-            text_slot_ids: Vec::new(),
+            text_slot_ids: self.text_map.borrow().ids(),
         }
     }
 }

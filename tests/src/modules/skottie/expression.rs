@@ -2,8 +2,6 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: modules/skottie/tests/Expression.cpp (chrome/m156)
-//
-// `Skottie_ExpressionText` needs the text layers of M22, and is not ported yet.
 
 #![cfg(test)]
 
@@ -16,10 +14,11 @@ use skia_rust_core::stream::MemoryStream;
 use skia_rust_skottie::skottie_property::LazyHandle;
 use skia_rust_skottie::{
     Builder, ColorPropertyHandle, ExpressionEvaluator, ExpressionManager, OpacityPropertyHandle,
-    PropertyObserver, TransformPropertyHandle,
+    PropertyObserver, TextPropertyHandle, TransformPropertyHandle,
 };
+use skia_rust_tools::font_tool_utils::test_font_mgr;
 
-use crate::{def_test, reporter_assert};
+use crate::{def_font_test, def_test, reporter_assert};
 
 struct FakeScalarExpressionEvaluator;
 
@@ -75,6 +74,7 @@ struct FakePropertyObserver {
     opacity: RefCell<Option<Box<OpacityPropertyHandle>>>,
     transform: RefCell<Option<Box<TransformPropertyHandle>>>,
     color: RefCell<Option<Box<ColorPropertyHandle>>>,
+    text: RefCell<Option<Box<TextPropertyHandle>>>,
 }
 
 impl PropertyObserver for FakePropertyObserver {
@@ -100,6 +100,14 @@ impl PropertyObserver for FakePropertyObserver {
         color_handle: LazyHandle<'_, ColorPropertyHandle>,
     ) {
         *self.color.borrow_mut() = Some(color_handle());
+    }
+
+    fn on_text_property(
+        &self,
+        _node_name: Option<&str>,
+        text_handle: LazyHandle<'_, TextPropertyHandle>,
+    ) {
+        *self.text.borrow_mut() = Some(text_handle());
     }
 }
 
@@ -322,5 +330,115 @@ def_test!(Skottie_Expression, |r| {
                 a: 1.0
             }
             .to_color()
+    );
+});
+
+// Port of: modules/skottie/tests/Expression.cpp#L269-L364 (chrome/m156)
+def_font_test!(Skottie_ExpressionText, |r| {
+    let text_json = r#"{
+     "layers":[
+        {
+           "ty":5,
+           "ks":{
+              "a":{
+                 "k":[
+                    0,
+                    0
+                 ]
+              },
+              "p":{
+                 "k":[
+                    128,
+                    144
+                 ]
+              },
+              "o":{
+                 "k":100
+              }
+           },
+           "ind":0,
+           "ip":0,
+           "op":2,
+           "nm":"TextLayer_0",
+           "t":{
+              "d":{
+                 "k":[
+                    {
+                       "t":0,
+                       "s":{
+                          "f": "Helvetica",
+                          "s":14,
+                          "t":"will be replaced.",
+                          "j":0,
+                          "ps":[
+                             0,
+                             0
+                          ],
+                          "sz":[
+                             384,
+                             360
+                          ],
+                          "fc":[
+                             0.95686274766921997,
+                             0.37254902720451355,
+                             0.25490197539329529,
+                             1
+                          ],
+                          "lh":16
+                       }
+                    }
+                 ],
+                 "x": "fake; return value is specified by the FakeStringExpressionEvaluator."
+              }
+           }
+        }
+     ],
+     "ip":0,
+     "op":2,
+     "fr":25,
+     "w":1280,
+     "h":720,
+     "ddd":false,
+     "v":"5.2.2",
+     "nm":"skottie_animation",
+     "fonts":{
+        "list":[
+           {
+              "fName": "Helvetica",
+              "fFamily":"external_font_family",
+              "fStyle":"Regular"
+           }
+        ]
+     }
+  }"#;
+
+    let mut stream = MemoryStream::make_copy(text_json.as_bytes());
+
+    let em = Rc::new(FakeExpressionManager);
+    let observer = Rc::new(FakePropertyObserver::default());
+
+    let anim = Builder::new()
+        .set_expression_manager(em)
+        .set_font_manager(test_font_mgr())
+        .set_property_observer(observer.clone())
+        .make_from_stream(&mut *stream);
+
+    reporter_assert!(r, anim.is_some());
+    let Some(anim) = anim else {
+        return;
+    };
+
+    anim.seek_frame_time(0.0);
+
+    reporter_assert!(
+        r,
+        observer
+            .text
+            .borrow()
+            .as_ref()
+            .expect("a text handle")
+            .get()
+            .text
+            == "Hello, world!"
     );
 });

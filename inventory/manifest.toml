@@ -26410,8 +26410,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skottie/gm/ExternalProperties.cpp#L138-L138"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer and the text property handles (TextPropertyHandle, onTextProperty)"
+status = "passing"
 span_hash = "cf6518affcf7117dc7efb0545bd2f814687da4d2e66647672ce3942fd674b1bc"
 
 [[test]]
@@ -26429,8 +26428,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L183-L183"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer"
+status = "passing"
 span_hash = "f74e03d29d896f95053bb67b85a11800925db8023addbdc7df4f839799a6dc98"
 
 [[test]]
@@ -26448,8 +26446,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L94-L94"
 module = "skottie"
-status = "todo"
-reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer"
+status = "passing"
 span_hash = "fd5304773225efaa47b6e282a52395f1f0a417cc9e9239a51c353a27ef1b9c67"
 
 [[test]]
@@ -26476,8 +26473,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Expression.cpp#L269-L364"
 module = "skottie"
-status = "todo"
-reason = "needs the text layers (M22: TextAdapter, TextValue, the shaper)"
+status = "passing"
 span_hash = "0a8c3b2432a32ee6193bb0a9c038db64774fa0854c38f7713f427525aa404262"
 
 [[test]]
@@ -26504,8 +26500,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L270-L370"
 module = "skottie"
-status = "todo"
-reason = "needs the text layers (M22): the text property observer and TextPropertyValue; the ADBE Fill effects it also observes are ported (M21a)"
+status = "passing"
 span_hash = "c4a6a5889bbf16c3031beb4697f572b81167325381345e80f559a37b07d1ba1f"
 
 [[test]]
@@ -26514,8 +26509,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L372-L414"
 module = "skottie"
-status = "todo"
-reason = "needs the text layers (M22): the text property observer and TextPropertyValue; the ADBE Fill effects it also observes are ported (M21a)"
+status = "passing"
 span_hash = "44602197777e5443e6093b37df0e434f672ad08f6ff7dae12edd6fe5da53b965"
 
 [[test]]
@@ -26534,7 +26528,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L26-L76"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "3a20838cea4939cc6dd8f0756a08c86dd5c8d0f0a63366bd563af9c5ff691000"
 
 [[test]]
@@ -26543,7 +26537,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L270-L361"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "60f034164b8317187020dc192543048d48b121f971e2819c8a4a00ae897d3b6b"
 
 [[test]]
@@ -26552,7 +26546,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L224-L266"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "5cccee11c4c9655175d3e8bc1613c594f10a639138c925a9bfa2a7b18b68c5d5"
 
 [[test]]
@@ -26561,7 +26555,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L78-L149"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "a732fff69b937a27de1b5e7ed29b3825330df0b3382f858173847c606a809bb8"
 
 [[test]]
@@ -26570,7 +26564,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L151-L222"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "9733a93d3aa8d0e80b7af8060a7a25ca60ae5a54f92d0d98ba798dda622c568a"
 
 [[test]]
@@ -26579,7 +26573,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L368-L495"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "1755dd9023e43a0e9100eb8f56fc87db1a8fa8473d966cad4742513dd958c272"
 
 [[test]]
@@ -26588,7 +26582,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L497-L513"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "bf88b0d05216b53930eeadbc4d792786a2fe2eb7c41956763c2ca6b0a9edca85"
 
 [[test]]
@@ -26642,7 +26636,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Text.cpp#L231-L307"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "89e3ae983ba1ee0152c5491ec66fec3ccf19bfd6b8c690e7d0ab8166a6a8a021"
 
 [[test]]
@@ -26651,7 +26645,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Text.cpp#L151-L229"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "542f4a74dd0b88e2e004fab0cfbe1d5563ab31a219f6c9b59dc8d0791e289225"
 
 [[test]]
@@ -26660,7 +26654,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Text.cpp#L77-L149"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "20d08d7fad22d90bf0baa1e1ebaeab9723f54b4cb5bc96a14bcd0ccdd027306e"
 
 [[test]]

@@ -18,6 +18,7 @@ use std::rc::{Rc, Weak};
 
 use skia_rust_core::m44::V2;
 
+use crate::internal::text::text_value::TextValue;
 use crate::json::{ObjectValue, Value};
 use crate::skottie::LoggerLevel;
 use crate::skottie_json::{ValueExt, parse_default, parse_slot_id, string_text};
@@ -28,6 +29,7 @@ use super::skottie_priv::AnimationBuilder;
 pub mod keyframe_animator;
 pub mod scalar_keyframe_animator;
 pub mod shape_keyframe_animator;
+pub mod text_keyframe_animator;
 pub mod vec2_keyframe_animator;
 pub mod vector_keyframe_animator;
 
@@ -545,6 +547,18 @@ impl Bindable for ShapeValue {
         );
 
         container.bind_impl(abuilder, jprop, &mut builder)
+    }
+}
+
+impl Bindable for TextValue {
+    // Port of: modules/skottie/src/animator/TextKeyframeAnimator.cpp#L131-L137 (chrome/m156)
+    fn bind_to(
+        container: &PropertyContainer,
+        abuilder: &AnimationBuilder<'_>,
+        jprop: Option<&ObjectValue>,
+        target: &Prop<Self>,
+    ) -> bool {
+        text_keyframe_animator::bind(container, abuilder, jprop, target)
     }
 }
 

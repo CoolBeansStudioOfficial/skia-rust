@@ -4,8 +4,8 @@
 //! [`skia_rust_sksg`] nodes and the animators that drive it. [`json`] is the JSON reader
 //! (Skia's `skjson` namespace), [`internal`] the animation builder (`skottie::internal`).
 //!
-//! Layer effects are M21 and text layers M22: the builders have their boundaries in
-//! [`internal::effects`] and [`internal::layers::text_layer`].
+//! Layer effects are M21 and text layers M22: [`internal::effects`] and [`internal::text`] (with
+//! [`text_shaper`], the shaper that `modules/skottie/include/TextShaper.h` declares).
 
 /// Implements `Debug` for a type that has no useful fields to print.
 macro_rules! opaque_debug {
@@ -28,6 +28,7 @@ pub mod skottie_json;
 pub mod skottie_property;
 pub mod skottie_value;
 pub mod slot_manager;
+pub mod text_shaper;
 pub mod utils;
 
 pub use external_layer::{ExternalLayer, PrecompInterceptor};
@@ -36,8 +37,9 @@ pub use skottie::{
     LayerInfo, Logger, LoggerLevel, MarkerObserver, RenderFlags, Stats,
 };
 pub use skottie_property::{
-    ColorPropertyHandle, ColorPropertyValue, NodeType, OpacityPropertyHandle, OpacityPropertyValue,
-    PropertyHandle, PropertyObserver, TransformPropertyHandle, TransformPropertyValue,
+    ColorPropertyHandle, ColorPropertyValue, GlyphDecorator, NodeType, OpacityPropertyHandle,
+    OpacityPropertyValue, PropertyHandle, PropertyObserver, TextPaintOrder, TextPropertyHandle,
+    TextPropertyValue, TransformPropertyHandle, TransformPropertyValue,
 };
 pub use skottie_value::{ColorValue, ScalarValue, ShapeValue, Vec2Value, VectorValue};
 pub use slot_manager::{SlotID, SlotInfo, SlotManager};

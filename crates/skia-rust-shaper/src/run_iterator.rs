@@ -283,9 +283,11 @@ pub fn make_std_language_run_iterator(utf8_bytes: usize) -> TrivialLanguageRunIt
 // the primary font. Here a missing fallback manager means "no fallback candidate": the primary
 // font is used, as it is when the manager finds nothing.
 //
-// The overload of `SkShaper::MakeFontMgrRunIterator` that takes a `LanguageRunIterator` is not
-// ported (rust-skia has the same TODO): the language is read while the font iterator is consumed,
-// which a shared borrow of a second `&mut` iterator cannot express.
+// The overload of `SkShaper::MakeFontMgrRunIterator` that takes a `LanguageRunIterator` reads the
+// language while the font iterator is consumed, which a shared borrow of a second `&mut` iterator
+// cannot express. [`FontMgrRunIterator::with_request`] takes the language as a string instead:
+// the value of `currentLanguage()` of a `TrivialLanguageRunIterator`, the only kind Skottie
+// (its one caller) passes, which has one language for the whole text.
 /// `SkShaper::FontRunIterator` from a font manager: each run uses the first font that has its
 /// characters, falling back to a typeface the font manager finds for them.
 #[derive(Debug)]
@@ -300,7 +302,11 @@ pub struct FontMgrRunIterator<'a> {
     fallback_typeface: Option<Typeface>,
     fallback_font: Font,
     current_is_fallback: bool,
+    /// `fRequestName`: the family name the fallback request carries.
+    request_name: Option<String>,
     request_style: FontStyle,
+    /// `fLanguage->currentLanguage()`: `None` is a null `fLanguage`.
+    language: Option<String>,
 }
 
 impl<'a> FontMgrRunIterator<'a> {
@@ -310,6 +316,23 @@ impl<'a> FontMgrRunIterator<'a> {
     #[must_use]
     pub fn new(utf8: &'a [u8], font: &Font, fallback_mgr: Option<FontMgr>) -> Self {
         let request_style = font.typeface().font_style();
+        Self::with_request(utf8, font, fallback_mgr, None, request_style, None)
+    }
+
+    // Port of: modules/skshaper/src/SkShaper.cpp#L53-L70 (chrome/m156), the constructor with all
+    // its parameters.
+    /// `SkShaper::MakeFontMgrRunIterator(utf8, utf8Bytes, font, fallback, requestName,
+    /// requestStyle, language)`. `language` is the current language of the language iterator
+    /// (see the note above).
+    #[must_use]
+    pub fn with_request(
+        utf8: &'a [u8],
+        font: &Font,
+        fallback_mgr: Option<FontMgr>,
+        request_name: Option<&str>,
+        request_style: FontStyle,
+        language: Option<&str>,
+    ) -> Self {
         // `fFont.setTypeface(font.refTypeface())`: a copy of `font` with its own typeface.
         let font = font.clone();
         // `fFallbackFont(fFont)` with `fFallbackFont.setTypeface(nullptr)`.
@@ -324,7 +347,9 @@ impl<'a> FontMgrRunIterator<'a> {
             fallback_typeface: None,
             fallback_font,
             current_is_fallback: false,
+            request_name: request_name.map(str::to_owned),
             request_style,
+            language: language.map(str::to_owned),
         }
     }
 
@@ -345,12 +370,17 @@ impl<'a> FontMgrRunIterator<'a> {
     }
 
     // Port of: modules/skshaper/src/SkShaper.cpp#L104-L106 (chrome/m156): the
-    // `matchFamilyStyleCharacter` call with no request name and no language.
+    // `matchFamilyStyleCharacter` call.
     fn match_fallback(&self, unichar: Unichar) -> Option<Typeface> {
+        // `languageCount = fLanguage ? 1 : 0`.
+        let bcp47: &[&str] = match &self.language {
+            Some(language) => &[language.as_str()],
+            None => &[],
+        };
         self.fallback_mgr.as_ref()?.match_family_style_character(
-            None,
+            self.request_name.as_deref(),
             &self.request_style,
-            &[],
+            bcp47,
             unichar,
         )
     }
@@ -433,4 +463,21 @@ pub fn make_font_mgr_run_iterator<'a>(
     fallback: Option<FontMgr>,
 ) -> FontMgrRunIterator<'a> {
     FontMgrRunIterator::new(utf8, font, fallback)
+}
+
+// Port of: modules/skshaper/src/SkShaper.cpp#L146-L155 (chrome/m156), the 7-argument
+// `MakeFontMgrRunIterator`.
+/// `SkShaper::MakeFontMgrRunIterator(utf8, utf8Bytes, font, fallback, requestName, requestStyle,
+/// language)`; `language` is the current language of the language iterator.
+#[must_use]
+#[doc(alias = "MakeFontMgrRunIterator")]
+pub fn make_font_mgr_run_iterator_with_request<'a>(
+    utf8: &'a [u8],
+    font: &Font,
+    fallback: Option<FontMgr>,
+    request_name: Option<&str>,
+    request_style: FontStyle,
+    language: Option<&str>,
+) -> FontMgrRunIterator<'a> {
+    FontMgrRunIterator::with_request(utf8, font, fallback, request_name, request_style, language)
 }

@@ -3,4 +3,5 @@
 
 //! The Skottie GMs of `modules/skottie/gm`.
 
+pub mod external_properties;
 pub mod skottie_gm;

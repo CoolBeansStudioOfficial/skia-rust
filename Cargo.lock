@@ -1418,6 +1418,7 @@ dependencies = [
  "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-resources",
+ "skia-rust-shaper",
  "skia-rust-simd",
  "skia-rust-skcms",
  "skia-rust-skottie",
@@ -1555,7 +1556,10 @@ dependencies = [
  "skia-rust-effects",
  "skia-rust-raster",
  "skia-rust-resources",
+ "skia-rust-shaper",
  "skia-rust-sksg",
+ "skia-rust-text",
+ "skia-rust-unicode",
 ]
 
 [[package]]

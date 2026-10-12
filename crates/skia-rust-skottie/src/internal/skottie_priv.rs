@@ -11,21 +11,28 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::sync::Arc;
 
+use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_mgr::FontMgr;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::size::Size;
+use skia_rust_core::typeface::Typeface;
 use skia_rust_resources::{ImageAsset, ResourceProvider};
+use skia_rust_shaper::factory::Factory;
 use skia_rust_sksg::{Color as SgColor, OpacityEffect, RenderNode};
 
 use crate::external_layer::PrecompInterceptor;
+use crate::internal::text::font::{CustomFontBuilder, GlyphCompMapper};
+use crate::internal::text::text_adapter::TextAdapter;
 use crate::json::{ArrayValue, ObjectValue};
 use crate::skottie::{
     BuilderFlags, ExpressionManager, LayerInfo, Logger, LoggerLevel, MarkerObserver,
 };
 use crate::skottie_json::{LogJson, ValueExt, parse_default, string_text};
 use crate::skottie_property::{
-    ColorPropertyHandle, NodeType, OpacityPropertyHandle, PropertyObserver, TransformPropertyHandle,
+    ColorPropertyHandle, NodeType, OpacityPropertyHandle, PropertyObserver, TextPropertyHandle,
+    TransformPropertyHandle,
 };
 use crate::slot_manager::SlotManager;
 
@@ -94,6 +101,28 @@ pub struct FootageAssetInfo {
     /// The declared size.
     pub size: skia_rust_core::size::ISize,
 }
+
+/// A font of the animation: what the `fonts` list says about it, and the typeface it resolves to.
+// Port of: modules/skottie/src/SkottiePriv.h#L88-L98 (chrome/m156) (`AnimationBuilder::FontInfo`)
+#[doc(alias = "skottie::internal::AnimationBuilder::FontInfo")]
+pub struct FontInfo {
+    /// The family (`fFamily`).
+    pub family: String,
+    /// The style (`fStyle`).
+    pub style: String,
+    /// The path (`fPath`).
+    pub path: String,
+    /// The ascent, in percent of the text size (`fAscentPct`).
+    pub ascent_pct: f32,
+    /// The typeface (`fTypeface`).
+    pub typeface: Option<Typeface>,
+    /// Collects the embedded glyphs of the font (`fCustomFontBuilder`).
+    pub custom_font_builder: CustomFontBuilder,
+    /// The variation coordinates (`fVariation`).
+    pub variation: Vec<Coordinate>,
+}
+
+opaque_debug!(FontInfo);
 
 /// A reference to the asset a layer points at, locked against cycles while it is alive.
 // Port of: modules/skottie/src/SkottiePriv.h#L250-L271 (chrome/m156) (`AnimationBuilder::ScopedAssetRef`)
@@ -247,6 +276,7 @@ pub struct AnimationBuilder<'j> {
     marker_observer: Option<Rc<dyn MarkerObserver>>,
     precomp_interceptor: Option<Rc<dyn PrecompInterceptor>>,
     expression_manager: Option<Rc<dyn ExpressionManager>>,
+    shaping_factory: Arc<dyn Factory>,
     revalidator: Rc<SceneGraphRevalidator>,
     slot_manager: Rc<SlotManager>,
     comp_size: Size,
@@ -258,6 +288,9 @@ pub struct AnimationBuilder<'j> {
     pub(crate) property_observer_context: RefCell<Option<String>>,
     has_nontrivial_blending: Cell<bool>,
     assets: RefCell<HashMap<String, Rc<AssetInfo<'j>>>>,
+    /// The fonts by name, in the order they were declared (`fFonts`).
+    pub(crate) fonts: RefCell<Vec<(String, FontInfo)>>,
+    pub(crate) custom_glyph_mapper: RefCell<Option<Rc<GlyphCompMapper>>>,
     image_asset_cache: RefCell<HashMap<String, Rc<FootageAssetInfo>>>,
     /// Handle to the "slots" JSON object, used to grab slot values while building.
     slots_root: Cell<Option<&'j ObjectValue>>,
@@ -276,6 +309,7 @@ impl<'j> AnimationBuilder<'j> {
         mobserver: Option<Rc<dyn MarkerObserver>>,
         pi: Option<Rc<dyn PrecompInterceptor>>,
         expressionmgr: Option<Rc<dyn ExpressionManager>>,
+        shaping_factory: Arc<dyn Factory>,
         comp_size: Size,
         duration: f32,
         framerate: f32,
@@ -291,6 +325,7 @@ impl<'j> AnimationBuilder<'j> {
             marker_observer: mobserver,
             precomp_interceptor: pi,
             expression_manager: expressionmgr,
+            shaping_factory,
             revalidator,
             slot_manager,
             comp_size,
@@ -302,6 +337,8 @@ impl<'j> AnimationBuilder<'j> {
             property_observer_context: RefCell::new(None),
             has_nontrivial_blending: Cell::new(false),
             assets: RefCell::new(HashMap::new()),
+            fonts: RefCell::new(Vec::new()),
+            custom_glyph_mapper: RefCell::new(None),
             image_asset_cache: RefCell::new(HashMap::new()),
             slots_root: Cell::new(None),
         }
@@ -358,12 +395,25 @@ impl<'j> AnimationBuilder<'j> {
         }
     }
 
-    /// Resolves the fonts of the animation. Text layers (M22) own the font table; until they are
-    /// ported there is nothing to resolve.
-    // Port of: modules/skottie/src/text/Font.cpp (chrome/m156) (`AnimationBuilder::parseFonts`)
-    #[allow(clippy::unused_self)] // the font table is M22's; it needs the builder
-    fn parse_fonts(&self, _jfonts: Option<&ObjectValue>, _jchars: Option<&ArrayValue>) {
-        // TODO(M22): font table and embedded glyph fonts.
+    /// Adds (or replaces) the font `name` in the font table (`fFonts.set`).
+    pub(crate) fn set_font(&self, name: String, info: FontInfo) {
+        let mut fonts = self.fonts.borrow_mut();
+        if let Some(entry) = fonts.iter_mut().find(|(n, _)| *n == name) {
+            entry.1 = info;
+        } else {
+            fonts.push((name, info));
+        }
+    }
+
+    /// The text shaping factory.
+    #[must_use]
+    pub fn shaping_factory(&self) -> &Arc<dyn Factory> {
+        &self.shaping_factory
+    }
+
+    /// The logger, if there is one.
+    pub(crate) fn logger_handle(&self) -> Option<Rc<dyn Logger>> {
+        self.logger.clone()
     }
 
     // Port of: modules/skottie/src/Skottie.cpp#L183-L210 (chrome/m156) (`dispatchMarkers`)
@@ -559,6 +609,36 @@ impl<'j> AnimationBuilder<'j> {
                 dispatched.set(true);
                 Box::new(ColorPropertyHandle::with_revalidator(
                     Rc::clone(c),
+                    Rc::clone(&self.revalidator),
+                ))
+            });
+        }
+
+        dispatched.get()
+    }
+
+    // Port of: modules/skottie/src/Skottie.cpp#L252-L270 (chrome/m156) (`dispatchTextProperty`)
+    pub(crate) fn dispatch_text_property(
+        &self,
+        t: &Rc<TextAdapter>,
+        jtext: Option<&ObjectValue>,
+    ) -> bool {
+        let dispatched = Cell::new(false);
+
+        if let Some(jtext) = jtext
+            && let Some(slot_id) = jtext.get("sid").as_string()
+        {
+            self.slot_manager
+                .track_text_value(&string_text(slot_id), Rc::clone(t));
+            dispatched.set(true);
+        }
+
+        if let Some(observer) = &self.property_observer {
+            let node_name = self.property_observer_context_name();
+            observer.on_text_property(node_name.as_deref(), &|| {
+                dispatched.set(true);
+                Box::new(TextPropertyHandle::with_revalidator(
+                    Rc::clone(t),
                     Rc::clone(&self.revalidator),
                 ))
             });

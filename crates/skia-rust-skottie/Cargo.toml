@@ -15,6 +15,9 @@ skia-rust-sksg.workspace = true
 skia-rust-resources.workspace = true
 skia-rust-effects.workspace = true
 skia-rust-raster.workspace = true
+skia-rust-shaper.workspace = true
+skia-rust-text.workspace = true
+skia-rust-unicode.workspace = true
 bitflags.workspace = true
 
 [dev-dependencies]
