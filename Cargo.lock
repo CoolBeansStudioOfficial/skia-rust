@@ -1415,6 +1415,7 @@ dependencies = [
  "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-paragraph",
  "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-resources",
@@ -1423,6 +1424,7 @@ dependencies = [
  "skia-rust-skottie",
  "skia-rust-text",
  "skia-rust-tools",
+ "skia-rust-unicode",
  "zstd",
 ]
 
@@ -1460,6 +1462,18 @@ dependencies = [
 [[package]]
 name = "skia-rust-libwebp"
 version = "0.156.0"
+
+[[package]]
+name = "skia-rust-paragraph"
+version = "0.156.0"
+dependencies = [
+ "bitflags",
+ "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-shaper",
+ "skia-rust-text",
+ "skia-rust-unicode",
+]
 
 [[package]]
 name = "skia-rust-pathops"
@@ -1597,6 +1611,7 @@ dependencies = [
  "skia-rust-gpu",
  "skia-rust-libpng",
  "skia-rust-libwebp",
+ "skia-rust-paragraph",
  "skia-rust-pathops",
  "skia-rust-pdf",
  "skia-rust-raster",
@@ -1638,6 +1653,7 @@ name = "skia-rust-tools"
 version = "0.156.0"
 dependencies = [
  "skia-rust-core",
+ "skia-rust-paragraph",
  "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-svg",

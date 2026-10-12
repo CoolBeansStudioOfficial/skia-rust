@@ -802,3 +802,32 @@ images::raster_from_pixmap(info, pixels, row_bytes, release_proc) -> Option<Imag
 - `info` and `row_bytes` replace the pixmap's; the pixel slice must hold `info.computeByteSize(row_bytes)` bytes.
 - Callers that only had a `Pixmap` (the ports of `ExtendedSkColorTypeTests` and `ReadPixelsTest`) pass a copy of the bytes.
 - `skia-safe` does not expose `RasterFromPixmap` (`// TODO: RasterFromPixmap` in `image.rs`), so there is no API shape to follow.
+
+## Paragraph (`modules/skparagraph`)
+
+The crate `skia-rust-paragraph` follows `skia_safe::textlayout` (names, paths, signatures); the deviations:
+
+| C++ | skia-rust | Deviation |
+|---|---|---|
+| `Paragraph`, `ParagraphImpl` | one struct `Paragraph`; `ParagraphImpl` is a type alias | the abstract class is merged with its only implementation; the tests reach into the layout through `runs()`, `lines()`, `clusters()` |
+| `ParagraphBuilder::make(style, fontCollection, unicode)`, `ParagraphBuilderImpl(style, fontCollection, unicode)` | `ParagraphBuilder::new(&ParagraphStyle, impl Into<FontCollection>, Arc<dyn Unicode>)`; `ParagraphBuilderImpl` is an alias | skia-safe has no `unicode` parameter (it picks the best available); Skia's does, and the tests pass one |
+| `ParagraphBuilder::addText(const char*, size_t)`, `addText(const std::u16string&)` | `add_text(impl AsRef<str>)`, `add_text_bytes(&[u8])`, `add_text_utf16(&[u16])` | |
+| `FontCollection` (`sk_sp`) | `FontCollection` (an `Arc` of locked state; `Clone` shares it) | setters take `&mut self` as in skia-safe but the collection is shared by clones |
+| `TextStyle::setFontFamilies(std::vector<SkString>)` | `set_font_families(&[impl AsRef<str>])` | |
+| `TextStyle::setDecoration(TextDecoration)` | `set_decoration_type(TextDecoration)`; `set_decoration(&Decoration)` sets the whole record | as skia-safe |
+| `TextStyle::setBackgroundColor(SkPaint)`, `setForegroundColor(SkPaint)` | `set_background_color(&Paint)`, `set_foreground_color(&Paint)` | |
+| `TextRange` (`SkRange<size_t>`) | `Range<usize>` with the trait `RangeExtensions` (`width`, `shift`, `contains`, `intersects`, `intersection`, `empty`) | |
+| `ParagraphStyle::getMaxLines()` (`size_t`, `max` = unlimited) | `max_lines() -> Option<usize>`; `max_lines_raw() -> usize` | |
+| `Paragraph::getRectsForRange(start, end, h, w)` | `get_rects_for_range(Range<usize>, RectHeightStyle, RectWidthStyle) -> Vec<TextBox>` | |
+| `Paragraph::getGlyphPositionAtCoordinate(x, y)` | `get_glyph_position_at_coordinate(impl Into<Point>)` | |
+| `Paragraph::getWordBoundary(unsigned)` | `get_word_boundary(&mut self, u32) -> Range<usize>` | the cache of the word iterator lives in the paragraph |
+| `Paragraph::getLineMetrics(std::vector<LineMetrics>&)`, `getLineMetricsAt(n, LineMetrics*)` | `get_line_metrics() -> Vec<LineMetrics<'_>>`, `get_line_metrics_at(usize) -> Option<LineMetrics<'_>>` | out-parameters become return values; `LineMetrics` borrows the `TextStyle`s of its style metrics |
+| `Paragraph::getLineNumberAt` (`int`, -1 = none), `getLineNumberAtUTF16Offset` | `Option<usize>` | |
+| `getGlyphClusterAt`, `getClosestGlyphClusterAt`, `getGlyphInfoAtUTF16Offset`, `getClosestUTF16GlyphInfoAt` (bool + out-parameter) | `Option<GlyphClusterInfo>` / `Option<GlyphInfo>` | `GlyphClusterInfo` and `GlyphInfo` have a `Default` (C++ leaves `GlyphClusterInfo` uninitialized) |
+| `Paragraph::unresolvedGlyphs()` (`int`, -1 = not shaped), `unresolvedCodepoints()` (`std::unordered_set`) | `unresolved_glyphs(&mut self) -> Option<usize>`, `unresolved_codepoints() -> HashSet<Unichar>` | |
+| `Paragraph::visit(const Visitor&)`, `extendedVisit` | `visit(impl FnMut(usize, Option<&VisitorInfo<'_>>))`, `extended_visit(...)` | the C++ passes a null `VisitorInfo*` for "end of line" |
+| `Paragraph::paint(SkCanvas*, x, y)`, `paint(ParagraphPainter*, x, y)` | `paint(&Canvas, impl Into<Point>)`, `paint_with_painter(&mut dyn ParagraphPainter, x, y)` | |
+| `Run`, `Cluster`, `TextLine` (members point to their `ParagraphImpl`) | no back-pointer: methods that read the paragraph take `owner: &Paragraph` (or the slices they need), e.g. `TextLine::scan_styles(owner, style, visitor)`, `get_metrics(owner)` | Rust ownership; `RunRef { Run, Ellipsis, Hyphen }` replaces the `Run*` of a line |
+| `TypefaceFontProvider::registerTypeface(typeface, alias)` | `register_typeface(Typeface, impl Into<Option<&str>>)` | |
+| `TestFontCollection(resourceDir, testOnly, loadFonts)` | `utils::TestFontCollection::new(&str, bool, bool)`; `fonts_found() -> usize` | typefaces come from the Fontations factory |
+

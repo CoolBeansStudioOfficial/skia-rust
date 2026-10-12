@@ -20,6 +20,7 @@ members = [
     "crates/skia-rust-unicode",
     "crates/skia-rust-unicode-data",
     "crates/skia-rust-shaper",
+    "crates/skia-rust-paragraph",
     "crates/skia-rust-svg",
     "crates/skia-rust-pdf",
     "crates/skia-rust-skottie",
@@ -70,6 +71,7 @@ skia-rust-text = { path = "crates/skia-rust-text", version = "0.156.0" }
 skia-rust-unicode = { path = "crates/skia-rust-unicode", version = "0.156.0" }
 skia-rust-unicode-data = { path = "crates/skia-rust-unicode-data", version = "0.156.0" }
 skia-rust-shaper = { path = "crates/skia-rust-shaper", version = "0.156.0" }
+skia-rust-paragraph = { path = "crates/skia-rust-paragraph", version = "0.156.0" }
 skia-rust-svg = { path = "crates/skia-rust-svg", version = "0.156.0" }
 skia-rust-pdf = { path = "crates/skia-rust-pdf", version = "0.156.0" }
 skia-rust-tools = { path = "tests/tools", version = "0.156.0" }

@@ -19,6 +19,8 @@ skia-rust-pathops.workspace = true
 skia-rust-raster = { workspace = true, features = ["testing"] }
 skia-rust-tools.workspace = true
 skia-rust-text.workspace = true
+skia-rust-paragraph.workspace = true
+skia-rust-unicode.workspace = true
 skia-rust-simd = { workspace = true, features = ["testing", "models"] }
 skia-rust-skcms.workspace = true
 # Static GM registry: the Rust counterpart of Skia's `sk_tools::Registry` behind `DEF_GM`.

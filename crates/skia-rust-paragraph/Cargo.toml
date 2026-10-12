@@ -1,0 +1,21 @@
+[package]
+name = "skia-rust-paragraph"
+description = "The SkParagraph module of skia-rust (skia_safe::textlayout): text styles, the font collection, line breaking, layout and painting of paragraphs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-effects.workspace = true
+skia-rust-unicode.workspace = true
+skia-rust-shaper.workspace = true
+skia-rust-text.workspace = true
+bitflags.workspace = true
+
+[lints]
+workspace = true

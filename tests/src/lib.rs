@@ -486,6 +486,48 @@ macro_rules! def_font_test {
     };
 }
 
+/// [`def_test!`] for a paragraph test (`UNIX_ONLY_TEST` in `SkParagraphTest.cpp`): runs the body
+/// under [`FontConfig::NativeFontations`](::skia_rust_tools::font_tool_utils::FontConfig), the
+/// configuration that loads the paragraph fonts (`ResourceFontCollection` makes its typefaces
+/// with `ToolUtils::TestFontMgr()->makeFromStream`, which the portable manager cannot do, so
+/// Skia's bots run these tests with `--nativeFonts`; docs/design/modules.md §4). Under the
+/// portable configuration the C++ tests return early, and there is nothing to run here.
+///
+/// `UNIX_ONLY_TEST` is `DEF_TEST_DISABLED` unless `SK_BUILD_FOR_UNIX` (neither Windows, macOS,
+/// iOS nor Android), and so is this: on those hosts the body does not run.
+#[macro_export]
+macro_rules! def_paragraph_test {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident| $body:block) => {
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let _test_guard = $crate::test_read_guard();
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            if cfg!(all(
+                unix,
+                not(target_vendor = "apple"),
+                not(target_os = "android")
+            )) {
+                reporter.set_context(Some(format!(
+                    "{:?}",
+                    ::skia_rust_tools::font_tool_utils::FontConfig::NativeFontations
+                )));
+                ::skia_rust_tools::font_tool_utils::with_font_config(
+                    ::skia_rust_tools::font_tool_utils::FontConfig::NativeFontations,
+                    || {
+                        // A closure, as in `def_test!`: an early `return` ends only the body.
+                        let run = |$reporter: &mut $crate::Reporter| $body;
+                        run(&mut reporter);
+                    },
+                );
+                reporter.set_context(None);
+            }
+            reporter.finish();
+        }
+    };
+}
+
 /// Port of `REPORTER_ASSERT(r, cond, ...)`. Records a failure and keeps going.
 #[macro_export]
 macro_rules! reporter_assert {

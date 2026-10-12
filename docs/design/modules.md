@@ -899,8 +899,9 @@ The maintainer decided the open questions as follows. They bind the tasks of §9
   `cargo xtask text-deps fetch`); the licences are in `NOTICE`; `tools/test-fonts/build.sh` rebuilds the
   archive from the sources of Skia's `create.py`. One deviation from the bots' asset, for the
   maintainer to confirm: `GoogleSans-Regular.ttf` is **not** included, because the font's own licence
-  string says it is not an open-source font. Only `SkParagraph_Intrinsic` uses the family. It is listed
-  under `[excluded]` in the lock with its SHA-256.
+  string says it is not an open-source font. `SkParagraph_Intrinsic` (which only compares two widths, so it
+  passes with the fallback font) and `SkParagraph_MultiStyle_Logo` (which asserts Google Sans clip positions, so it
+  stays `todo`) use the family. It is listed under `[excluded]` in the lock with its SHA-256.
 - **Q3: reproduce Chromium's patched ICU segmentation (M4).**
 - **Q5: committed expected files, replayed by `cargo test`.** C/C++ is rebuilt only in a cached job
   (`cargo xtask oracle shaper-diff`; HarfBuzz about 80 s here).
@@ -965,7 +966,58 @@ expected files and the replay tests. M8's font part is in place: `skia_rust_tool
 `ResourceFontCollection` and `TestFontCollection` themselves (they need text T19b's typeface and the
 `TypefaceFontProvider` of M9), the registration of the fonts with a font manager, and the
 `SKIP_IF_FONTS_NOT_FOUND` / `UNIX_ONLY_TEST` macros of the test harness, which belong with the first
-paragraph test port (M11).
+paragraph test port (M11). All of it is done: see the status of M8 to M11 below.
+
+### Status of M8, M9, M10 and the start of M11 (2026-10-12)
+
+M8 to M10 are done: the crate `skia-rust-paragraph` (`skia_safe::textlayout`'s API shape) ports
+`modules/skparagraph` function by function, with the arithmetic of the C++ (doubles where it uses doubles,
+`std::min`/`std::max` semantics, the `roundf` and `+ 0.5` idioms). Modules follow Skia's files:
+`text_style`, `paragraph_style`, `font_arguments`, `font_collection`, `typeface_font_provider`,
+`paragraph_cache`, `paragraph_builder`, `metrics`, `dart_types`, `text_shadow`, `run`, `text_line`,
+`text_wrapper`, `one_line_shaper`, `iterators`, `decorations`, `paragraph_painter`, `paragraph_impl` and
+`utils::test_font_collection`; `skia_rust_tools::paragraph_fonts` has `ResourceFontCollection`.
+
+Design decisions a continuing agent needs:
+
+- `Paragraph` is one struct (the abstract `Paragraph` and `ParagraphImpl` merged; `ParagraphImpl` and
+  `ParagraphBuilderImpl` are type aliases). `Run`, `Cluster` and `TextLine` hold no back-pointer to it: the
+  methods that read it take `owner: &Paragraph` (or the slices they need), and the methods of `TextLine` that
+  change it work on a `std::mem::take`n `lines` vector. `RunRef { Run(i), Ellipsis, Hyphen }` stands for the
+  `Run*` of a line; `TextWrapper` and `OneLineShaper` index clusters and runs (`isize`/arena `Vec`) where C++
+  holds pointers; a `Run` clone deep-copies the glyph data (C++ shares it; nothing mutates it after the cache).
+- `FontCollection` is an `Arc` of locked state (the caches are searched by equality, as C++'s hash maps are
+  keyed by it); `ParagraphCache` keeps the C++ hash (`SkGoodHash`) and its LRU order.
+- `ParagraphBuilder::new(&ParagraphStyle, impl Into<FontCollection>, Arc<dyn Unicode>)` takes the Unicode
+  (Skia's `make` does); `TextLine::scan_styles` and the like take the paragraph as their first argument.
+- Paragraph tests run only under `FontConfig::NativeFontations` (`def_paragraph_test!`), with
+  `SKIA_RUST_PARAGRAPH_FONTS=release SKIA_RUST_RUN_PARAGRAPH_TESTS_NEEDING_SYSTEM_FONTS=0` (the bot's flags;
+  until the release is published, `SKIA_RUST_TEST_FONTS_TAR=<path to test-fonts-m156.tar>`).
+
+M11: `tests/src/modules/skparagraph/sk_paragraph_test.rs` ports all 153 `UNIX_ONLY_TEST`s but the two
+`ICU4X` ones (`excluded`: `SK_UNICODE_ICU4X_IMPLEMENTATION` is not defined): 149 pass under the flags above,
+2 are `#[ignore]`d with a reason and stay `todo`. The helpers `SkParagraph_EmojiFontResolution`,
+`SkUnicode_Emoji`, `has_empty_typeface` and `performGetRectsForRangeConcurrently` (100 threads, a
+`Mutex<&mut Reporter>`) are ported with them. `NonMonotonicGlyphsLTR/RTL` and `MultiStyle_Zalgo` return early
+under the flags, as on the bots (hollow). The GMs are
+`tests/gm/src/gm/modules/skparagraph/simple_gm.rs`: `gm-verify --match paragraph` matches the goldens of all
+four GMs on every checkable tier and the fifth (`kTimeLayout`) skips as Skia does.
+`SkShaperJSONWriterTest`'s `SkShaperTest_cluster` and `SkShaperTest_VisualizeCluster` pass with the two static
+helpers of `SkShaperJSONWriter.cpp` (`BreakupClusters`, `VisualizeClusters`; the JSON `RunHandler` is only
+used by `SkShaperTest_basic`, which is inside `#if 0` and `excluded`).
+
+Left, in the order to take it:
+
+1. `SkParagraph_EmojiParagraph` (`notes/SkParagraphTest-SkParagraph_EmojiParagraph.md`): widths 996.09375 vs the
+   FreeType-specific 998.25; confirm with a Fontations C++ run whether the advance of bitmap-only glyphs in
+   `skia-rust-text` is the difference.
+2. `SkParagraph_MultiStyle_Logo`: needs `GoogleSans-Regular.ttf` (not in `test-fonts-m156`); flip it where the
+   font is available.
+3. `ParagraphBench` (`bench/ParagraphBench.cpp` and `modules/skparagraph/bench/ParagraphBench.cpp::english`):
+   the module bench is not built in Skia (`paragraph_bench_enabled = false` in `modules/skparagraph/BUILD.gn`)
+   and both call a builder without the `SkUnicode` that m156 requires; `xtask` cannot map
+   `modules/<m>/bench` ids yet. `FuzzSkParagraph` is not ported.
+4. The `skia-rust` facade does not re-export the text crates yet.
 
 ---
 

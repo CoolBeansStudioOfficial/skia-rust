@@ -3,6 +3,9 @@
 #[cfg(test)]
 pub mod skottie;
 #[cfg(test)]
+#[macro_use]
+pub mod skparagraph;
+#[cfg(test)]
 pub mod sksg;
 #[cfg(test)]
 pub mod skshaper;

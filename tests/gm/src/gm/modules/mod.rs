@@ -4,3 +4,4 @@
 //! The `modules/<module>/gm/*.cpp` GMs (`gm::modules::<module>::<file_snake>`).
 
 pub mod skottie;
+pub mod skparagraph;

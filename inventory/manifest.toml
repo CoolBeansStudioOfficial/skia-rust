@@ -7052,7 +7052,7 @@ macro = "DEF_BENCH"
 source = "bench/ParagraphBench.cpp#L98-L98"
 module = "paragraph"
 status = "todo"
-reason = "modules/skparagraph is not ported"
+reason = "not ported yet: the paragraph crate exists (modules.md status of M8 to M11), but the file calls ParagraphBuilder::make(style, fontCollection) without the SkUnicode the m156 header requires; check that nanobench builds it before porting"
 span_hash = "c68a53f074bb9a99934ea6e9c626ac4d7f5f35510d6281edac6bfce79cb0ab60"
 
 [[test]]
@@ -16024,7 +16024,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzSkParagraph.cpp#L262-L288"
 module = "paragraph"
 status = "todo"
-reason = "needs SkParagraph (modules.md M10)"
+reason = "not ported yet: the paragraph crate exists (modules.md status of M8 to M11)"
 span_hash = "a871566365cd66d25552b4f1380950664ab8ab49d06ef30da358ccb586cce942"
 
 [[test]]
@@ -26670,6 +26670,7 @@ macro = "PARAGRAPH_BENCH"
 source = "modules/skparagraph/bench/ParagraphBench.cpp#L62-L62"
 module = "paragraph"
 status = "todo"
+reason = "not ported: modules/skparagraph/BUILD.gn sets paragraph_bench_enabled = false, the file builds ParagraphBuilderImpl without the SkUnicode m156 requires, and xtask cannot map modules/<m>/bench ids yet"
 span_hash = "725b290de7a781eea173639124474c7fb2d30f33b8f597028e2de99096266b96"
 
 [[test]]
@@ -26678,8 +26679,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L253-L253"
 module = "paragraph"
-status = "todo"
-reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
+status = "passing"
 span_hash = "6a5402337d111d6ea7a5565e32ee2d2cb055fc2548499902bbab50e3364194cd"
 
 [[test]]
@@ -26688,8 +26688,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L257-L257"
 module = "paragraph"
-status = "todo"
-reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
+status = "passing"
 span_hash = "547da74113bbbca47d712d60438b69d07b31ae5b44788ab26c3c264bdab0846b"
 
 [[test]]
@@ -26698,8 +26697,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L256-L256"
 module = "paragraph"
-status = "todo"
-reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
+status = "passing"
 span_hash = "1b6e121e336248c4f5591f15fbaadb7a91c39c219b4c9a6eba9dc2ff97468814"
 
 [[test]]
@@ -26708,8 +26706,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L254-L254"
 module = "paragraph"
-status = "todo"
-reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
+status = "passing"
 span_hash = "295fcb9679c4f1a00ad0d3952f7948a227de1834f87feedacbf47c40255915b2"
 
 [[test]]
@@ -26718,8 +26715,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skparagraph/gm/simple_gm.cpp#L255-L255"
 module = "paragraph"
-status = "todo"
-reason = "needs SkParagraph (modules/skparagraph): no paragraph crate is ported"
+status = "passing"
 span_hash = "8ee3c7e899b35f86407a6e9fb602e2aafa1b25c313b7c96ccb5872747639bf36"
 
 [[test]]
@@ -26728,7 +26724,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8139-L8183"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a48913d990e3280502f8e3de3e4a5a021dcfc728f1f0a17743e49b47fd0fe63d"
 
 [[test]]
@@ -26737,7 +26733,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8476-L8514"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "35cc3b074adf9370f912e03a0a1d382330fa9ca0757a837dbcaafd529a4597a0"
 
 [[test]]
@@ -26746,7 +26742,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2587-L2631"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "c8332c7629809695f39a7c6e6f41a69844299cff4933d033720938bfd4ed2748"
 
 [[test]]
@@ -26755,7 +26751,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2686-L2733"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "92c9c61c7667de41c83dfd4244999e2143912d23a7f566f2dede2225f2c43b17"
 
 [[test]]
@@ -26764,7 +26760,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2736-L2783"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a50510b903f16f4d6bc84ee161fa6b045b3f32808a0e48318ad90b3a1ceb1a8d"
 
 [[test]]
@@ -26773,7 +26769,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2634-L2680"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "3a07befba5a5f37e2dc11bddffd2f0d0810fe76f9b097cd286775e7c9e93ae14"
 
 [[test]]
@@ -26782,7 +26778,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8553-L8589"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "5cdd286c99a847289e2b84b09ba2d003a00a2586bd154a1afd8e7268ef357397"
 
 [[test]]
@@ -26791,7 +26787,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8516-L8551"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a80300493a4991bc9b60f783a0f5a194aa6c1da50b15f99932c0770ce05cd6b0"
 
 [[test]]
@@ -26800,7 +26796,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4614-L4658"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "ddb28e043c5e2559d603e54b883f48fcbc299f9ddbd1491d9086a6e93f1fcd08"
 
 [[test]]
@@ -26809,7 +26805,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1459-L1516"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a49f21f6719d46c10c35740e7ecb268372ba6b0ea1438df754acaed530ef32df"
 
 [[test]]
@@ -26818,7 +26814,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5726-L5776"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "06a0b560ec1f6979fb39e0e7658d75b7a8a5c1c6f33fead4d1d3538f7e4f5da4"
 
 [[test]]
@@ -26827,7 +26823,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5778-L5817"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a22adc0dbbad3f743a86bcff682a4d447672287ed0abddddf8e6ed831d5ac150"
 
 [[test]]
@@ -26836,7 +26832,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1357-L1401"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "520301be03b5c91f1628777a855d6dab9ced92d05415e496c55c86257fbc7cf4"
 
 [[test]]
@@ -26845,7 +26841,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5528-L5571"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a590ec25cd5688f4c6508db9cca496613751fe6c05ddcdeae90d1e85f53dd322"
 
 [[test]]
@@ -26854,7 +26850,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5488-L5526"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a87d35560ae2af206935ba2e315661b1595620fa0c3baad441490f03e47f5334"
 
 [[test]]
@@ -26863,7 +26859,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5573-L5611"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "0a04941d3cd359b5e25cd3f35a177077a00c046a9601d2142e7512c1d3a50f01"
 
 [[test]]
@@ -26872,7 +26868,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5453-L5486"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "9383be81230c852a113f84a6a8598dc3b06d5055d48b3a315666f7776b8f2551"
 
 [[test]]
@@ -26881,7 +26877,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1977-L2062"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "51ada52d7e8d330370e95ea802ed55f7f3c94b789836403a7c5422d01f48508e"
 
 [[test]]
@@ -26890,7 +26886,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2536-L2584"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "ebb17420948d3134b1ed2333aad51b3ab377b01262927ad717e035883eaa7623"
 
 [[test]]
@@ -26899,7 +26895,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4544-L4611"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "406596ce3f6735ab27c7ed18e94d7fd7bd5ed87eca31784a831738e6a12cc1a7"
 
 [[test]]
@@ -26908,7 +26904,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2351-L2468"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "ec3921520eac05947b57f40e7667a4a3ba3c4cd25e62e3bd21d1e21fffb046f0"
 
 [[test]]
@@ -26917,7 +26913,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1317-L1355"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "734411f1ad839a13287f49347d7b78528eb0c264884af4265d1ffbdaef34db64"
 
 [[test]]
@@ -26926,7 +26922,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7179-L7225"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "8e585534ebb049480094c226d4abfd8a686c115e625ee6c5888067dc30491cfd"
 
 [[test]]
@@ -26935,7 +26931,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5969-L6028"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "5bd5a1699712691ff3abaec5ad6f0e8ad294302e840a417bfb9750008f9ed822"
 
 [[test]]
@@ -26944,7 +26940,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7270-L7312"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "9a3b8d662e6237f82949f40a6b1c478de03b7d9f84c4eb7884dc29d7ded4b5c5"
 
 [[test]]
@@ -26953,7 +26949,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4396-L4434"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "beffc290b24a735e0d02a8abe2879fa28ec46a8ce157b8b272dc1cc1c09df87e"
 
 [[test]]
@@ -26962,7 +26958,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4295-L4353"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "5d599980bdb1551671610940accb830c31bf25a05f6168d08d52aa068309eefd"
 
 [[test]]
@@ -26972,6 +26968,7 @@ macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4245-L4292"
 module = "paragraph"
 status = "todo"
+reason = "fails under NativeFontations: the Noto Color Emoji advance is 62.255859375 (2550/2048 em) per emoji here, while the test expects FreeType's bitmap-strike advance 62.390625 (998.25 per line); see notes/SkParagraphTest-SkParagraph_EmojiParagraph.md"
 span_hash = "9b62a04e65cd44c14672394be80e44b229984836e5ea3de603a325deacfa8381"
 
 [[test]]
@@ -26980,7 +26977,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8185-L8207"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "cab29bf3f38f86d720e2312971630fa821e88d2832b211d8a703773787cc35cb"
 
 [[test]]
@@ -26989,7 +26986,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8331-L8359"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "f0b3f0c71e46918d7b4009a7353a83fe3fdc4893c9e7953de04925f9dea30abd"
 
 [[test]]
@@ -26998,7 +26995,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5682-L5724"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "af1f781ab11ed98a81587b288528255819cf3868f48847c0b7b71eba0a7f52aa"
 
 [[test]]
@@ -27007,7 +27004,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4661-L4749"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "0060b37be63b6e7e6090487f301e3c3fe783f51dd36d4b158d9723f320824550"
 
 [[test]]
@@ -27016,7 +27013,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5286-L5336"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "79d87d14976f77cd9e2698c7d65a2fdcae381632a6a730d6bba1d66e183a6479"
 
 [[test]]
@@ -27025,7 +27022,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6303-L6335"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a591070bc5ef09b85f617f127e931a0164106a30cab27e0d798294659caf4aee"
 
 [[test]]
@@ -27034,7 +27031,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6273-L6301"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "b2c05d0371487ab2442db08efade918712100f6b90883045a1b5e0001cdf03a1"
 
 [[test]]
@@ -27043,7 +27040,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5840-L5903"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "90998553074ff7ef70d7c9a2c93e91c0f26763cd82ee3b73d871b79aca2737a8"
 
 [[test]]
@@ -27052,7 +27049,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5905-L5941"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "c93e12826804accd80997fd6dc103a9c78d2c0c6e244955cad536ab3045060d6"
 
 [[test]]
@@ -27061,7 +27058,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6061-L6095"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "97961120d3533c28ff8d2d42884dd76a447033ea5f35fac23b03d57b910feee6"
 
 [[test]]
@@ -27070,7 +27067,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2785-L2847"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "6442477b4983e6784a4383d4dd9d07d328004dd367b8218b0c53db4f3cc387da"
 
 [[test]]
@@ -27079,7 +27076,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3664-L3775"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "8159b70e9c192b537ac1a115bcb5be470c956c85171fe0ea70707dce3c2d2d5d"
 
 [[test]]
@@ -27088,7 +27085,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3490-L3595"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a0a9e203abd8f94d361f573d2afda4c28ea7d31fe868ccd632f750d961fe5ef3"
 
 [[test]]
@@ -27097,7 +27094,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3598-L3661"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "1a8e3bf51c42cd7da0329f880c5557fcd616a3254220cfd499a9cf3696dce3a1"
 
 [[test]]
@@ -27106,7 +27103,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7480-L7489"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "9db9f73938de6bb274b041e21a22f0f780dfefbe407dd1a53509ff2b51e3432a"
 
 [[test]]
@@ -27125,7 +27122,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3295-L3423"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "5c494df1423fc1c51342d933b1f2782c9e76b256efa01bba9d7835095694e970"
 
 [[test]]
@@ -27134,7 +27131,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3033-L3161"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "635f3fce62515672b67da1eaab8f92312ae002cde3a0769d60bfce9da05af2a4"
 
 [[test]]
@@ -27143,7 +27140,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3164-L3292"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "81f976e56f64f42e019623de959a0111e03c7ea8c24ef7442bbf2bd355c5c577"
 
 [[test]]
@@ -27152,7 +27149,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2849-L2953"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "e43809b68cb0770b3dd546d9c82d6cc7757b31d95b3e95e54eb2a204c4c7d122"
 
 [[test]]
@@ -27161,7 +27158,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3778-L3824"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "78c95f0232bff46cccb351ee460a901b419ec5c34f9dd1d94409aeafa292c823"
 
 [[test]]
@@ -27170,7 +27167,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3908-L3946"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "137a96bebeae37252aa109a633e926a39c309690f625f958a27c7714ba49d025"
 
 [[test]]
@@ -27179,7 +27176,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3826-L3864"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "767958fc836be4bd0722605326819d9c59b52cb1c5b4e3c95b794ec1bc5ca91d"
 
 [[test]]
@@ -27188,7 +27185,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3866-L3906"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "1cd7bac955c7b7197bac6aa4a2c976fd686b2a3dca129d62edcda30654a99c79"
 
 [[test]]
@@ -27197,7 +27194,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2955-L3030"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "db460af09fd7d5c11ab4df02780b76a896bec17743fe7de0c08d51767ca80d74"
 
 [[test]]
@@ -27206,7 +27203,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L3949-L4022"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "2607cbe494d917166308e3213df356cc1626e83a8076130a6c14c9b0404d804c"
 
 [[test]]
@@ -27215,7 +27212,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8209-L8232"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "92b77a6edd2d7dd4c55f0607dc6c1e0ca049a3faec4490a74bef356e6def8541"
 
 [[test]]
@@ -27224,7 +27221,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8234-L8295"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "00f35ca725808a4c8f12d04e7905104c2b8fe2e524797d351f8a7a515c6bf479"
 
 [[test]]
@@ -27233,7 +27230,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6650-L6680"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "52bac99a2366e109c4ecd7bcd032c00fe9b7ef24721ced96960df7249059eaeb"
 
 [[test]]
@@ -27242,7 +27239,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6422-L6452"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "de40f945b282c03ca7716a06d7bb6f872e1a0fb2d85f55ddc577efac3868e2b8"
 
 [[test]]
@@ -27251,7 +27248,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1403-L1457"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "d4ed86e40cc0a6cc9931917f2d284566978b72e633e8ba818f354d5817e2c4b8"
 
 [[test]]
@@ -27260,7 +27257,8 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8406-L8408"
 module = "paragraph"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia: SK_UNICODE_ICU4X_IMPLEMENTATION is not defined (the ICU4X Unicode of Skia is not part of this port)"
 span_hash = "5f84292ec6a252b8a69d7e3899e227cb1e1f501d74e8e23da4e405dc46eebf3b"
 
 [[test]]
@@ -27269,7 +27267,8 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8979-L8981"
 module = "paragraph"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia: SK_UNICODE_ICU4X_IMPLEMENTATION is not defined (the ICU4X Unicode of Skia is not part of this port)"
 span_hash = "a9a3d32672b062147e36ac39471f05fcb3fbcb2b9a2c415f72477b77d2a050b3"
 
 [[test]]
@@ -27278,7 +27277,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8400-L8402"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "fa5bfcb0f05d29bcff8cb3b41cfcf489f576def357ac6df8a8b1a5d45f4ffd5b"
 
 [[test]]
@@ -27287,7 +27286,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8973-L8975"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "51173e51012354fcbd3248d42a566f3ef4fe1a3b74e0d99476380cc7f2e564b3"
 
 [[test]]
@@ -27296,7 +27295,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6097-L6113"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "3f9680179b88a89a26341d1336d7826bdf79639181da2aaa71502df2eccc3718"
 
 [[test]]
@@ -27305,7 +27304,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L533-L591"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "4e4f2caeeecbeaf0b3a339bada5504dcacfa1b4cf0315d84d49045c6c17efdc1"
 
 [[test]]
@@ -27314,7 +27313,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L473-L531"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "205b328def06b43734b38dd120e301cfedb9acffe79cac7de284f2c2e352ab4f"
 
 [[test]]
@@ -27323,7 +27322,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L593-L651"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "772c4061c750196d400d10f2285ad43d3ffd7172aa6ac4bb24a625bfffaec985"
 
 [[test]]
@@ -27332,7 +27331,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L653-L709"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "8635965b4199369f9a61dd9f97ca930d387bbf15705582985d558d7aa47d9588"
 
 [[test]]
@@ -27341,7 +27340,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L884-L1021"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "674d7392a8810290d9f803737f74388290946bbb64408538bb1cce1765401226"
 
 [[test]]
@@ -27350,7 +27349,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1023-L1153"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "e5ca4efcac8a230e67be9e1284425b7de440e0133405796ffc972d42e33af3dc"
 
 [[test]]
@@ -27359,7 +27358,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L827-L882"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "f4521da9cb7597c8f097a54fbe4956d5e9b7d66bbf456078dcaff67e7d69801f"
 
 [[test]]
@@ -27368,7 +27367,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L769-L825"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "90a4e21933f676713c3a04f4df574d54932d8a8c04be140d31507398624ba93f"
 
 [[test]]
@@ -27377,7 +27376,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L373-L471"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "f9c557205f717a8395bd24fdc337b8c9deb822a604bb148c9f2ab26666cbcc97"
 
 [[test]]
@@ -27386,7 +27385,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L711-L767"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "3fd820f8f225343404ce42ab3fba5bb497438e51272d5800b76f5a342c9c6d55"
 
 [[test]]
@@ -27395,7 +27394,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6337-L6356"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "3e05657091327aa0fbbcc6e69751f986ad88ef0e4fd0e580f1de00a627dec49d"
 
 [[test]]
@@ -27404,7 +27403,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2472-L2534"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "c8c9737085fbc11fafc94c513063a5e42a7e174fdcb099e16f5ed8cdce8db128"
 
 [[test]]
@@ -27433,7 +27432,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2064-L2149"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "fea4cf12e6bab0136cd3412e7616abb1e41ee3eaec60dd9d358c300955ad9ce7"
 
 [[test]]
@@ -27442,7 +27441,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2152-L2227"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "d464a6c5e8b82bb0868939be211bfbd0140e4e7095c4279f34453ee7407793ee"
 
 [[test]]
@@ -27451,7 +27450,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2229-L2306"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "4e291b66070a2a64a6045e4e387d48c4a21074d954c12a4d44c63ac71a258939"
 
 [[test]]
@@ -27460,7 +27459,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4154-L4199"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "cf4c56bc375cd916305e5fe2b93f22c354bf1ea5cd9ff99a8a6c3de3d845b211"
 
 [[test]]
@@ -27469,7 +27468,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6753-L6792"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "dacba42186d0bc6a92c14e47b440dc73bb894bdafc56c8cb772b7c6cade62aef"
 
 [[test]]
@@ -27478,7 +27477,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6851-L6891"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "4f5bf292afbfa37a0e327ef0c6dc55101a508595d6062fd979f3caf5ea8bbdef"
 
 [[test]]
@@ -27487,7 +27486,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L2308-L2349"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "54cf05ad53876fda737d7f0b637869d8c5a990aec911ac8f9e783fa405fdb8d5"
 
 [[test]]
@@ -27496,7 +27495,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1806-L1888"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "1f752f58f8ef533f7c2286007cc0b0080701c00a30e234bf4244a215c649c025"
 
 [[test]]
@@ -27505,7 +27504,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7000-L7039"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "bcd4b0b96fc3a3deb90ed20b0de76a12b4ca039cf1df192b60cb199eb66c0a10"
 
 [[test]]
@@ -27514,7 +27513,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6115-L6193"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "30ba38adf90995575bd11aa6c18d47c3ed3501e5fb958e0c0a8a0eef06d45253"
 
 [[test]]
@@ -27523,7 +27522,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6228-L6271"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "7fde6cfe29c81ff703471d6e5d7ebc528c4ff157bdb363df2c7dab127e097abe"
 
 [[test]]
@@ -27532,7 +27531,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4108-L4151"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "46649cd3f6aa25b4a69a5cb9b9abc3682a27f735dd7d5da9fc2a7a45a5a3ba04"
 
 [[test]]
@@ -27541,7 +27540,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6030-L6059"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "2264e5c68aa20868b009657610c325cc378fe894ce11b307bc11ce92658175b5"
 
 [[test]]
@@ -27550,7 +27549,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7809-L7858"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a05ad977d93f6e5fbea99abd53c0e205b136ac4455b5bb391149536e9244a402"
 
 [[test]]
@@ -27559,7 +27558,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7755-L7806"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "af6e32da8226886ae737e2b8aa70761713afc0b91eac8f5fca793154de68653a"
 
 [[test]]
@@ -27568,7 +27567,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7693-L7752"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "271bb2eb20fb18fcfa459e3abb27095e775b7e89f4a044ef97cd0d6f71ff6401"
 
 [[test]]
@@ -27578,6 +27577,7 @@ macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7576-L7690"
 module = "paragraph"
 status = "todo"
+reason = "needs GoogleSans-Regular.ttf, which test-fonts-m156 does not contain (the font's licence); the asserted clip positions are its advances"
 span_hash = "9afadad965d8f473701efcd26671ade73da824d53122b53f610e68bc793f21de"
 
 [[test]]
@@ -27586,7 +27586,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7861-L7921"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "197fee6bba29295e6c30d5cbf1ed5362aa9a072f72d582decfb0950ab0d5325c"
 
 [[test]]
@@ -27595,7 +27595,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8672-L8709"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "71c65ba4d1324908f6bb1c21475a9791b2cfb7dcb1ceabce675763b0c021b06f"
 
 [[test]]
@@ -27604,7 +27604,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1518-L1606"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "d89db6de42a8dcd95633f0c41a993707c37b130716bcf1b56fdffb3518b3c211"
 
 [[test]]
@@ -27613,7 +27613,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5820-L5838"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "e88183272a15d471820f222de8e3831e8b51f02d2061db52e3fceb817585c8c3"
 
 [[test]]
@@ -27622,7 +27622,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4202-L4242"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "9662bec6f0c57605faa70125d802cfc08e7861c6f66545bf8e3c392db20b9f89"
 
 [[test]]
@@ -27631,7 +27631,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6359-L6420"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "8ac42b3c458a9f867042c2d8a2f1ec25f784065744cdcb9245a6ffe98fb9aff9"
 
 [[test]]
@@ -27640,7 +27640,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7354-L7404"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "e175337ea44b8ee70378c9acabc3d06f430bee9e7f2dd68c5f4a92331b425f78"
 
 [[test]]
@@ -27649,7 +27649,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7406-L7443"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "484a3de0ec7ac0aa51dab886ef73bfbdf68815759d1cc1e935a97dc7fb5d67a2"
 
 [[test]]
@@ -27658,7 +27658,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5642-L5660"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "34db0047013825c4a2e888f94ef31d7ec881b2668775893ec8089a8c1d537716"
 
 [[test]]
@@ -27667,7 +27667,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5613-L5639"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "32b340614138ee7c79661f77b9c5406b90490c84ac890a6515681f38192274f6"
 
 [[test]]
@@ -27686,7 +27686,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5663-L5680"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "3651369ccb0b6053f4d5c2165dba4b801e53ad56d4690f57736544a7700ce980"
 
 [[test]]
@@ -27695,7 +27695,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6968-L6998"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "6c3dda68f4880b98277a9bea039343d6c3c9cd091fb483b38db730a4d9a3ee6e"
 
 [[test]]
@@ -27704,7 +27704,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6606-L6648"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "94d8d43613c174d386ba02b22c98285d4624698e2437950a87634c1d4c3e6ae6"
 
 [[test]]
@@ -27713,7 +27713,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6494-L6547"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "5e0590fd2505d4d61f0ebd300b551709b3d77c781f90dbd2e23acd0e43cc9b9c"
 
 [[test]]
@@ -27722,7 +27722,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7072-L7127"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "18850b75185917e985d1767a43a3680235e4ae8d05220c7a001483f3379c582f"
 
 [[test]]
@@ -27731,7 +27731,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6682-L6720"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "60d28641e079969c359a5bd6d95149f8f94b559e972e4036d415a4cd07f42a2e"
 
 [[test]]
@@ -27740,7 +27740,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6794-L6849"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "977f86f1cf29273e580993927af7dd4d1683da17a1e407120ca337cbfee04c26"
 
 [[test]]
@@ -27749,7 +27749,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6722-L6751"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "75fc1da4d9b25804b730c13d9261ab4afc15a77fd5f37cde218ec9b063eb55d8"
 
 [[test]]
@@ -27758,7 +27758,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6893-L6966"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "7490e5eff6565acc25d4503f23649c0fa1f9224ff5617758d3bb6d89647d4bf7"
 
 [[test]]
@@ -27767,7 +27767,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6454-L6492"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "cfc88daec2d26ec4a56984038b44c4639ab8359c30914d19255f1c9d7b52c1b2"
 
 [[test]]
@@ -27776,7 +27776,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1194-L1315"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "fd387ea00420358f038cf5bb78742fd82a51dd7b2f043dcc4e9315d48e6d544d"
 
 [[test]]
@@ -27785,7 +27785,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4356-L4393"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "65d91c3b8822e48475e27cd65e2e361122b30a42abf188287ee4f9e229ebc44f"
 
 [[test]]
@@ -27794,7 +27794,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1890-L1975"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "9e30986eb5e32f5e05982b992d61229d9a8beff14f4df6b260a218b70e813715"
 
 [[test]]
@@ -27803,7 +27803,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L336-L371"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "d25b008663c70f3bf7f4dfc3f6e8c635846694c5a6b6828cc842501aa20cb77c"
 
 [[test]]
@@ -27812,7 +27812,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7924-L7959"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "b5679e2fa37b9b8ae49884cdf1bbc659164a41253a148ea76938c0772452792d"
 
 [[test]]
@@ -27821,7 +27821,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7961-L7996"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a4c329d7853429fb59c9364d578f234d8414f91d69ace04637490a10d9a31dd9"
 
 [[test]]
@@ -27830,7 +27830,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5943-L5967"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "8899dd6213e21f4f62ede006d50a55f77425b6b893ccd5b69712a00f838d24ef"
 
 [[test]]
@@ -27839,7 +27839,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L298-L334"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "e3f60ae827821b6feb77dfb01aeabc98fd8a1a52f7b811847a48aa5bcb4827f8"
 
 [[test]]
@@ -27848,7 +27848,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7227-L7268"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "8aa1c80bd5eb4788bde56a4ded7ed6c9c23f2dea168c8bece91cdc96c5453963"
 
 [[test]]
@@ -27857,7 +27857,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1155-L1191"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "529e6c1008815fd5d72538d44c219aeab5a6e7308b6292924364a8bee3a09bc9"
 
 [[test]]
@@ -27866,7 +27866,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4506-L4541"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "b6ce8f5ecf3820c184c5fc85cb469f2de4836bb6be817a8ca9c72dc15360331b"
 
 [[test]]
@@ -27875,7 +27875,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8297-L8329"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "1f13c2842f814863ae87e49d9c4adc37e0994f6bcedc16550e94861263f6ca87"
 
 [[test]]
@@ -27884,7 +27884,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6549-L6576"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "e4a1c5368309930bca53ff406a2a1882fc78c63f4cc1b745019b06744dcaa8c2"
 
 [[test]]
@@ -27893,7 +27893,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L6578-L6604"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "2cded2da91de645468aea0167e39b96cf6b6b34ad00ea80713d8a569b36b39e0"
 
 [[test]]
@@ -27902,7 +27902,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8595-L8637"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "647422da4b7e86d41c8b7e1440a3a9adba58f438c1400eb96aa928362e538e99"
 
 [[test]]
@@ -27911,7 +27911,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8790-L8824"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "c9fc6cc4dee638ffd43c2176c0a1c1a34fa5fc73b75de34495804957d24c5133"
 
 [[test]]
@@ -27920,7 +27920,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8829-L8885"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "8b83d19cf010685c22af236ba1da9927c175138fe7c650f2e5de7b189fed7136"
 
 [[test]]
@@ -27929,7 +27929,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8890-L8931"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "f3fcfdfaae8a1f1a42eaaeb2186537aeeb108bac9aa0da86e17b2488ba45eb39"
 
 [[test]]
@@ -27938,7 +27938,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8711-L8747"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "480b970f91d4bc62a9057889f44737d7156a290a81852c5370f080b8566b276e"
 
 [[test]]
@@ -27947,7 +27947,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8639-L8670"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "fb388f5b14a4b0ccc8334759040e48a69ff070253afd6f072abcf8eb8107738a"
 
 [[test]]
@@ -27956,7 +27956,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8749-L8786"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a735735d80d825ebff0456b26a71df765d502345eb9fbe6ec614ac28f6e8d4b3"
 
 [[test]]
@@ -27965,7 +27965,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8935-L8970"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "a597e7cecb37985ca24a633f2a2e102cebccac147479ad73cd631fca65ded979"
 
 [[test]]
@@ -27974,7 +27974,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4025-L4105"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "1a40d71e9add896894d79bd5607f9279856f162b9217f23ee730a7c716a2c267"
 
 [[test]]
@@ -27983,7 +27983,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7315-L7352"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "3f1b48277f6aeefa5384ae19c94561e8d97827f0e93d19bab45ffa1c4f05ed13"
 
 [[test]]
@@ -27992,7 +27992,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5219-L5284"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "2b3acb53b4c9f60dca9bd6e6368005e880dd8066571534d81097c47ca36a25fa"
 
 [[test]]
@@ -28001,7 +28001,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5108-L5216"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "c9062686405e47e55a9b09fcf1a241c77b5f62c699b35ef80200b20d744af7b0"
 
 [[test]]
@@ -28010,7 +28010,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1674-L1740"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "b14c8d56fe94785340d296138d253c65eba6b352f2b7f45f04e3c844f5bb2474"
 
 [[test]]
@@ -28019,7 +28019,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1608-L1672"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "eec3b92cfb695f92346d77e5c84da78c25ee3ccbc12715228934258441ce5981"
 
 [[test]]
@@ -28028,7 +28028,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4752-L4866"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "18a9384cdd075d8b6ebc0793cad12765712202a95c1087f452fc728310ba8f59"
 
 [[test]]
@@ -28037,7 +28037,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4869-L4985"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "7dc9034bc570c82e138d686bf8247adbfc27324e655baed002820d784dfd6cf8"
 
 [[test]]
@@ -28046,7 +28046,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4988-L5105"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "cbe9dd5680830ad6657dce34b2698914e27da6f90f04c48759c49a6a2fca68ac"
 
 [[test]]
@@ -28055,7 +28055,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7129-L7177"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "bf63f70760921c7a9793fd444e204ac03f3a5d688947c2042c83e3c895166eeb"
 
 [[test]]
@@ -28064,7 +28064,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7491-L7525"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "0000fee08fa2a8f32911feb6396ff7e5d5a28674673d055fa5e810430aa0b0f6"
 
 [[test]]
@@ -28073,7 +28073,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8006-L8097"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "65808920055e70563806897e5b7e8fab95f49d22f560d3fa6bfb02f367053be1"
 
 [[test]]
@@ -28082,7 +28082,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L1742-L1804"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "9f1c9270425e4ccfe3864df6b63579d8697078c7e2158dff397bb95f7058abf6"
 
 [[test]]
@@ -28091,7 +28091,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L4437-L4503"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "b77157d7ef64947ada20df1d8363fca1894a59c57ba9ff076a48748b3582e92a"
 
 [[test]]
@@ -28100,7 +28100,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7041-L7070"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "fc4b94732ccb2ded6b63c68ab30ae5e31abe8c64954748f8ba4393a6ca6bfc51"
 
 [[test]]
@@ -28109,7 +28109,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L5339-L5368"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "244b9c8ca7b0d86517633141b8e044d8f0e3ee6fb4ae1fa46984bb60f631cefe"
 
 [[test]]
@@ -28118,7 +28118,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L8099-L8137"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "c0c78a8acdafeb35277d6bdf23b1760d62d2efd6a9b546a3738d7931fcabb103"
 
 [[test]]
@@ -28127,7 +28127,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7549-L7573"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "4cfeb291783e7baa6f77ce8730062a1ea10e5d59bcce8277031581625e8b2595"
 
 [[test]]
@@ -28136,7 +28136,7 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skparagraph/tests/SkParagraphTest.cpp#L7527-L7547"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "57e97a932332b5f6accbc430f4097044a9d6412c88908919357d66d8f124a439"
 
 [[test]]
@@ -28145,7 +28145,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skparagraph/tests/SkShaperJSONWriterTest.cpp#L73-L121"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "09742c983da1db4282ef52b318f6922e14ac51b5b661e43c0819e7b24a5b679a"
 
 [[test]]
@@ -28154,7 +28154,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skparagraph/tests/SkShaperJSONWriterTest.cpp#L126-L146"
 module = "paragraph"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "054fda0681af0f2d6429594045e6f5f778c706a08fcea0800802a1bee2a7c612"
 
 [[test]]
@@ -28163,7 +28164,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skparagraph/tests/SkShaperJSONWriterTest.cpp#L16-L71"
 module = "paragraph"
-status = "todo"
+status = "passing"
 span_hash = "2c28415c3a5f8cfef7164794dc48b4b622127f564d0504748421c61393d89208"
 
 [[test]]
