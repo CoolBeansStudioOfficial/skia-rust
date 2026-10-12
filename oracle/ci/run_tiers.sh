@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # Renders one CI oracle build at its CPU tiers (see oracle/README.md, "CI-hosted oracle").
 #
-#   run_tiers.sh <build> <bin-dir> <goldens-dir> <out-dir>
+#   run_tiers.sh <build> <bin-dir> <goldens-dir> <out-dir> [<tier>]
 #
 # <bin-dir> holds `dm`, `toolchain.txt` and `resources/` (the build cache). <goldens-dir> holds
 # the published `hashes-m156.json` (+ `objects-m156.tar` for the mismatch analysis). For every
 # tier of the build it renders `--src gm` (8888) and compares with the golden tier of the same
 # name; with EXTRAS=1 it also renders `--src image` (8888 565 f16) and `--src lottie`.
 # Results land in <out-dir>/<tier>/: hashes-gm.json, equivalence.{json,md}, hashes-image.json,
-# hashes-lottie.json and the DM logs.
+# hashes-lottie.json and the DM logs. With <tier>, only that tier runs. REQUIRE_AMD=1 (default)
+# makes the script fail on a non-AMD CPU: the goldens come from a Zen 4 host, and Intel's
+# `rcpps`/`rsqrtps` estimates differ from AMD's, which changes the baseline and ml3 code paths
+# (design raster-pipeline.md §4.6). Re-run the failed job to get another runner.
 set -uo pipefail
 
 build=$1
@@ -17,6 +20,7 @@ goldens=$(realpath "$3")
 out=$(realpath -m "$4")
 here=$(dirname "$(realpath "$0")")
 ci="python3 -I $here/oracle_ci.py"
+only=${5:-}
 mkdir -p "$out"
 
 # Tiers of each build: `<tier>:<SKIA_ORACLE_CPU_CAP>` (derived from oracle/tiers.toml the way
@@ -33,10 +37,16 @@ flags=$(grep -m1 '^flags' /proc/cpuinfo)
 has() { for f in "$@"; do [[ " $flags " == *" $f "* ]] || return 1; done; }
 {
   grep -m1 'model name' /proc/cpuinfo
+  grep -m1 'vendor_id' /proc/cpuinfo
   echo "ml3-capable: $(has avx2 bmi1 bmi2 fma f16c && echo yes || echo no)"
   echo "ml4-capable: $(has avx512f avx512dq avx512cd avx512bw avx512vl && echo yes || echo no)"
   echo "flags: $flags"
 } | tee "$out/cpu.txt"
+
+if [[ ${REQUIRE_AMD:-1} == 1 ]] && ! grep -q AuthenticAMD /proc/cpuinfo; then
+  echo "::error::this runner is not an AMD CPU (see $out/cpu.txt); re-run the job to get another runner"
+  exit 3
+fi
 
 cd "$bin"
 dm_common=(--resourcePath resources --nativeFonts false --cpu true --gpu false --graphite false)
@@ -45,11 +55,12 @@ status=0
 for spec in $tiers; do
   tier=${spec%%:*}
   cap=${spec##*:}
+  [[ -z $only || $only == "$tier" ]] || continue
   tdir=$out/$tier
   mkdir -p "$tdir"
   case $cap in
-    ml3) has avx2 bmi1 bmi2 fma f16c || { echo "SKIPPED: this runner lacks AVX2/FMA, cannot run $tier" | tee "$tdir/skipped.txt"; continue; } ;;
-    ml4) has avx512f avx512dq avx512cd avx512bw avx512vl || { echo "SKIPPED: this runner lacks AVX-512, cannot run $tier" | tee "$tdir/skipped.txt"; continue; } ;;
+    ml3) has avx2 bmi1 bmi2 fma f16c || { echo "::error::this runner lacks AVX2/FMA, cannot run $tier"; exit 3; } ;;
+    ml4) has avx512f avx512dq avx512cd avx512bw avx512vl || { echo "::error::this runner lacks AVX-512, cannot run $tier; re-run the job"; exit 3; } ;;
   esac
   # The CPU tier the DM metadata reports for this cap.
   case $cap in baseline|ssse3|ml3|ml4) cpu_tier=$cap ;; esac

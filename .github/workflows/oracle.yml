@@ -47,8 +47,8 @@ env:
   GIT_SYNC_DEPS_SKIP_EMSDK: "1"
 
 jobs:
-  oracle:
-    name: oracle (${{ matrix.build }})
+  build:
+    name: build (${{ matrix.build }})
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -73,14 +73,14 @@ jobs:
           clang --version | tee clang-version.txt
           python3 --version
 
-      - name: Cache key (pin + GN args + patches + compiler)
+      - name: Cache key (pin + GN args + patches)
         id: key
         run: |
           pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
           python3 -I oracle/ci/oracle_ci.py gn-args "$BUILD" > gn-args.txt
           cat gn-args.txt
           if [ "${{ inputs.nanobench }}" = "true" ]; then nb=nb; else nb=nonb; fi
-          h=$( (cat gn-args.txt clang-version.txt oracle/patches/*.patch oracle/dm/*; echo "$nb") | sha256sum | cut -c1-16)
+          h=$( (cat gn-args.txt oracle/patches/*.patch oracle/dm/*; echo "$nb") | sha256sum | cut -c1-16)
           echo "pin=$pin" >> "$GITHUB_OUTPUT"
           echo "bin=oracle-bin-$BUILD-${pin::12}-$h" >> "$GITHUB_OUTPUT"
 
@@ -162,7 +162,47 @@ jobs:
           path: oracle-bin
           key: ${{ steps.key.outputs.bin }}
 
-      # ---- equivalence check and extra sources ----------------------------------------------
+
+  render:
+    name: render (${{ matrix.tier }})
+    needs: build
+    if: ${{ always() && needs.build.result == 'success' && contains(inputs.builds, matrix.build) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { build: x64-sse2-rgba,   tier: cpu-x64-sse2-rgba }
+          - { build: x64-sse2-rgba,   tier: cpu-x64-sse2-rgba-rt-ml3 }
+          - { build: x64-sse2-rgba,   tier: cpu-x64-sse2-rgba-rt-ml4 }
+          - { build: x64-sse41-rgba,  tier: cpu-x64-sse41-rgba }
+          - { build: x64-scalar-rgba, tier: cpu-x64-scalar-rgba }
+    env:
+      BUILD: ${{ matrix.build }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache key
+        id: key
+        run: |
+          pin=$(python3 -I -c "import tomllib;print(tomllib.load(open('inventory/skia-pin.toml','rb'))['commit'])")
+          python3 -I oracle/ci/oracle_ci.py gn-args "$BUILD" > gn-args.txt
+          if [ "${{ inputs.nanobench }}" = "true" ]; then nb=nb; else nb=nonb; fi
+          h=$( (cat gn-args.txt oracle/patches/*.patch oracle/dm/*; echo "$nb") | sha256sum | cut -c1-16)
+          echo "bin=oracle-bin-$BUILD-${pin::12}-$h" >> "$GITHUB_OUTPUT"
+
+      - name: Restore binaries
+        uses: actions/cache/restore@v4
+        with:
+          path: oracle-bin
+          key: ${{ steps.key.outputs.bin }}
+          fail-on-cache-miss: true
+
+      - name: Tools
+        run: sudo apt-get install -y --no-install-recommends zstd
+
       - name: Download the published goldens
         run: |
           mkdir -p goldens
@@ -187,13 +227,13 @@ jobs:
           LOTTIE_CONFIGS: ${{ inputs.lottie_configs }}
         run: |
           chmod +x oracle/ci/run_tiers.sh oracle-bin/dm
-          oracle/ci/run_tiers.sh "$BUILD" oracle-bin goldens results
+          oracle/ci/run_tiers.sh "$BUILD" oracle-bin goldens results "${{ matrix.tier }}"
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: oracle-results-${{ matrix.build }}
+          name: oracle-results-${{ matrix.tier }}
           path: |
             results
             oracle-bin/toolchain.txt
@@ -202,7 +242,7 @@ jobs:
 
   collect:
     name: collect hashes
-    needs: oracle
+    needs: render
     if: ${{ always() && inputs.extras }}
     runs-on: ubuntu-latest
     steps:
@@ -226,4 +266,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: oracle-dm-hashes-m156
+          overwrite: true
           path: merged
